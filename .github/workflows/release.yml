@@ -1,0 +1,79 @@
+name: Create Release
+
+on:
+  push:
+    # Trigger on pushes to main or master branch
+    branches: [ main, master ]
+  # Allow manual triggering
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  discussions: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get latest version
+        id: get_version
+        run: |
+          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" simple-site-exporter.php)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          RELEASE_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }})
+          if [[ "$RELEASE_EXISTS" == "200" ]]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.get_version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.get_version.outputs.version }} does not exist yet"
+          fi
+
+      - name: Create zip file
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          mkdir -p enginescript-simple-site-exporter
+          cp simple-site-exporter.php enginescript-simple-site-exporter/
+          cp README.md enginescript-simple-site-exporter/
+          cp CHANGELOG.md enginescript-simple-site-exporter/
+          cp LICENSE enginescript-simple-site-exporter/ || echo "No LICENSE file found"
+          zip -r enginescript-simple-site-exporter-${{ steps.get_version.outputs.version }}.zip enginescript-simple-site-exporter
+
+      - name: Get changelog entry
+        if: steps.check_release.outputs.exists == 'false'
+        id: get_changelog
+        run: |
+          CHANGELOG_ENTRY=$(awk -v ver="## ${{ steps.get_version.outputs.version }}" 'BEGIN{flag=0} $0~ver{flag=1; print; next} /^## [0-9]+\.[0-9]+\.[0-9]+/{flag=0} flag{print}' CHANGELOG.md | tail -n +2)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_ENTRY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            ${{ steps.get_changelog.outputs.changelog }}
+            
+            ## Installation
+            1. Download the zip file
+            2. Upload to your WordPress site through the Plugins > Add New > Upload menu
+            3. Activate the plugin
+            
+            [Full Documentation](https://github.com/${{ github.repository }})
+          files: enginescript-simple-site-exporter-${{ steps.get_version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: false
