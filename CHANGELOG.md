@@ -1,6 +1,18 @@
 # Changelog for EngineScript: Simple Site Exporter
 
-## 1.5.7 - May 1, 2025
+## 1.5.8 - May 1, 2025
+### Code Quality Improvements
+- Refactored validation functions to eliminate code duplication
+- Created shared `sse_validate_export_file()` function for both download and deletion operations
+- Improved code maintainability while preserving security controls
+
+### Security Enhancements
+- Updated license to GPL v3
+- Enhanced file path validation
+- Strengthened regex pattern for export file validation
+- Added proper documentation for security-related functions
+
+## 1.5.7 - April 25, 2025
 ### Security Enhancements
 - Implemented comprehensive file path validation function to prevent directory traversal attacks
 - Added referrer checks for download and delete operations

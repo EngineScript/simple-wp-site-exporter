@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.7
+Version: 1.5.8
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: simple-site-exporter-enginescript
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.5.7');
+    define('ES_SITE_EXPORTER_VERSION', '1.5.8');
 }
 
 // --- Admin Menu ---
@@ -463,264 +463,13 @@ function sse_safely_delete_file($filepath) {
 }
 
 /**
- * Validate export download request parameters
+ * Shared file validation logic used by both download and deletion operations
  * 
  * @param string $filename The filename to validate
- * @return array|WP_Error Result array with file path and size or WP_Error on failure
+ * @param bool $check_filesize Whether to check file size (for downloads)
+ * @return array|WP_Error Result array with file data or WP_Error on failure
  */
-function sse_validate_download_request($filename) {
-    if (empty($filename)) {
-        return new WP_Error('invalid_request', esc_html__('No file specified.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Prevent path traversal attacks
-    if (strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-        return new WP_Error('invalid_filename', esc_html__('Invalid filename.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Validate that it's our export file format
-    if (!preg_match('/^site_export_sse_[a-f0-9]{7}_[a-zA-Z0-9_-]+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip$/', $filename)) {
-        return new WP_Error('invalid_format', esc_html__('Invalid export file format.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Get the full path to the file
-    $upload_dir = wp_upload_dir();
-    $export_dir = $upload_dir['basedir'] . '/enginescript-sse-site-exports';
-    $file_path = $export_dir . '/' . $filename;
-    
-    // Validate the file path is within our export directory
-    if (!sse_validate_filepath($file_path, $export_dir)) {
-        return new WP_Error('invalid_path', esc_html__('Invalid file path.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Use WordPress filesystem API
-    global $wp_filesystem;
-    
-    // Initialize the WordPress filesystem
-    if (empty($wp_filesystem)) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        WP_Filesystem();
-    }
-    
-    // Check if file exists using WP Filesystem
-    if (!$wp_filesystem->exists($file_path) || !$wp_filesystem->is_readable($file_path)) {
-        return new WP_Error('file_not_found', esc_html__('Export file not found or not readable.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Get file size using WP Filesystem
-    $file_size = $wp_filesystem->size($file_path);
-    if (!$file_size) {
-        return new WP_Error('file_size_error', esc_html__('Could not determine file size.', 'simple-site-exporter-enginescript'));
-    }
-    
-    // Add referer check for request validation
-    $referer = wp_get_referer();
-    if (!$referer || strpos($referer, admin_url()) !== 0) {
-        return new WP_Error('invalid_request_source', esc_html__('Invalid request source.', 'simple-site-exporter-enginescript'));
-    }
-    
-    return array(
-        'filepath' => $file_path,
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename
-        'filename' => basename($file_path),
-        'filesize' => $file_size
-    );
-}
-
-/**
- * Prepare environment for secure download
- */
-function sse_prepare_download_environment() {
-    // End any output buffering completely
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-    
-    // Close session to prevent locks
-    if (function_exists('session_write_close')) {
-        // In WordPress context, session handling is generally discouraged,
-        // but needed for compatibility with plugins that might use sessions
-        session_write_close();
-    }
-    
-    // Set unlimited execution time for large files
-    // Note: Using set_time_limit is sometimes necessary for large file operations
-    if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_set_time_limit
-        set_time_limit(0);
-    }
-    
-    // Try to disable output compression
-    if (function_exists('apache_setenv')) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_apache_setenv
-        apache_setenv('no-gzip', '1');
-    }
-    
-    // Disable zlib compression
-    // Note: In this specific case, we need to ensure no compression for binary file download
-    if (function_exists('ini_set')) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_ini_set
-        ini_set('zlib.output_compression', '0');
-    }
-}
-
-/**
- * Send file download headers
- * 
- * @param string $filename The filename to send
- * @param int $filesize The file size in bytes
- */
-function sse_send_download_headers($filename, $filesize) {
-    // WordPress doesn't provide a native API for sending file download headers,
-    // so we need to use the header function directly
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Content-Description: File Transfer');
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Content-Type: application/octet-stream');
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Content-Length: ' . $filesize);
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Content-Transfer-Encoding: binary');
-    // Most Cache-Control headers are handled by Nginx
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Pragma: no-cache');
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.header_header
-    header('Expires: 0');
-    
-    // Add security headers
-    header('X-Content-Type-Options: nosniff');
-    header('X-Frame-Options: DENY');
-    header('Content-Security-Policy: default-src \'none\'');
-}
-
-/**
- * Stream file to browser using WordPress filesystem when possible
- * 
- * @param string $file_path Path to the file to be streamed
- * @return bool Success or failure
- */
-function sse_stream_file($file_path) {
-    global $wp_filesystem;
-    
-    if (empty($wp_filesystem)) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        WP_Filesystem();
-    }
-    
-    // Final buffer clean before sending the file
-    if (ob_get_level()) {
-        ob_end_clean();
-    }
-    
-    // Try different methods to send the file, starting with the most efficient
-    
-    // Method 1: Direct readfile (most efficient for most servers)
-    // WordPress discourages direct file operations but doesn't provide a native API for efficient 
-    // streaming of large files. Using readfile() here is necessary for performance reasons 
-    // when handling potentially large export files, with fallback options if it fails.
-    // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_readfile
-    if (@readfile($file_path) !== false) {
-        return true;
-    }
-    
-    // Method 2: File chunks with WordPress filesystem
-    if ($wp_filesystem->exists($file_path) && $wp_filesystem->is_readable($file_path)) {
-        // WP_Filesystem doesn't support efficient streaming for large files, so we need direct file access
-        // for chunked downloads. This approach is only used if readfile() fails and is necessary for
-        // properly handling large exports in memory-constrained environments.
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_fopen
-        $handle = fopen($file_path, 'rb');
-        if ($handle !== false) {
-            $chunk_size = 1024 * 1024; // 1MB chunks
-            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_feof
-            while (!feof($handle)) {
-                // No escaping needed here as we're outputting binary file content for download
-                // with appropriate Content-Type and Content-Disposition headers already set
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.PHP.DiscouragedPHPFunctions.filesystem_fread
-                echo fread($handle, $chunk_size);
-                flush();
-                if (connection_status() != 0) {
-                    break;
-                }
-            }
-            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_fclose
-            fclose($handle);
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-/**
- * Main handler for secure download requests
- */
-function sse_secure_download_handler() {
-    // Use filter_input for better security when accessing superglobals
-    $sse_secure_download = filter_input(INPUT_GET, 'sse_secure_download', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $sse_secure_download = $sse_secure_download ? wp_unslash($sse_secure_download) : '';
-    
-    $download_nonce = filter_input(INPUT_GET, 'sse_download_nonce', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $download_nonce = $download_nonce ? sanitize_key(wp_unslash($download_nonce)) : '';
-    
-    // Check for our download request parameter
-    if (empty($sse_secure_download)) {
-        return;
-    }
-
-    // Verify nonce for security
-    if (empty($download_nonce) || 
-        !wp_verify_nonce($download_nonce, 'sse_secure_download')) {
-        wp_die(esc_html__('Security check failed.', 'simple-site-exporter-enginescript'), 403);
-    }
-
-    // Check user permissions
-    if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to download exports.', 'simple-site-exporter-enginescript'), 403);
-    }
-    
-    // Validate file - make sure input is properly sanitized with wp_unslash first
-    $file_info = sse_validate_download_request(sanitize_file_name($sse_secure_download));
-    
-    // Handle validation errors
-    if (is_wp_error($file_info)) {
-        wp_die(esc_html($file_info->get_error_message()), 400);
-    }
-    
-    // Log the download for auditing purposes
-    error_log('Simple Site Exporter: Admin user ' . wp_get_current_user()->user_login . 
-              ' downloaded export file: ' . $file_info['filename']);
-    
-    // Prepare environment (buffer, session, time limit)
-    sse_prepare_download_environment();
-    
-    // Send HTTP headers for download
-    sse_send_download_headers($file_info['filename'], $file_info['filesize']);
-    
-    // Stream file to browser
-    $success = sse_stream_file($file_info['filepath']);
-    
-    if (!$success) {
-        wp_die(esc_html__('Error streaming file.', 'simple-site-exporter-enginescript'), 500);
-    }
-    
-    // Terminate immediately after sending file (necessary for proper download)
-    // Using exit is necessary after sending a file to prevent any additional output that could corrupt the downloaded file
-    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-    exit;
-}
-// Hook into WordPress for the download handler
-add_action('init', 'sse_secure_download_handler');
-
-/**
- * Validate file deletion request
- *
- * @param string $filename The filename to validate
- * @return array|WP_Error Result array with file path or WP_Error on failure
- */
-function sse_validate_file_deletion($filename) {
+function sse_validate_export_file($filename, $check_filesize = false) {
     if (empty($filename)) {
         return new WP_Error('invalid_request', esc_html__('No file specified.', 'simple-site-exporter-enginescript'));
     }
@@ -759,253 +508,61 @@ function sse_validate_file_deletion($filename) {
         return new WP_Error('file_not_found', esc_html__('Export file not found.', 'simple-site-exporter-enginescript'));
     }
     
+    // For download requests, check additional conditions
+    if ($check_filesize) {
+        // Check if file is readable
+        if (!$wp_filesystem->is_readable($file_path)) {
+            return new WP_Error('file_not_readable', esc_html__('Export file not readable.', 'simple-site-exporter-enginescript'));
+        }
+        
+        // Get file size using WP Filesystem
+        $file_size = $wp_filesystem->size($file_path);
+        if (!$file_size) {
+            return new WP_Error('file_size_error', esc_html__('Could not determine file size.', 'simple-site-exporter-enginescript'));
+        }
+    } else {
+        $file_size = 0; // Not needed for deletion operations
+    }
+    
     // Add referer check for request validation
     $referer = wp_get_referer();
     if (!$referer || strpos($referer, admin_url()) !== 0) {
         return new WP_Error('invalid_request_source', esc_html__('Invalid request source.', 'simple-site-exporter-enginescript'));
     }
     
-    return array(
+    // Create the result array with common properties
+    $result = array(
         'filepath' => $file_path,
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename
         'filename' => basename($file_path)
     );
+    
+    // Add filesize for download operations
+    if ($check_filesize) {
+        $result['filesize'] = $file_size;
+    }
+    
+    return $result;
 }
 
 /**
- * Clear any scheduled cron events for file deletion
+ * Validate export download request parameters
+ * 
+ * @param string $filename The filename to validate
+ * @return array|WP_Error Result array with file path and size or WP_Error on failure
+ */
+function sse_validate_download_request($filename) {
+    // Use the shared validation function with filesize checking enabled
+    return sse_validate_export_file($filename, true);
+}
+
+/**
+ * Validate file deletion request
  *
- * @param string $file_path Full path to the file
- * @return bool Whether any cron events were cleared
+ * @param string $filename The filename to validate
+ * @return array|WP_Error Result array with file path or WP_Error on failure
  */
-function sse_clear_scheduled_deletions($file_path) {
-    $cron_cleared = false;
-    $crons = _get_cron_array();
-    
-    if (!empty($crons)) {
-        foreach ($crons as $timestamp => $cron) {
-            if (isset($cron['sse_delete_export_file'])) {
-                // Use foreach without creating an unused key variable
-                foreach ($cron['sse_delete_export_file'] as $event) {
-                    if (isset($event['args'][0]) && $event['args'][0] === $file_path) {
-                        // Found a scheduled cron task for this file, remove it
-                        wp_unschedule_event($timestamp, 'sse_delete_export_file', array($file_path));
-                        $cron_cleared = true;
-                        error_log('Simple Site Exporter: Removed scheduled deletion event for: ' . $file_path);
-                    }
-                }
-            }
-        }
-    }
-    
-    return $cron_cleared;
-}
-
-/**
- * Handle manual export file deletion requests
- * 
- * This function follows a specific security flow:
- * 1. Verify context and inputs
- * 2. Validate security tokens
- * 3. Validate permissions and files
- * 4. Perform the deletion operation
- * 5. Log and redirect
- * 
- * @since 1.5.3
- */
-function sse_manual_delete_handler() {
-    // Only run on admin pages
-    if (!is_admin()) {
-        return;
-    }
-    
-    // Get and validate input parameters
-    $request = sse_validate_delete_request();
-    if (!$request['valid']) {
-        return;
-    }
-    
-    // Validate the file
-    $file_info = sse_validate_file_deletion(sanitize_file_name($request['filename']));
-    
-    // Handle validation errors
-    if (is_wp_error($file_info)) {
-        wp_die(esc_html($file_info->get_error_message()), 400);
-    }
-    
-    // Process the file deletion
-    $result = sse_process_file_deletion($file_info);
-    
-    // Redirect with appropriate status
-    sse_redirect_after_deletion($result);
-}
-
-/**
- * Validate delete request parameters
- * 
- * @since 1.5.4
- * @return array Request validation results
- */
-function sse_validate_delete_request() {
-    // Use filter_input for better security when accessing superglobals
-    $sse_delete_export = filter_input(INPUT_GET, 'sse_delete_export', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $sse_delete_export = $sse_delete_export ? wp_unslash($sse_delete_export) : '';
-    
-    $delete_nonce = filter_input(INPUT_GET, 'sse_delete_nonce', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $delete_nonce = $delete_nonce ? sanitize_key(wp_unslash($delete_nonce)) : '';
-    
-    // Check for our delete action
-    if (empty($sse_delete_export)) {
-        return ['valid' => false];
-    }
-    
-    // Verify nonce for security
-    if (empty($delete_nonce) || 
-        !wp_verify_nonce($delete_nonce, 'sse_delete_export')) {
-        wp_die(esc_html__('Security check failed.', 'simple-site-exporter-enginescript'), 403);
-    }
-    
-    // Check user permissions
-    if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to delete export files.', 'simple-site-exporter-enginescript'), 403);
-    }
-    
-    return [
-        'valid' => true,
-        'filename' => $sse_delete_export
-    ];
-}
-
-/**
- * Process file deletion
- * 
- * @since 1.5.4
- * @param array $file_info File information
- * @return array Operation result
- */
-function sse_process_file_deletion($file_info) {
-    // Clear any scheduled cron events for this file
-    $cron_cleared = sse_clear_scheduled_deletions($file_info['filepath']);
-    
-    // Delete the file
-    $deleted = sse_safely_delete_file($file_info['filepath']);
-    
-    // Log the deletion
-    if ($deleted) {
-        error_log('Simple Site Exporter: Admin user ' . wp_get_current_user()->user_login . 
-                  ' manually deleted export file: ' . $file_info['filename'] . 
-                  ($cron_cleared ? ' (scheduled task removed)' : ''));
-    }
-    
-    return [
-        'deleted' => $deleted,
-        'cron_cleared' => $cron_cleared
-    ];
-}
-
-/**
- * Redirect after file deletion
- * 
- * @since 1.5.4
- * @param array $result Deletion operation result
- */
-function sse_redirect_after_deletion($result) {
-    // Redirect back to the exporter page with a message and nonce for CSRF protection
-    $redirect_url = add_query_arg(
-        array(
-            'page' => sanitize_key('simple-site-exporter'), // Explicitly sanitize the page parameter
-            'file_deleted' => $result['deleted'] ? '1' : '0',
-            '_wpnonce' => wp_create_nonce('sse_file_deleted_notice')
-        ),
-        admin_url('tools.php')
-    );
-    
-    // Use wp_safe_redirect with second parameter to avoid direct exit call
-    wp_safe_redirect($redirect_url, 302, 'Simple Site Exporter');
-    // Use wp_die instead of exit for cleaner shutdown with WordPress
-    wp_die('', '', array('response' => 302, 'exit' => true));
-}
-add_action('admin_init', 'sse_manual_delete_handler');
-
-/**
- * Display admin notice for file deletion result
- */
-function sse_file_deletion_notice() {
-    // Only show on our plugin page
-    $screen = get_current_screen();
-    if (!$screen || $screen->id !== 'tools_page_simple-site-exporter') {
-        return;
-    }
-    
-    // Use filter_input for better security when accessing superglobals
-    $file_deleted = filter_input(INPUT_GET, 'file_deleted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $file_deleted = $file_deleted ? wp_unslash($file_deleted) : '';
-    
-    // Consistently sanitize the nonce value
-    $nonce = filter_input(INPUT_GET, '_wpnonce', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $nonce = $nonce ? sanitize_key(wp_unslash($nonce)) : '';
-    
-    // Check for the deletion result parameter with nonce verification
-    if (!empty($file_deleted) && !empty($nonce) && 
-        wp_verify_nonce($nonce, 'sse_file_deleted_notice')) {
-        
-        if ($file_deleted === '1') {
-            ?>
-            <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e('Export file deleted successfully.', 'simple-site-exporter-enginescript'); ?></p>
-            </div>
-            <?php
-        } else {
-            ?>
-            <div class="notice notice-error is-dismissible">
-                <p><?php esc_html_e('Failed to delete export file.', 'simple-site-exporter-enginescript'); ?></p>
-            </div>
-            <?php
-        }
-    }
-}
-add_action('admin_notices', 'sse_file_deletion_notice');
-
-/**
- * Validate a file path for security
- * 
- * @param string $filepath The file path to validate
- * @param string $allowed_dir The allowed directory
- * @return bool Whether the file path is valid and within the allowed directory
- */
-function sse_validate_filepath($filepath, $allowed_dir) {
-    // Normalize paths for consistent comparison
-    $filepath = wp_normalize_path($filepath);
-    $allowed_dir = wp_normalize_path($allowed_dir);
-    
-    // Check if file path is within allowed directory
-    if (strpos($filepath, $allowed_dir) !== 0) {
-        error_log("Simple Site Exporter: Path validation failed - file is outside allowed directory");
-        return false;
-    }
-    
-    // Check for directory traversal sequences
-    if (strpos($filepath, '..') !== false) {
-        error_log("Simple Site Exporter: Path validation failed - directory traversal detected");
-        return false;
-    }
-    
-    // Additional checks for suspicious patterns
-    $suspicious_patterns = array(
-        '/\\\/',        // Backslashes (Windows)
-        '/\s+/',        // Whitespace
-        '/\%/',         // URL encoded chars
-        '/\0/',         // Null byte
-        '/\$/',         // PHP variable
-        '/\{|\}|\[|\]/' // Special chars used in template strings
-    );
-    
-    foreach ($suspicious_patterns as $pattern) {
-        if (preg_match($pattern, $filepath)) {
-            error_log("Simple Site Exporter: Path validation failed - suspicious pattern detected");
-            return false;
-        }
-    }
-    
-    return true;
+function sse_validate_file_deletion($filename) {
+    // Use the shared validation function with filesize checking disabled
+    return sse_validate_export_file($filename, false);
 }
