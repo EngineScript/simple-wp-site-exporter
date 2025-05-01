@@ -23,8 +23,19 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Install action-dependency-updater
-        run: npm install -g @octokit/core js-yaml
+      - name: Install dependencies
+        run: |
+          # Install dependencies locally to avoid global installation issues
+          npm init -y
+          npm install @octokit/core js-yaml
+          
+          # Debug Node.js environment
+          echo "Checking Node.js version:"
+          node -v
+          echo "Checking npm version:"
+          npm -v
+          echo "Checking installed packages:"
+          npm list --depth=0
       
       - name: Create updater script
         run: |
