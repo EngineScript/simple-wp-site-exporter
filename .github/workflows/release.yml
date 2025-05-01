@@ -77,3 +77,22 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: false
+
+      - name: Update README for new version
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          README_FILE=README.md
+          TMP_FILE=$(mktemp)
+          
+          # Update the "Current Version" section
+          awk -v version="$VERSION" '/^## Current Version/{found=1; print "## Current Version"; print "**Version " version "** - [Download](https:\/\/github.com\/EngineScript\/EngineScript-Simple-Site-Exporter\/releases\/latest\/download\/enginescript-simple-site-exporter-" version ".zip)"; next} found && /^##/{found=0; print; next} !found{print}' $README_FILE > $TMP_FILE && mv $TMP_FILE $README_FILE
+          
+          # Commit and push the changes
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add $README_FILE
+          git commit -m "Update README for version $VERSION [skip ci]"
+          git push https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
