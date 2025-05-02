@@ -1,0 +1,28 @@
+# This workflow automatically posts a guidance comment on new pull requests.
+# It encourages contributors to include sanitized output from `es.debug` if relevant,
+# helping maintainers review and test changes more efficiently.
+
+name: New Pull Request Guidance
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    # Explicitly define permissions required by the job
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post guidance comment on new PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Thanks for contributing to EngineScript Simple Site Exporter! 🎉
+
+
+            We'll review your PR soon!
+          # Token is implicitly provided with the defined permissions
+          # token: ${{ secrets.GITHUB_TOKEN }} # This line can be removed

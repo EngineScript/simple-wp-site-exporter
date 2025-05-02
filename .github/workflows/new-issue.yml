@@ -1,0 +1,26 @@
+# This workflow automatically posts a guidance comment on new issues.
+# It instructs users to run the `es.debug` command on their server and share the sanitized output,
+# helping maintainers get the information needed to troubleshoot and resolve issues efficiently.
+
+name: Issue Guidance
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post guidance comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Thanks for opening an issue. Please provide a detailed description of the problem you're facing. If you have error messages or logs, please include them as well.
+
+            If you're server was configured with the main EngineScript application, you can run a detailed log by running the command `es.debug` in your server console. This will generate a detailed log of the current state of the server, which can help us understand the issue better.

@@ -1,0 +1,78 @@
+# Configuration for GitHub Actions Labeler
+# Labels PRs based on changed file paths
+
+# Core plugin functionality
+core:
+  - changed-files:
+    - any-glob-to-any-file: simple-site-exporter.php
+    - any-glob-to-any-file: includes/**/*
+    - any-glob-to-any-file: assets/js/**/*
+
+# Frontend related changes
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: assets/css/**/*
+    - any-glob-to-any-file: assets/images/**/*
+    - any-glob-to-any-file: templates/**/*
+
+# Workflows and automation
+automation:
+  - changed-files:
+    - any-glob-to-any-file: .github/**/*
+
+# Security related changes
+security:
+  - changed-files:
+    - any-glob-to-any-file: '**/*.php'
+    - any-glob-to-any-file: SECURITY.md
+
+# Documentation
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: README.md
+    - any-glob-to-any-file: '*.md'
+    - any-glob-to-any-file: docs/**/*
+
+# Export functionality
+export:
+  - changed-files:
+    - any-glob-to-any-file: '**/export*.php'
+    - any-glob-to-any-file: '**/zip*.php'
+
+# Database related changes
+database:
+  - changed-files:
+    - any-glob-to-any-file: '**/database*.php'
+    - any-glob-to-any-file: '**/db*.php'
+    - any-glob-to-any-file: '**/sql*.php'
+
+# WordPress integration
+wordpress:
+  - changed-files:
+    - any-glob-to-any-file: '**/wp-*.php'
+    - any-glob-to-any-file: '**/wordpress*.php'
+
+# Translations and localization
+i18n:
+  - changed-files:
+    - any-glob-to-any-file: languages/**/*
+    - any-glob-to-any-file: '**/*.pot'
+    - any-glob-to-any-file: '**/*.po'
+    - any-glob-to-any-file: '**/*.mo'
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file: .github/dependabot.yml
+    - any-glob-to-any-file: composer.json
+    - any-glob-to-any-file: composer.lock
+    - any-glob-to-any-file: package.json
+    - any-glob-to-any-file: package-lock.json
+
+# Tests and quality
+testing:
+  - changed-files:
+    - any-glob-to-any-file: tests/**/*
+    - any-glob-to-any-file: phpunit.xml
+    - any-glob-to-any-file: .travis.yml
+    - any-glob-to-any-file: .phpcs.xml
