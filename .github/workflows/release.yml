@@ -78,21 +78,40 @@ jobs:
           prerelease: false
           generate_release_notes: false
 
-      - name: Update README for new version
+      - name: Update README version
         if: steps.check_release.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          VERSION=${{ steps.get_version.outputs.version }}
-          README_FILE=README.md
+          README_FILE="README.md"
           TMP_FILE=$(mktemp)
           
           # Update the "Current Version" section
-          awk -v version="$VERSION" '/^## Current Version/{found=1; print "## Current Version"; print "**Version " version "** - [Download](https:\/\/github.com\/EngineScript\/EngineScript-Simple-Site-Exporter\/releases\/latest\/download\/enginescript-simple-site-exporter-" version ".zip)"; next} found && /^##/{found=0; print; next} !found{print}' $README_FILE > $TMP_FILE && mv $TMP_FILE $README_FILE
+          sed -E '/^## Current Version$/,/^##/{
+            /^## Current Version$/b
+            /^##/b
+            s/\*\*Version [0-9]+\.[0-9]+\.[0-9]+\*\* - \[Download\].*$/\*\*Version '"$VERSION"'\*\* - \[Download\]\(https:\/\/github.com\/EngineScript\/EngineScript-Simple-Site-Exporter\/releases\/latest\/download\/enginescript-simple-site-exporter-'"$VERSION"'\.zip\)/g
+          }' "$README_FILE" > "$TMP_FILE"
           
-          # Commit and push the changes
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add $README_FILE
-          git commit -m "Update README for version $VERSION [skip ci]"
-          git push https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Replace file if changes were made
+          if ! cmp -s "$README_FILE" "$TMP_FILE"; then
+            cp "$TMP_FILE" "$README_FILE"
+            echo "Updated README.md with version $VERSION"
+            
+            # Configure git
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            
+            # Commit and push the changes
+            git add "$README_FILE"
+            git commit -m "docs: update README.md version to $VERSION [skip ci]"
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+            
+            echo "::notice::README.md updated with latest version $VERSION"
+          else
+            echo "::notice::README.md already has the correct version"
+          fi
+          
+          # Clean up temporary file
+          rm "$TMP_FILE"

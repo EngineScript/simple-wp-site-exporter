@@ -2,10 +2,10 @@
 
 A WordPress plugin that exports your entire site, including files and database, as a secure, downloadable ZIP archive.
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/d81efac1703c4d3b8b998d2587cd696b)](https://app.codacy.com/gh/EngineScript/EngineScript-Simple-Site-Exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![License](https://img.shields.io/badge/License-GPL%20v3-green.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![WordPress Compatible](https://img.shields.io/badge/WordPress-5.8%2B-blue.svg)](https://wordpress.org/)
 [![PHP Compatible](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://www.php.net/)
-[![License](https://img.shields.io/badge/License-GPL%20v3-green.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/d81efac1703c4d3b8b998d2587cd696b)](https://app.codacy.com/gh/EngineScript/EngineScript-Simple-Site-Exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## Current Version
 **Version 1.5.8** - [Download](https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/enginescript-simple-site-exporter-1.5.8.zip)
