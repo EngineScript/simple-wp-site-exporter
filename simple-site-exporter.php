@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.8
+Version: 1.5.9
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: simple-site-exporter-enginescript
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.5.8');
+    define('ES_SITE_EXPORTER_VERSION', '1.5.9');
 }
 
 // --- Admin Menu ---
@@ -76,18 +76,7 @@ function sse_exporter_page_html() {
         </p>
         <p style="color: #b94a48; font-weight: bold;">
             <?php esc_html_e( 'Security Notice:', 'simple-site-exporter-enginescript' ); ?>
-            <?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 1 hour after it is created.', 'simple-site-exporter-enginescript' ); ?>
-        </p>
-        <p style="color: #31708f;">
-            <?php esc_html_e( 'Note:', 'simple-site-exporter-enginescript' ); ?>
-            <?php
-                // Direct use of $_SERVER is necessary for domain display. Value is unslashed and sanitized immediately.
-                $current_domain = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : 'DOMAIN';
-                printf(
-                    esc_html__( 'If you are running EngineScript, a cronjob will run once an hour to automatically move the exported zip file to a non-public directory inside /var/www/sites/%s/enginescript-sse-site-exports for improved security.', 'simple-site-exporter-enginescript' ),
-                    esc_html( $current_domain )
-                );
-            ?>
+            <?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created.', 'simple-site-exporter-enginescript' ); ?>
         </p>
     </div>
     <?php
@@ -352,7 +341,7 @@ function sse_handle_export() {
     if ( $zip_close_status && file_exists( $zip_filepath ) ) {
         // Schedule deletion of the export file after 1 hour
         if ( ! wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) ) ) {
-            wp_schedule_single_event( time() + HOUR_IN_SECONDS, 'sse_delete_export_file', array( $zip_filepath ) );
+            wp_schedule_single_event( time() + (5 * 60), 'sse_delete_export_file', array( $zip_filepath ) );
         }
         add_action( 'admin_notices', function() use ( $zip_filename, $zip_filepath ) {
             $download_url = add_query_arg(

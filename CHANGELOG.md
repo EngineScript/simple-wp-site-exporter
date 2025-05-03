@@ -1,5 +1,14 @@
 # Changelog for EngineScript: Simple Site Exporter
 
+## 1.5.9 - May 3, 2025
+### Security Enhancements
+- Reduced export file auto-deletion time from 1 hour to 5 minutes for improved security
+- Removed dependency on external systems for file security management
+
+### Improvements
+- Simplified user interface by removing environment-specific messaging
+- Enhanced self-containment of the plugin's security features
+
 ## 1.5.8 - May 1, 2025
 ### Code Quality Improvements
 - Refactored validation functions to eliminate code duplication
