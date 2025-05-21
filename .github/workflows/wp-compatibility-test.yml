@@ -1,0 +1,321 @@
+name: WordPress Compatibility Test
+
+on:
+  # Run on pushes to main branch and on all pull requests
+  push:
+    branches: [ main ]
+  pull_request:
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+
+# Cancels all previous workflow runs for the same branch that have not yet completed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  php-compatibility-test:
+    name: PHP ${{ matrix.php-version }} with WordPress Latest
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+      fail-fast: false
+    
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: false
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: none
+          tools: composer:v2
+          
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+          
+      - name: Remove the PHP platform requirement
+        run: composer config --unset platform.php
+        
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: highest
+          composer-options: "--prefer-dist --no-progress"
+          
+      - name: Prepare Database
+        run: |
+          # Make sure database doesn't exist before creating it
+          mysql -u root --password=root --host=127.0.0.1 --port=3306 -e "DROP DATABASE IF EXISTS wordpress_test;"
+          # Force creating a fresh database
+          mysqladmin -u root --password=root --host=127.0.0.1 --port=3306 --force create wordpress_test
+      
+      - name: Create tests directory structure
+        run: |
+          mkdir -p tests/bin
+          mkdir -p tests/bootstrap
+          
+      - name: Create WP tests install script
+        run: |
+          cat > tests/bin/install-wp-tests.sh << 'EOF'
+          #!/usr/bin/env bash
+          
+          if [ $# -lt 3 ]; then
+            echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version] [skip-database-creation]"
+            exit 1
+          fi
+          
+          DB_NAME=$1
+          DB_USER=$2
+          DB_PASS=$3
+          DB_HOST=${4-localhost}
+          WP_VERSION=${5-latest}
+          SKIP_DB_CREATE=${6-false}
+          
+          WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
+          WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
+          
+          download() {
+              if [ $(which curl) ]; then
+                  curl -s "$1" > "$2";
+              elif [ $(which wget) ]; then
+                  wget -nv -O "$2" "$1"
+              fi
+          }
+          
+          if [[ $WP_VERSION =~ [0-9]+\.[0-9]+(\.[0-9]+)? ]]; then
+              WP_TESTS_TAG="tags/$WP_VERSION"
+          elif [[ $WP_VERSION == 'nightly' || $WP_VERSION == 'trunk' ]]; then
+              WP_TESTS_TAG="trunk"
+          else
+              # http serves a single offer, whereas https serves multiple. we only want one
+              download http://api.wordpress.org/core/version-check/1.7/ /tmp/wp-latest.json
+              LATEST_VERSION=$(grep -o '"version":"[^"]*' /tmp/wp-latest.json | sed 's/"version":"//')
+              if [[ -z "$LATEST_VERSION" ]]; then
+                  echo "Latest WordPress version could not be found"
+                  exit 1
+              fi
+              WP_TESTS_TAG="tags/$LATEST_VERSION"
+          fi
+          
+          set -ex
+          
+          install_wp() {
+          
+              if [ -d $WP_CORE_DIR ]; then
+                  return;
+              fi
+          
+              mkdir -p $WP_CORE_DIR
+          
+              if [[ $WP_VERSION == 'nightly' || $WP_VERSION == 'trunk' ]]; then
+                  mkdir -p /tmp/wordpress-nightly
+                  download https://wordpress.org/nightly-builds/wordpress-latest.zip  /tmp/wordpress-nightly/wordpress-nightly.zip
+                  unzip -q /tmp/wordpress-nightly/wordpress-nightly.zip -d /tmp/wordpress-nightly/
+                  mv /tmp/wordpress-nightly/wordpress/* $WP_CORE_DIR
+              else
+                  if [ $WP_VERSION == 'latest' ]; then
+                      local ARCHIVE_NAME='latest'
+                  else
+                      local ARCHIVE_NAME="wordpress-$WP_VERSION"
+                  fi
+                  download https://wordpress.org/${ARCHIVE_NAME}.tar.gz  /tmp/wordpress.tar.gz
+                  tar --strip-components=1 -zxmf /tmp/wordpress.tar.gz -C $WP_CORE_DIR
+              fi
+          
+              download https://raw.github.com/markoheijnen/wp-mysqli/master/db.php $WP_CORE_DIR/wp-content/db.php
+          }
+          
+          install_test_suite() {
+              # portable in-place argument for both GNU sed and Mac OSX sed
+              if [[ $(uname -s) == 'Darwin' ]]; then
+                  local ioption='-i.bak'
+              else
+                  local ioption='-i'
+              fi
+          
+              # set up testing suite if it doesn't yet exist
+              if [ ! -d $WP_TESTS_DIR ]; then
+                  # set up testing suite
+                  mkdir -p $WP_TESTS_DIR
+                  svn co --quiet https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/includes/ $WP_TESTS_DIR/includes
+                  svn co --quiet https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/data/ $WP_TESTS_DIR/data
+              fi
+          
+              if [ ! -f wp-tests-config.php ]; then
+                  download https://develop.svn.wordpress.org/${WP_TESTS_TAG}/wp-tests-config-sample.php "$WP_TESTS_DIR"/wp-tests-config.php
+                  # remove all forward slashes in the end
+                  WP_CORE_DIR=$(echo $WP_CORE_DIR | sed "s:/\+$::")
+                  sed $ioption "s:dirname( __FILE__ ) . '/src/':'$WP_CORE_DIR/':" "$WP_TESTS_DIR"/wp-tests-config.php
+                  sed $ioption "s/youremptytestdbnamehere/$DB_NAME/" "$WP_TESTS_DIR"/wp-tests-config.php
+                  sed $ioption "s/yourusernamehere/$DB_USER/" "$WP_TESTS_DIR"/wp-tests-config.php
+                  sed $ioption "s/yourpasswordhere/$DB_PASS/" "$WP_TESTS_DIR"/wp-tests-config.php
+                  sed $ioption "s|localhost|${DB_HOST}|" "$WP_TESTS_DIR"/wp-tests-config.php
+              fi
+          }
+          
+          install_db() {
+              if [ ${SKIP_DB_CREATE} = "true" ]; then
+                  return 0
+              fi
+          
+              # parse DB_HOST for port or socket references
+              local PARTS=(${DB_HOST//\:/ })
+              local DB_HOSTNAME=${PARTS[0]};
+              local DB_SOCK_OR_PORT=${PARTS[1]};
+              local EXTRA=""
+          
+              if ! [ -z $DB_HOSTNAME ] ; then
+                  if [ $(echo $DB_SOCK_OR_PORT | grep -e '^[0-9]\{1,\}$') ]; then
+                      EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp"
+                  elif ! [ -z $DB_SOCK_OR_PORT ] ; then
+                      EXTRA=" --socket=$DB_SOCK_OR_PORT"
+                  elif ! [ -z $DB_HOSTNAME ] ; then
+                      EXTRA=" --host=$DB_HOSTNAME --protocol=tcp"
+                  fi
+              fi
+          
+              # First, ensure database doesn't exist (ignore errors)
+              mysql --user="$DB_USER" --password="$DB_PASS"$EXTRA -e "DROP DATABASE IF EXISTS $DB_NAME" || true
+              # Now create fresh database with force flag
+              mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA --force
+          }
+          
+          install_wp
+          install_test_suite
+          install_db
+          EOF
+          chmod +x tests/bin/install-wp-tests.sh
+          
+      - name: Create Bootstrap File
+        run: |
+          mkdir -p tests
+          cat > tests/bootstrap.php << 'EOF'
+          <?php
+          /**
+           * PHPUnit bootstrap file for plugin tests.
+           *
+           * @package EngineScript_Simple_Site_Exporter
+           */
+          
+          // Give access to tests_add_filter() function.
+          require_once '/tmp/wordpress-tests-lib/includes/functions.php';
+          
+          /**
+           * Manually load the plugin being tested.
+           */
+          function _manually_load_plugin() {
+              // Make sure widget registration won't throw errors
+              add_filter('widgets_init', function() {
+                  // Empty the action to prevent widget registration errors
+                  return;
+              }, 0);
+              
+              require dirname( dirname( __FILE__ ) ) . '/simple-site-exporter.php';
+          }
+          
+          // Start up the WP testing environment.
+          tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
+          
+          require '/tmp/wordpress-tests-lib/includes/bootstrap.php';
+          EOF
+          
+      - name: Create Test File
+        run: |
+          cat > tests/test-plugin.php << 'EOF'
+          <?php
+          /**
+           * Class Test_EngineScript_Simple_Site_Exporter
+           *
+           * @package EngineScript_Simple_Site_Exporter
+           */
+          
+          /**
+           * Simple test case for EngineScript Simple Site Exporter plugin.
+           */
+          class Test_EngineScript_Simple_Site_Exporter extends WP_UnitTestCase {
+              /**
+               * Test that the plugin can be loaded correctly.
+               * 
+               * This test simply checks that the plugin loads in WordPress
+               * without causing any errors.
+               */
+              public function test_plugin_loaded() {
+                  // Check for at least one function to verify the plugin loaded
+                  $this->assertTrue(function_exists('sse_admin_menu'), 'Plugin was not loaded correctly');
+              }
+          }
+          EOF
+          
+      - name: Create PHPUnit Config
+        run: |
+          cat > phpunit.xml << 'EOF'
+          <?xml version="1.0"?>
+          <phpunit
+              bootstrap="tests/bootstrap.php"
+              backupGlobals="false"
+              colors="true"
+              convertErrorsToExceptions="true"
+              convertNoticesToExceptions="true"
+              convertWarningsToExceptions="true"
+          >
+              <testsuites>
+                  <testsuite name="EngineScript Simple Site Exporter">
+                      <directory prefix="test-" suffix=".php">./tests/</directory>
+                  </testsuite>
+              </testsuites>
+          </phpunit>
+          EOF
+          
+      - name: Setup WP Tests
+        run: |
+          bash tests/bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:3306 latest
+          
+      - name: Run plugin test
+        run: vendor/bin/phpunit --config phpunit.xml
+        
+      - name: Report test status
+        if: ${{ always() }}
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Tests passed successfully on PHP ${{ matrix.php-version }} with the latest WordPress version"
+          else
+            echo "❌ Tests failed on PHP ${{ matrix.php-version }} with the latest WordPress version"
+            # Don't exit here, allow the next step to create the issue
+          fi
+          
+      - name: Create issue on test failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PHP_VERSION: ${{ matrix.php-version }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/compatibility-test-failure.md
+          update_existing: false
+          
+      - name: Mark job as failed after issue creation
+        if: ${{ failure() }}
+        run: |
+          echo "::error::PHP ${{ matrix.php-version }} compatibility test failed. Created issue for tracking."
+          exit 1

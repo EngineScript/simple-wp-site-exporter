@@ -1,0 +1,27 @@
+{
+  "name": "enginescript/simple-site-exporter",
+  "description": "EngineScript Simple Site Exporter - Export your entire WordPress site as a ZIP archive",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "EngineScript",
+      "email": "support@enginescript.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5",
+    "yoast/phpunit-polyfills": "^4.0",
+    "wp-coding-standards/wpcs": "^2.3",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
+}
