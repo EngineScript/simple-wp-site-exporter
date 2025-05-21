@@ -1,0 +1,81 @@
+name: WordPress Plugin Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+
+# Cancels all previous workflow runs for the same branch that have not yet completed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  plugin-check:
+    name: WordPress Plugin Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: none
+          tools: composer:v2
+      
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: highest
+          composer-options: "--prefer-dist --no-progress"
+      
+      - name: WordPress Plugin Check
+        uses: WordPress/plugin-check-action@v1.1.2
+        with:
+          # Build directory - using repository root
+          build-dir: './'
+          
+          # Configure which categories to check
+          categories: |
+            accessibility
+            general
+            performance
+            plugin_repo
+            security
+          
+          # Whether to include experimental checks
+          include-experimental: false
+          
+          # Don't ignore warnings or errors
+          ignore-warnings: false
+          ignore-errors: false
+          
+          # WordPress version to use
+          wp-version: 'latest'
+      
+      - name: Create issue on plugin check failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/plugin-check-failure.md
+          update_existing: false
+          
+      - name: Mark job as failed after issue creation
+        if: ${{ failure() }}
+        run: |
+          echo "::error::WordPress Plugin Check failed. Created issue for tracking."
+          exit 1

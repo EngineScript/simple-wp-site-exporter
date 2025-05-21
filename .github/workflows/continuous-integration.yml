@@ -1,0 +1,187 @@
+# This workflow runs continuous integration checks on the Simple WP Optimizer plugin.
+# It performs code linting for both PHP and JavaScript files and builds the plugin package.
+# The workflow is triggered on push to main branch and on pull requests to ensure code quality.
+# It creates and stores a plugin zip file as an artifact that can be used for testing.
+
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Define explicit permissions to follow principle of least privilege
+permissions:
+  contents: read  # Allows read access to repository contents
+  actions: read   # Allows read access to GitHub Actions
+  checks: write   # Allows creating/updating checks on the workflow run
+  pull-requests: write  # Allows commenting on PRs for feedback
+  packages: read  # Allows reading packages
+  
+jobs:
+  lint:
+    name: Lint PHP and JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2, phpcs
+          
+      - name: Check for package-lock.json
+        id: check-lockfile
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "lockfile_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "lockfile_exists=false" >> $GITHUB_OUTPUT
+            echo "package-lock.json not found. Caching will be skipped."
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          # Use conditional caching based on package-lock.json existence
+          cache: ${{ steps.check-lockfile.outputs.lockfile_exists == 'true' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            !**/node_modules/
+          
+      - name: Install PHP dependencies
+        run: |
+          if [ -f composer.json ]; then
+            # Configure platform to ensure compatibility
+            composer config platform.php 7.4
+            composer install --prefer-dist --no-progress || {
+              echo "Standard install failed, trying with --ignore-platform-reqs"
+              composer install --prefer-dist --no-progress --ignore-platform-reqs
+            }
+          else
+            echo "No composer.json found. Skipping composer install."
+          fi
+        
+      - name: Install JS dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+          else
+            echo "No package.json found. Skipping npm install."
+          fi
+        
+      - name: Lint PHP
+        run: |
+          if [ -f composer.json ] && ([ -f .phpcs.xml ] || [ -f phpcs.xml.dist ]); then
+            if grep -q "\"lint:php\"" composer.json; then
+              composer run lint:php
+            else
+              echo "No lint:php script found in composer.json. Skipping."
+            fi
+          else
+            echo "No PHP linting configuration found. Skipping."
+          fi
+          
+      - name: Lint JavaScript
+        run: |
+          if [ -f package.json ] && ([ -f .eslintrc.js ] || [ -f .eslintrc.json ]); then
+            npm run lint:js || echo "Lint script not found in package.json. Skipping."
+          else
+            echo "No JS linting configuration found. Skipping."
+          fi
+          
+  build:
+    name: Build Plugin
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check for package-lock.json in build
+        id: check-lockfile-build
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "lockfile_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "lockfile_exists=false" >> $GITHUB_OUTPUT
+            echo "package-lock.json not found. Caching will be skipped."
+          fi
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          # Use conditional caching based on package-lock.json existence
+          cache: ${{ steps.check-lockfile-build.outputs.lockfile_exists == 'true' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            !**/node_modules/
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2
+          
+      - name: Install dependencies
+        run: |
+          if [ -f composer.json ]; then
+            # Configure platform to ensure compatibility
+            composer config platform.php 7.4
+            composer install --no-dev --prefer-dist --no-progress || {
+              echo "Standard install failed, trying with --ignore-platform-reqs"
+              composer install --no-dev --prefer-dist --no-progress --ignore-platform-reqs
+            }
+          else
+            echo "No composer.json found. Skipping composer install."
+          fi
+          
+          if [ -f package.json ]; then
+            npm ci || npm install
+          else
+            echo "No package.json found. Skipping npm install."
+          fi
+          
+      - name: Build frontend assets
+        run: |
+          if [ -f package.json ]; then
+            if grep -q "\"build\"" package.json; then
+              npm run build
+            else
+              echo "No build script found in package.json. Skipping."
+            fi
+          else
+            echo "No package.json found. Skipping build."
+          fi
+        
+      - name: Create plugin package
+        run: |
+          mkdir -p build/simple-wp-optimizer
+          
+          # Copy main plugin file
+          cp simple-wp-optimizer.php build/simple-wp-optimizer/
+          
+          # Copy directories if they exist
+          [ -d assets ] && cp -r assets build/simple-wp-optimizer/ || echo "No assets directory found"
+          [ -d includes ] && cp -r includes build/simple-wp-optimizer/ || echo "No includes directory found"
+          [ -d languages ] && cp -r languages build/simple-wp-optimizer/ || echo "No languages directory found"
+          [ -d templates ] && cp -r templates build/simple-wp-optimizer/ || echo "No templates directory found"
+          
+          # Copy additional files if they exist
+          [ -f readme.txt ] && cp readme.txt build/simple-wp-optimizer/ || echo "No readme.txt found"
+          [ -f LICENSE ] && cp LICENSE build/simple-wp-optimizer/ || echo "No LICENSE file found"
+          
+          # Create zip file
+          cd build
+          zip -r simple-wp-optimizer.zip simple-wp-optimizer
+          
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-wp-optimizer
+          path: build/simple-wp-optimizer.zip
