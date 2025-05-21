@@ -1,4 +1,4 @@
-# This workflow runs continuous integration checks on the Simple WP Optimizer plugin.
+# This workflow runs continuous integration checks on the EngineScript Simple Site Exporter plugin.
 # It performs code linting for both PHP and JavaScript files and builds the plugin package.
 # The workflow is triggered on push to main branch and on pull requests to ensure code quality.
 # It creates and stores a plugin zip file as an artifact that can be used for testing.
@@ -161,27 +161,29 @@ jobs:
         
       - name: Create plugin package
         run: |
-          mkdir -p build/simple-wp-optimizer
+          mkdir -p build/enginescript-simple-site-exporter
           
           # Copy main plugin file
-          cp simple-wp-optimizer.php build/simple-wp-optimizer/
+          cp simple-site-exporter.php build/enginescript-simple-site-exporter/
           
           # Copy directories if they exist
-          [ -d assets ] && cp -r assets build/simple-wp-optimizer/ || echo "No assets directory found"
-          [ -d includes ] && cp -r includes build/simple-wp-optimizer/ || echo "No includes directory found"
-          [ -d languages ] && cp -r languages build/simple-wp-optimizer/ || echo "No languages directory found"
-          [ -d templates ] && cp -r templates build/simple-wp-optimizer/ || echo "No templates directory found"
+          [ -d assets ] && cp -r assets build/enginescript-simple-site-exporter/ || echo "No assets directory found"
+          [ -d includes ] && cp -r includes build/enginescript-simple-site-exporter/ || echo "No includes directory found"
+          [ -d languages ] && cp -r languages build/enginescript-simple-site-exporter/ || echo "No languages directory found"
+          [ -d templates ] && cp -r templates build/enginescript-simple-site-exporter/ || echo "No templates directory found"
           
           # Copy additional files if they exist
-          [ -f readme.txt ] && cp readme.txt build/simple-wp-optimizer/ || echo "No readme.txt found"
-          [ -f LICENSE ] && cp LICENSE build/simple-wp-optimizer/ || echo "No LICENSE file found"
+          [ -f readme.txt ] && cp readme.txt build/enginescript-simple-site-exporter/ || echo "No readme.txt found"
+          [ -f README.md ] && cp README.md build/enginescript-simple-site-exporter/ || echo "No README.md found"
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md build/enginescript-simple-site-exporter/ || echo "No CHANGELOG.md found"
+          [ -f LICENSE ] && cp LICENSE build/enginescript-simple-site-exporter/ || echo "No LICENSE file found"
           
           # Create zip file
           cd build
-          zip -r simple-wp-optimizer.zip simple-wp-optimizer
+          zip -r enginescript-simple-site-exporter.zip enginescript-simple-site-exporter
           
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: simple-wp-optimizer
-          path: build/simple-wp-optimizer.zip
+          name: enginescript-simple-site-exporter
+          path: build/enginescript-simple-site-exporter.zip

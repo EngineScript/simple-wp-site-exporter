@@ -17,7 +17,7 @@ The automated compatibility test for PHP {{ env.PHP_VERSION }} has failed.
 
 ### Next Steps
 
-This issue has been automatically created because the Simple WP Optimizer plugin failed to load properly with PHP {{ env.PHP_VERSION }}. This could indicate compatibility issues that need to be addressed.
+This issue has been automatically created because the EngineScript Simple Site Exporter plugin failed to load properly with PHP {{ env.PHP_VERSION }}. This could indicate compatibility issues that need to be addressed.
 
 #### Recommended Actions:
 
