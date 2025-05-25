@@ -1,5 +1,29 @@
 # Changelog for EngineScript: Simple Site Exporter
 
+## 1.6.0 - May 15, 2025
+### Major Security and Code Quality Improvements
+- **Enhanced Logging**: Replaced all direct `error_log()` calls with secure `sse_log()` function that respects WP_DEBUG settings, includes timestamps, and stores critical errors in database (limited to last 20 entries)
+- **Improved File Operations**: Replaced unsafe `@unlink()` calls with `sse_safely_delete_file()` function using WordPress Filesystem API with proper error handling
+- **Execution Time Safety**: Enhanced `set_time_limit()` usage with safety checks, reasonable 30-minute limits instead of unlimited execution, and proper logging
+- **Path Security**: Added `sse_validate_filepath()` function to prevent directory traversal attacks with comprehensive path validation
+- **Text Domain Standardization**: Updated all translatable strings to use consistent 'Simple-Site-Exporter' text domain across the entire plugin
+
+### GitHub Actions Security Updates
+- Pinned all GitHub Actions to specific commit hashes instead of version tags for improved security
+- Updated all workflow references from Simple-WP-Optimizer to Simple Site Exporter
+- Enhanced CI/CD pipeline security with version pinning and proper repository references
+
+### Code Structure Improvements
+- Fixed corrupted text domain line in plugin header
+- Corrected malformed comment sections
+- Enhanced code organization and readability
+- Added comprehensive security helper functions with WordPress-compatible logging
+
+### WordPress Compatibility
+- Created standard WordPress plugin `readme.txt` file with all required sections
+- Updated `composer.json` package information and license to GPL-3.0-or-later
+- Improved WordPress coding standards compliance throughout the plugin
+
 ## 1.5.9 - May 3, 2025
 ### Security Enhancements
 - Reduced export file auto-deletion time from 1 hour to 5 minutes for improved security

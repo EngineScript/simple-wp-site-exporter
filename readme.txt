@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.5.9
+Stable tag: 1.6.0
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -72,6 +72,19 @@ Yes, the plugin is designed to be compatible with most shared hosting environmen
 
 == Changelog ==
 
+= 1.6.0 =
+* Major security and code quality improvements
+* Enhanced logging system with WP_DEBUG integration and database storage for critical errors
+* Improved file operations using WordPress Filesystem API instead of direct file functions
+* Added execution time safety with reasonable limits and proper logging
+* Implemented comprehensive path validation to prevent directory traversal attacks
+* Standardized text domain across all translatable strings
+* Pinned GitHub Actions to specific commit hashes for improved security
+* Updated all repository references and workflow configurations
+* Created WordPress-compatible readme.txt file
+* Updated composer.json with correct package information and GPL-3.0-or-later license
+* Fixed code structure issues and improved WordPress coding standards compliance
+
 = 1.5.9 =
 * Reduced export file auto-deletion time from 1 hour to 5 minutes for improved security
 * Removed dependency on external systems for file security management
@@ -137,6 +150,9 @@ Yes, the plugin is designed to be compatible with most shared hosting environmen
 * Simple admin interface
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Major security and code quality update: Enhanced logging system, improved file operations with WordPress Filesystem API, execution time safety improvements, comprehensive path validation, standardized text domains, and GitHub Actions security updates. Recommended upgrade for all users.
 
 = 1.5.9 =
 This update improves security by reducing export file auto-deletion time from 1 hour to 5 minutes and enhances overall plugin security with simplified, self-contained security features.

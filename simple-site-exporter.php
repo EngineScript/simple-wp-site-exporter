@@ -2,10 +2,10 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.9
+Version: 1.6.0
 Author: EngineScript
 License: GPL v3 or later
-Text Domain: simple-site-exporter-enginescript
+Text Domain: Simple-Site-Exporter
 */
 
 // Prevent direct access. Note: Using return here instead of exit.
@@ -15,14 +15,73 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.5.9');
+    define('ES_SITE_EXPORTER_VERSION', '1.6.0');
+}
+
+/**
+ * Safely log plugin messages
+ *
+ * @param string $message The message to log
+ * @param string $level   The log level (error, warning, info)
+ */
+function sse_log($message, $level = 'info') {
+    // Check if WP_DEBUG is enabled
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        // Format the message with a timestamp
+        $formatted_message = sprintf(
+            '[%s] [%s] %s: %s',
+            date('Y-m-d H:i:s'),
+            'Simple Site Exporter',
+            strtoupper($level),
+            $message
+        );
+        
+        // Log to the WordPress debug log if enabled
+        if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            error_log($formatted_message);
+        }
+        
+        // Store logs in the database (limit to errors only to prevent bloat)
+        if ($level === 'error') {
+            // Store last 20 error messages in an option
+            $logs = get_option('sse_error_logs', array());
+            $logs[] = array(
+                'time' => time(),
+                'message' => $message
+            );
+            
+            // Keep only the most recent 20 logs
+            if (count($logs) > 20) {
+                $logs = array_slice($logs, -20);
+            }
+            
+            update_option('sse_error_logs', $logs);
+        }
+    }
+}
+
+/**
+ * Safely get the PHP execution time limit
+ * 
+ * @return int Current PHP execution time limit in seconds
+ */
+function sse_get_execution_time_limit() {
+    // Get the current execution time limit
+    $max_execution_time = ini_get('max_execution_time');
+    
+    // If ini_get failed or returned non-numeric value
+    if ($max_execution_time === false || !is_numeric($max_execution_time)) {
+        $max_execution_time = 30; // Default PHP value is typically 30 seconds
+    }
+    
+    return (int)$max_execution_time;
 }
 
 // --- Admin Menu ---
 function sse_admin_menu() {
     add_management_page(
-        esc_html__( 'Simple Site Exporter', 'simple-site-exporter-enginescript' ), // Escaped title
-        esc_html__( 'Site Exporter', 'simple-site-exporter-enginescript' ),       // Escaped menu title
+        esc_html__( 'Simple Site Exporter', 'Simple-Site-Exporter' ), // Escaped title
+        esc_html__( 'Site Exporter', 'Simple-Site-Exporter' ),       // Escaped menu title
         'manage_options', // Capability required
         'simple-site-exporter',
         'sse_exporter_page_html'
@@ -33,27 +92,27 @@ add_action( 'admin_menu', 'sse_admin_menu' );
 // --- Exporter Page HTML ---
 function sse_exporter_page_html() {
     if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( esc_html__( 'You do not have permission to view this page.', 'simple-site-exporter-enginescript' ), 403 );
+        wp_die( esc_html__( 'You do not have permission to view this page.', 'Simple-Site-Exporter' ), 403 );
     }
 
     $upload_dir = wp_upload_dir();
     if ( empty( $upload_dir['basedir'] ) ) {
-         wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'simple-site-exporter-enginescript' ) );
+         wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'Simple-Site-Exporter' ) );
     }
     $export_dir_name = 'enginescript-sse-site-exports';
     $export_dir_path = $upload_dir['basedir'] . '/' . $export_dir_name;
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
     ?>
     <div class="wrap">
-        <h1><?php esc_html_e( get_admin_page_title(), 'simple-site-exporter-enginescript' ); // Use esc_html_e for translatable titles ?></h1>
-        <p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'simple-site-exporter-enginescript' ); ?></p>
-        <p><strong><?php esc_html_e( 'Warning:', 'simple-site-exporter-enginescript' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'simple-site-exporter-enginescript' ); ?></p>
+        <h1><?php esc_html_e( get_admin_page_title(), 'Simple-Site-Exporter' ); // Use esc_html_e for translatable titles ?></h1>
+        <p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'Simple-Site-Exporter' ); ?></p>
+        <p><strong><?php esc_html_e( 'Warning:', 'Simple-Site-Exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'Simple-Site-Exporter' ); ?></p>
         <p style="margin-top: 15px;">
             <?php
             // printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
             printf(
                 /* translators: %s: directory path */
-                esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'simple-site-exporter-enginescript' ),
+                esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'Simple-Site-Exporter' ),
                 '<code>' . esc_html( $display_path ) . '</code>'
             );
             ?>
@@ -61,22 +120,22 @@ function sse_exporter_page_html() {
         <form method="post" action="" style="margin-top: 15px;">
             <?php wp_nonce_field( 'sse_export_action', 'sse_export_nonce' ); ?>
             <input type="hidden" name="action" value="sse_export_site">
-            <?php submit_button( esc_html__( 'Export Site', 'simple-site-exporter-enginescript' ) ); ?>
+            <?php submit_button( esc_html__( 'Export Site', 'Simple-Site-Exporter' ) ); ?>
         </form>
         <hr>
         <p>
-            <?php esc_html_e( 'This plugin is part of the EngineScript project.', 'simple-site-exporter-enginescript' ); ?>
+            <?php esc_html_e( 'This plugin is part of the EngineScript project.', 'Simple-Site-Exporter' ); ?>
             <a href="https://github.com/EngineScript/EngineScript" target="_blank" rel="noopener noreferrer">
-                <?php esc_html_e( 'Visit the EngineScript GitHub page', 'simple-site-exporter-enginescript' ); ?>
+                <?php esc_html_e( 'Visit the EngineScript GitHub page', 'Simple-Site-Exporter' ); ?>
             </a>
         </p>
         <p style="color: #b94a48; font-weight: bold;">
-            <?php esc_html_e( 'Important:', 'simple-site-exporter-enginescript' ); ?>
-            <?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'simple-site-exporter-enginescript' ); ?>
+            <?php esc_html_e( 'Important:', 'Simple-Site-Exporter' ); ?>
+            <?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'Simple-Site-Exporter' ); ?>
         </p>
         <p style="color: #b94a48; font-weight: bold;">
-            <?php esc_html_e( 'Security Notice:', 'simple-site-exporter-enginescript' ); ?>
-            <?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created.', 'simple-site-exporter-enginescript' ); ?>
+            <?php esc_html_e( 'Security Notice:', 'Simple-Site-Exporter' ); ?>
+            <?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created.', 'Simple-Site-Exporter' ); ?>
         </p>
     </div>
     <?php
@@ -100,24 +159,34 @@ function sse_handle_export() {
     // Sanitize, unslash, and verify nonce from POST data
     $post_nonce = isset( $_POST['sse_export_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ) : '';
     if ( ! $post_nonce || ! wp_verify_nonce( $post_nonce, 'sse_export_action' ) ) {
-        wp_die( esc_html__( 'Nonce verification failed! Please try again.', 'simple-site-exporter-enginescript' ), 403 );
+        wp_die( esc_html__( 'Nonce verification failed! Please try again.', 'Simple-Site-Exporter' ), 403 );
     }
 
     // Check user capabilities
     if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( esc_html__( 'You do not have permission to perform this action.', 'simple-site-exporter-enginescript' ), 403 );
+        wp_die( esc_html__( 'You do not have permission to perform this action.', 'Simple-Site-Exporter' ), 403 );
     }
 
-    // Increase execution time limit
-    // Note: set_time_limit is discouraged but often necessary for potentially long-running exports.
-    // Alternatives like background processing add significant complexity.
-    if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
-        set_time_limit( 0 );
+    // Increase execution time with safeguards
+    $max_execution_time = sse_get_execution_time_limit();
+    
+    // Define a reasonable maximum execution time (30 minutes)
+    $target_execution_time = 1800; // 30 minutes in seconds
+    
+    // Only try to increase if current limit is lower than our target
+    if ($max_execution_time > 0 && $max_execution_time < $target_execution_time) {
+        // Try to set a reasonable execution time instead of unlimited (0)
+        if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
+            @set_time_limit($target_execution_time);
+            sse_log("Increased execution time limit to {$target_execution_time} seconds", 'info');
+        } else {
+            sse_log("Unable to increase execution time limit. Current limit: {$max_execution_time} seconds", 'warning');
+        }
     }
 
     $upload_dir = wp_upload_dir();
     if ( empty( $upload_dir['basedir'] ) || empty( $upload_dir['baseurl'] ) ) {
-         wp_die( esc_html__( 'Could not determine the WordPress upload directory or URL.', 'simple-site-exporter-enginescript' ) );
+         wp_die( esc_html__( 'Could not determine the WordPress upload directory or URL.', 'Simple-Site-Exporter' ) );
     }
     $export_dir_name = 'enginescript-sse-site-exports';
     $export_dir = $upload_dir['basedir'] . '/' . $export_dir_name;
@@ -146,7 +215,7 @@ function sse_handle_export() {
                 FS_CHMOD_FILE
             );
         } else {
-            error_log('Simple Site Exporter: Failed to initialize WordPress filesystem API');
+            sse_log('Failed to initialize WordPress filesystem API', 'error');
             // Fallback to direct method only if WP_Filesystem fails
             @file_put_contents( $index_file_path, '<?php // Silence is golden.' );
         }
@@ -187,10 +256,10 @@ function sse_handle_export() {
                  $db_error = !empty($output) ? trim($output) : 'WP-CLI command failed silently.';
             }
         } else {
-             $db_error = esc_html__( 'Invalid WP-CLI path detected.', 'simple-site-exporter-enginescript' );
+             $db_error = esc_html__( 'Invalid WP-CLI path detected.', 'Simple-Site-Exporter' );
         }
     } else {
-         $db_error = esc_html__( 'shell_exec function is disabled on this server.', 'simple-site-exporter-enginescript' );
+         $db_error = esc_html__( 'shell_exec function is disabled on this server.', 'Simple-Site-Exporter' );
     }
 
     // Handle DB Export Failure - Show notice and stop
@@ -202,14 +271,14 @@ function sse_handle_export() {
                  <p><?php
                     printf(
                         /* translators: %s: error message */
-                        esc_html__( 'Database export failed: %s. Export process halted.', 'simple-site-exporter-enginescript' ),
+                        esc_html__( 'Database export failed: %s. Export process halted.', 'Simple-Site-Exporter' ),
                         '<strong>' . esc_html( $db_error ) . '</strong>'
                     );
                  ?></p>
              </div>
              <?php
         });
-        error_log("Simple Site Exporter: DB export failed - " . $db_error);
+        sse_log("DB export failed - " . $db_error, 'error');
         return; // Stop the export process
     }
 
@@ -218,14 +287,14 @@ function sse_handle_export() {
          add_action( 'admin_notices', function() {
              ?>
              <div class="notice notice-error is-dismissible">
-                 <p><?php esc_html_e( 'ZipArchive class is not available on your server. Cannot create zip file.', 'simple-site-exporter-enginescript' ); ?></p>
+                 <p><?php esc_html_e( 'ZipArchive class is not available on your server. Cannot create zip file.', 'Simple-Site-Exporter' ); ?></p>
              </div>
              <?php
          });
-         // Note: file_exists and @unlink are used for cleanup of self-created temp files.
-         // WP_Filesystem->delete() adds complexity here.
+         // Clean up the database dump file with the safe delete function
          if ( file_exists( $db_filepath ) ) {
-            @unlink( $db_filepath );
+            sse_safely_delete_file( $db_filepath );
+            sse_log("Temporary database dump file cleaned up", 'info');
          }
          return; // Stop
     }
@@ -239,7 +308,7 @@ function sse_handle_export() {
                  <p><?php
                     printf(
                         /* translators: %s: file path */
-                        esc_html__( 'Could not create zip file at %s', 'simple-site-exporter-enginescript' ),
+                        esc_html__( 'Could not create zip file at %s', 'Simple-Site-Exporter' ),
                         '<code>' . esc_html( $display_zip_path ) . '</code>'
                     );
                  ?></p>
@@ -247,9 +316,10 @@ function sse_handle_export() {
              <?php
          });
          // Cleanup DB dump if zip creation failed
-         // Note: file_exists and @unlink used for cleanup.
+         // Clean up the database dump file
          if ( file_exists( $db_filepath ) ) {
-            @unlink( $db_filepath );
+            sse_safely_delete_file( $db_filepath );
+            sse_log("Temporary database dump file cleaned up after zip creation failed", 'info');
          }
          return; // Stop
     }
@@ -258,7 +328,7 @@ function sse_handle_export() {
     // Note: file_exists is standard here for checking if the DB dump was created.
     if ( $db_exported && file_exists( $db_filepath ) ) {
         if ( ! $zip->addFile( $db_filepath, $db_filename ) ) {
-             error_log( "Simple Site Exporter: Failed to add DB file to zip: " . $db_filepath );
+             sse_log( "Failed to add DB file to zip: " . $db_filepath, 'error' );
         }
     }
 
@@ -267,7 +337,7 @@ function sse_handle_export() {
     // Fallback to ABSPATH if realpath fails.
     $source_path = realpath( ABSPATH );
     if ( ! $source_path ) {
-        error_log( "Simple Site Exporter: Could not resolve real path for ABSPATH. Using ABSPATH directly." );
+        sse_log( "Could not resolve real path for ABSPATH. Using ABSPATH directly.", 'warning' );
         $source_path = ABSPATH; // Fallback
     }
 
@@ -279,7 +349,7 @@ function sse_handle_export() {
 
         foreach ( $files as $file_info ) {
             if ( ! $file_info->isReadable() ) {
-                error_log( "Simple Site Exporter: Skipping unreadable file/dir: " . $file_info->getPathname() );
+                sse_log( "Skipping unreadable file/dir: " . $file_info->getPathname(), 'warning' );
                 continue;
             }
 
@@ -296,20 +366,26 @@ function sse_handle_export() {
 
             if ( $file_info->isDir() ) {
                 if ( ! $zip->addEmptyDir( $relativePath ) ) {
-                     error_log( "Simple Site Exporter: Failed to add directory to zip: " . $relativePath );
+                     sse_log( "Failed to add directory to zip: " . $relativePath, 'error' );
                 }
             } elseif ( $file_info->isFile() ) {
                 $file_to_add = ($file !== false) ? $file : $pathname;
                  if ( ! $zip->addFile( $file_to_add, $relativePath ) ) {
-                     error_log( "Simple Site Exporter: Failed to add file to zip: " . $relativePath . " (Source: " . $file_to_add . ")" );
+                     sse_log( "Failed to add file to zip: " . $relativePath . " (Source: " . $file_to_add . ")", 'error' );
                  }
             }
         } // End foreach
     } catch ( Exception $e ) {
         // Cleanup potentially created files
-        // Note: file_exists and @unlink used for cleanup.
-        if ( file_exists( $zip_filepath ) ) @unlink( $zip_filepath );
-        if ( file_exists( $db_filepath ) ) @unlink( $db_filepath );
+        // Clean up any created files
+        if ( file_exists( $zip_filepath ) ) {
+            sse_safely_delete_file( $zip_filepath );
+            sse_log("Cleaned up incomplete zip file after exception", 'info');
+        }
+        if ( file_exists( $db_filepath ) ) {
+            sse_safely_delete_file( $db_filepath );
+            sse_log("Cleaned up database dump file after exception", 'info');
+        }
 
         add_action( 'admin_notices', function() use ($e) {
              ?>
@@ -317,23 +393,23 @@ function sse_handle_export() {
                  <p><?php
                     printf(
                         /* translators: %s: error message */
-                        esc_html__( 'Error during file processing: %s', 'simple-site-exporter-enginescript' ),
+                        esc_html__( 'Error during file processing: %s', 'Simple-Site-Exporter' ),
                         '<strong>' . esc_html( $e->getMessage() ) . '</strong>'
                     );
                  ?></p>
              </div>
              <?php
          });
-         error_log("Simple Site Exporter: Exception during file iteration - " . $e->getMessage());
+         sse_log("Exception during file iteration - " . $e->getMessage(), 'error');
          return; // Stop
     }
 
     $zip_close_status = $zip->close();
 
     // --- 3. Cleanup temporary DB file ---
-    // Note: file_exists and @unlink are acceptable for cleanup of self-created temp files.
     if ( $db_exported && file_exists( $db_filepath ) ) {
         sse_safely_delete_file( $db_filepath );
+        sse_log("Temporary database dump file cleaned up after adding to zip", 'info');
     }
 
     // --- 4. Report Success or Failure ---
@@ -365,49 +441,49 @@ function sse_handle_export() {
             ?>
             <div class="notice notice-success is-dismissible">
                 <p>
-                    <?php esc_html_e( 'Site export successfully created!', 'simple-site-exporter-enginescript' ); ?>
+                    <?php esc_html_e( 'Site export successfully created!', 'Simple-Site-Exporter' ); ?>
                     <?php 
                     // Echo with esc_url() is the WordPress standard approach and is secure
                     // phpcs:ignore WordPress.Security.EchoNotEscaped.OutputNotEscaped
                     ?>
                     <a href="<?php echo esc_url( $download_url ); ?>" class="button" style="margin-left: 10px;">
-                        <?php esc_html_e( 'Download Export File', 'simple-site-exporter-enginescript' ); ?>
+                        <?php esc_html_e( 'Download Export File', 'Simple-Site-Exporter' ); ?>
                     </a>
                     <?php 
                     // Echo with esc_url() is the WordPress standard approach and is secure
                     // phpcs:ignore WordPress.Security.EchoNotEscaped.OutputNotEscaped
                     ?>
-                    <a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary" style="margin-left: 10px;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this export file?', 'simple-site-exporter-enginescript' ); ?>');">
-                        <?php esc_html_e( 'Delete Export File', 'simple-site-exporter-enginescript' ); ?>
+                    <a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary" style="margin-left: 10px;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this export file?', 'Simple-Site-Exporter' ); ?>');">
+                        <?php esc_html_e( 'Delete Export File', 'Simple-Site-Exporter' ); ?>
                     </a>
                 </p>
                 <p><small><?php
                     printf(
                         /* translators: %s: file path */
-                        esc_html__('File location: %s', 'simple-site-exporter-enginescript'),
-                        '<code title="' . esc_attr__('Path is relative to WordPress root directory', 'simple-site-exporter-enginescript') . '">' . 
+                        esc_html__('File location: %s', 'Simple-Site-Exporter'),
+                        '<code title="' . esc_attr__('Path is relative to WordPress root directory', 'Simple-Site-Exporter') . '">' . 
                         esc_html($display_zip_path) . '</code>'
                     );
                  ?></small></p>
             </div>
             <?php
         });
-        error_log("Simple Site Exporter: Export successful. File saved to " . $zip_filepath);
+        sse_log("Export successful. File saved to " . $zip_filepath, 'info');
     } else {
         // Add a generic error notice if the zip failed at the end
          add_action( 'admin_notices', function() {
              ?>
              <div class="notice notice-error is-dismissible">
-                 <p><?php esc_html_e( 'Failed to finalize or save the zip archive after processing files.', 'simple-site-exporter-enginescript' ); ?></p>
+                 <p><?php esc_html_e( 'Failed to finalize or save the zip archive after processing files.', 'Simple-Site-Exporter' ); ?></p>
              </div>
              <?php
          });
          // Note: file_exists is appropriate for logging state.
-         error_log("Simple Site Exporter: Export failed. Zip close status: " . ($zip_close_status ? 'OK' : 'FAIL') . ", File exists: " . (file_exists($zip_filepath) ? 'Yes' : 'No'));
-         // Attempt cleanup using @unlink, acceptable for self-created files.
-         // Note: file_exists and @unlink used for cleanup.
+         sse_log("Export failed. Zip close status: " . ($zip_close_status ? 'OK' : 'FAIL') . ", File exists: " . (file_exists($zip_filepath) ? 'Yes' : 'No'), 'error');
+         // Clean up the incomplete or corrupted zip file
          if ( file_exists( $zip_filepath ) ) {
-            @unlink( $zip_filepath );
+            sse_safely_delete_file( $zip_filepath );
+            sse_log("Cleaned up failed or corrupted zip file", 'warning');
          }
     }
 }
@@ -417,7 +493,7 @@ add_action( 'admin_init', 'sse_handle_export' );
 function sse_delete_export_file_handler( $file ) {
     if ( file_exists( $file ) ) {
         sse_safely_delete_file( $file );
-        error_log( 'Simple Site Exporter: Scheduled deletion of export file: ' . $file );
+        sse_log( 'Scheduled deletion of export file: ' . $file, 'info' );
     }
 }
 add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
@@ -438,7 +514,7 @@ function sse_safely_delete_file($filepath) {
     }
     
     if (!$wp_filesystem) {
-        error_log('Simple Site Exporter: Failed to initialize WordPress filesystem API');
+        sse_log('Failed to initialize WordPress filesystem API', 'error');
         return false;
     }
     
@@ -452,6 +528,27 @@ function sse_safely_delete_file($filepath) {
 }
 
 /**
+ * Validate that a file path is within the allowed directory
+ * 
+ * @param string $file_path The file path to validate
+ * @param string $base_dir The base directory that the file should be within
+ * @return bool True if the file path is safe, false otherwise
+ */
+function sse_validate_filepath($file_path, $base_dir) {
+    // Resolve real paths to prevent directory traversal
+    $real_file_path = realpath($file_path);
+    $real_base_dir = realpath($base_dir);
+    
+    // If realpath fails, the file/directory doesn't exist
+    if ($real_file_path === false || $real_base_dir === false) {
+        return false;
+    }
+    
+    // Ensure the file path starts with the base directory
+    return strpos($real_file_path, $real_base_dir) === 0;
+}
+
+/**
  * Shared file validation logic used by both download and deletion operations
  * 
  * @param string $filename The filename to validate
@@ -460,17 +557,17 @@ function sse_safely_delete_file($filepath) {
  */
 function sse_validate_export_file($filename, $check_filesize = false) {
     if (empty($filename)) {
-        return new WP_Error('invalid_request', esc_html__('No file specified.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('invalid_request', esc_html__('No file specified.', 'Simple-Site-Exporter'));
     }
     
     // Prevent path traversal attacks
     if (strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-        return new WP_Error('invalid_filename', esc_html__('Invalid filename.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('invalid_filename', esc_html__('Invalid filename.', 'Simple-Site-Exporter'));
     }
     
     // Validate that it's our export file format
     if (!preg_match('/^site_export_sse_[a-f0-9]{7}_[a-zA-Z0-9_-]+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip$/', $filename)) {
-        return new WP_Error('invalid_format', esc_html__('Invalid export file format.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('invalid_format', esc_html__('Invalid export file format.', 'Simple-Site-Exporter'));
     }
     
     // Get the full path to the file
@@ -480,7 +577,7 @@ function sse_validate_export_file($filename, $check_filesize = false) {
     
     // Validate the file path is within our export directory
     if (!sse_validate_filepath($file_path, $export_dir)) {
-        return new WP_Error('invalid_path', esc_html__('Invalid file path.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('invalid_path', esc_html__('Invalid file path.', 'Simple-Site-Exporter'));
     }
     
     // Use WordPress filesystem API
@@ -494,20 +591,20 @@ function sse_validate_export_file($filename, $check_filesize = false) {
     
     // Check if file exists using WP Filesystem
     if (!$wp_filesystem->exists($file_path)) {
-        return new WP_Error('file_not_found', esc_html__('Export file not found.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('file_not_found', esc_html__('Export file not found.', 'Simple-Site-Exporter'));
     }
     
     // For download requests, check additional conditions
     if ($check_filesize) {
         // Check if file is readable
         if (!$wp_filesystem->is_readable($file_path)) {
-            return new WP_Error('file_not_readable', esc_html__('Export file not readable.', 'simple-site-exporter-enginescript'));
+            return new WP_Error('file_not_readable', esc_html__('Export file not readable.', 'Simple-Site-Exporter'));
         }
         
         // Get file size using WP Filesystem
         $file_size = $wp_filesystem->size($file_path);
         if (!$file_size) {
-            return new WP_Error('file_size_error', esc_html__('Could not determine file size.', 'simple-site-exporter-enginescript'));
+            return new WP_Error('file_size_error', esc_html__('Could not determine file size.', 'Simple-Site-Exporter'));
         }
     } else {
         $file_size = 0; // Not needed for deletion operations
@@ -516,7 +613,7 @@ function sse_validate_export_file($filename, $check_filesize = false) {
     // Add referer check for request validation
     $referer = wp_get_referer();
     if (!$referer || strpos($referer, admin_url()) !== 0) {
-        return new WP_Error('invalid_request_source', esc_html__('Invalid request source.', 'simple-site-exporter-enginescript'));
+        return new WP_Error('invalid_request_source', esc_html__('Invalid request source.', 'Simple-Site-Exporter'));
     }
     
     // Create the result array with common properties
