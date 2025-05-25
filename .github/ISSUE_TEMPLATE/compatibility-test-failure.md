@@ -1,30 +1,46 @@
 ---
-title: PHP {{ env.PHP_VERSION }} Compatibility Test Failure
+title: WP {{ env.WP_VERSION }} / PHP {{ env.PHP_VERSION }} Compatibility Test Failure
 labels: bug, compatibility, automated
 assignees: []
 ---
 
-## PHP Compatibility Test Failure
+## WordPress & PHP Compatibility Test Failure
 
-The automated compatibility test for PHP {{ env.PHP_VERSION }} has failed.
+The automated compatibility test has failed for the following environment:
 
 ### Details
 
 - **PHP Version:** {{ env.PHP_VERSION }}
-- **WordPress Version:** Latest
+- **WordPress Version:** {{ env.WP_VERSION }}
 - **Test Date:** {{ date | date('YYYY-MM-DD HH:mm:ss') }}
 - **Workflow Run:** [View detailed logs]({{ env.WORKFLOW_URL }})
 
 ### Next Steps
 
-This issue has been automatically created because the EngineScript Simple Site Exporter plugin failed to load properly with PHP {{ env.PHP_VERSION }}. This could indicate compatibility issues that need to be addressed.
+This issue has been automatically created because the EngineScript Simple Site Exporter plugin failed compatibility testing with this specific WordPress and PHP version combination. This could indicate:
+
+#### Potential Issues:
+1. **PHP Compatibility**: Code may use features not available in PHP {{ env.PHP_VERSION }}
+2. **WordPress API Changes**: WordPress {{ env.WP_VERSION }} may have deprecated or changed APIs
+3. **Plugin Dependencies**: Required extensions or functions may not be available
+4. **WordPress Plugin Check Violations**: Code may not meet standards for this version combination
 
 #### Recommended Actions:
 
-1. Review the workflow logs for specific error messages
-2. Check for PHP {{ env.PHP_VERSION }} specific syntax or function compatibility issues
-3. Test locally with PHP {{ env.PHP_VERSION }} to reproduce the issue
-4. Make necessary code updates to ensure compatibility
+1. **Review Logs**: Check the workflow logs for specific error messages and stack traces
+2. **Local Testing**: Test locally with WordPress {{ env.WP_VERSION }} and PHP {{ env.PHP_VERSION }} to reproduce the issue
+3. **Code Review**: Look for version-specific syntax, deprecated functions, or API changes
+4. **Plugin Check**: Run WordPress Plugin Check locally against this environment
+5. **Update Code**: Make necessary updates to ensure compatibility across supported versions
+
+#### Testing Commands:
+```bash
+# Test with specific versions using Docker
+docker run --rm -v $(pwd):/app wordpress:{{ env.WP_VERSION }}-php{{ env.PHP_VERSION }}-apache
+
+# Run plugin check locally
+wp plugin check Simple-Site-Exporter --format=json --require=./wp-content/plugins/plugin-check/cli.php
+```
 
 Once fixed, please close this issue and reference it in the changelog.
 

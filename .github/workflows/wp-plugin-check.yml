@@ -18,17 +18,22 @@ permissions:
 
 jobs:
   plugin-check:
-    name: WordPress Plugin Check
+    name: WordPress Plugin Check (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup PHP
+      - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          php-version: ${{ matrix.php-version }}
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2
@@ -70,6 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PHP_VERSION: ${{ matrix.php-version }}
         with:
           filename: .github/ISSUE_TEMPLATE/plugin-check-failure.md
           update_existing: false

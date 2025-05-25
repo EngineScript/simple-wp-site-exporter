@@ -11,6 +11,7 @@ The WordPress Plugin Check action has identified issues with the EngineScript Si
 ### Details
 
 - **Test Date:** {{ date | date('YYYY-MM-DD HH:mm:ss') }}
+- **PHP Version:** {{ env.PHP_VERSION }}
 - **Workflow Run:** [View detailed logs]({{ env.WORKFLOW_URL }})
 
 ### Next Steps
