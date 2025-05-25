@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -71,6 +71,14 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
 
 == Changelog ==
+
+= 1.6.1 =
+* WordPress Plugin Check compliance fixes
+* Fixed timezone issues by replacing date() with gmdate() for UTC consistency
+* Improved debug logging with WordPress wp_debug_log() support and proper fallback
+* Fixed admin page title display issue with get_admin_page_title() usage
+* Enhanced documentation with proper PHPDoc comments and phpcs annotations
+* Addressed all WordPress Plugin Check warnings and errors
 
 = 1.6.0 =
 * Major security and code quality improvements
@@ -150,6 +158,9 @@ Yes, the plugin is designed to be compatible with most shared hosting environmen
 * Simple admin interface
 
 == Upgrade Notice ==
+
+= 1.6.1 =
+WordPress Plugin Check compliance update: Fixed timezone issues, improved debug logging, and addressed all plugin check warnings. Recommended update for WordPress.org submission.
 
 = 1.6.0 =
 Major security and code quality update: Enhanced logging system, improved file operations with WordPress Filesystem API, execution time safety improvements, comprehensive path validation, standardized text domains, and GitHub Actions security updates. Recommended upgrade for all users.

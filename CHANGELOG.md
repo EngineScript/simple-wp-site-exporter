@@ -1,5 +1,13 @@
 # Changelog for EngineScript: Simple Site Exporter
 
+## 1.6.1 - May 24, 2025
+### WordPress Plugin Check Compliance
+- **Fixed Timezone Issues**: Replaced all `date()` calls with `gmdate()` to avoid timezone-related problems
+- **Improved Debug Logging**: Enhanced logging function with WordPress `wp_debug_log()` support and proper fallback
+- **Fixed Admin Page Title**: Corrected `get_admin_page_title()` usage in template output
+- **Enhanced Documentation**: Added proper PHPDoc comments and phpcs ignore annotations for necessary discouraged functions
+- **Plugin Check Compliance**: Addressed all WordPress Plugin Check warnings and errors
+
 ## 1.6.0 - May 15, 2025
 ### Major Security and Code Quality Improvements
 - **Enhanced Logging**: Replaced all direct `error_log()` calls with secure `sse_log()` function that respects WP_DEBUG settings, includes timestamps, and stores critical errors in database (limited to last 20 entries)

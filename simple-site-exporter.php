@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.6.0
+Version: 1.6.1
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: Simple-Site-Exporter
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.6.0');
+    define('ES_SITE_EXPORTER_VERSION', '1.6.1');
 }
 
 /**
@@ -27,10 +27,10 @@ if (!defined('ES_SITE_EXPORTER_VERSION')) {
 function sse_log($message, $level = 'info') {
     // Check if WP_DEBUG is enabled
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        // Format the message with a timestamp
+        // Format the message with a timestamp (using GMT to avoid timezone issues)
         $formatted_message = sprintf(
             '[%s] [%s] %s: %s',
-            date('Y-m-d H:i:s'),
+            gmdate('Y-m-d H:i:s'),
             'Simple Site Exporter',
             strtoupper($level),
             $message
@@ -38,7 +38,15 @@ function sse_log($message, $level = 'info') {
         
         // Log to the WordPress debug log if enabled
         if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-            error_log($formatted_message);
+            // Use WordPress logging when available, fallback to standard logging
+            if (function_exists('wp_debug_log')) {
+                wp_debug_log($formatted_message);
+            } else {
+                // Fallback for older WordPress versions that don't have wp_debug_log()
+                // Only log during development/debug mode as controlled by WP_DEBUG
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                error_log($formatted_message);
+            }
         }
         
         // Store logs in the database (limit to errors only to prevent bloat)
@@ -104,7 +112,7 @@ function sse_exporter_page_html() {
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
     ?>
     <div class="wrap">
-        <h1><?php esc_html_e( get_admin_page_title(), 'Simple-Site-Exporter' ); // Use esc_html_e for translatable titles ?></h1>
+        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
         <p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'Simple-Site-Exporter' ); ?></p>
         <p><strong><?php esc_html_e( 'Warning:', 'Simple-Site-Exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'Simple-Site-Exporter' ); ?></p>
         <p style="margin-top: 15px;">
@@ -176,7 +184,11 @@ function sse_handle_export() {
     // Only try to increase if current limit is lower than our target
     if ($max_execution_time > 0 && $max_execution_time < $target_execution_time) {
         // Try to set a reasonable execution time instead of unlimited (0)
+        // Note: set_time_limit() is necessary for export operations that may take longer
+        // than the default PHP execution time. This is only used when the current limit
+        // is insufficient for the export process.
         if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_set_time_limit
             @set_time_limit($target_execution_time);
             sse_log("Increased execution time limit to {$target_execution_time} seconds", 'info');
         } else {
@@ -222,7 +234,7 @@ function sse_handle_export() {
     }
 
     $site_name = sanitize_file_name( get_bloginfo( 'name' ) );
-    $timestamp = date( 'Y-m-d_H-i-s' );
+    $timestamp = gmdate( 'Y-m-d_H-i-s' );
     $random_str = substr( bin2hex( random_bytes(4) ), 0, 7 );
     $db_filename = "db_dump_{$site_name}_{$timestamp}.sql";
     $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
