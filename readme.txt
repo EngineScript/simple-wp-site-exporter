@@ -1,9 +1,9 @@
-=== EngineScript: Simple Site Exporter ===
+=== Simple WP Site Exporter ===
 Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -12,7 +12,7 @@ Export your entire WordPress site, including files and database, as a secure dow
 
 == Description ==
 
-EngineScript Simple Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
+Simple WP Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
 
 Key features:
 * One-Click Export: Create a complete site backup with just one click
@@ -34,7 +34,7 @@ The export format is specifically designed to work with EngineScript's site impo
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/enginescript-simple-site-exporter` directory, or install the plugin through the WordPress plugins screen directly.
+1. Upload the plugin files to the `/wp-content/plugins/simple-wp-site-exporter` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. Navigate to Tools → Site Exporter in your WordPress admin.
 4. Click the "Export Site" button to create a full site backup.
@@ -71,6 +71,14 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
 
 == Changelog ==
+
+= 1.6.2 =
+* Plugin renamed from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
+* Updated text domain to 'simple-wp-site-exporter' for consistency
+* Updated composer package name to 'enginescript/simple-wp-site-exporter'
+* Updated export directory naming to 'simple-wp-site-exporter-exports'
+* Updated all GitHub workflows and documentation to reflect new plugin name
+* Enhanced plugin branding and consistency
 
 = 1.6.1 =
 * WordPress Plugin Check compliance fixes

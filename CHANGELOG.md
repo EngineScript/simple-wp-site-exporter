@@ -1,4 +1,13 @@
-# Changelog for EngineScript: Simple Site Exporter
+# Changelog for Simple WP Site Exporter
+
+## 1.6.2 - June 6, 2025
+### Plugin Rebrand
+- **Plugin Renamed**: Changed plugin name from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
+- **Text Domain Updated**: Updated text domain from 'Simple-Site-Exporter' to 'simple-wp-site-exporter' for consistency
+- **Package Name Updated**: Updated composer package name to 'enginescript/simple-wp-site-exporter'
+- **Directory Names Updated**: Updated export directory from 'enginescript-sse-site-exports' to 'simple-wp-site-exporter-exports'
+- **GitHub Workflows Updated**: Updated all GitHub Actions workflows to reference the new plugin name
+- **Documentation Updated**: Updated README.md, readme.txt, and all documentation to reflect the new plugin name
 
 ## 1.6.1 - May 24, 2025
 ### WordPress Plugin Check Compliance
@@ -14,7 +23,7 @@
 - **Improved File Operations**: Replaced unsafe `@unlink()` calls with `sse_safely_delete_file()` function using WordPress Filesystem API with proper error handling
 - **Execution Time Safety**: Enhanced `set_time_limit()` usage with safety checks, reasonable 30-minute limits instead of unlimited execution, and proper logging
 - **Path Security**: Added `sse_validate_filepath()` function to prevent directory traversal attacks with comprehensive path validation
-- **Text Domain Standardization**: Updated all translatable strings to use consistent 'Simple-Site-Exporter' text domain across the entire plugin
+- **Text Domain Standardization**: Updated all translatable strings to use consistent 'simple-wp-site-exporter' text domain across the entire plugin
 
 ### GitHub Actions Security Updates
 - Pinned all GitHub Actions to specific commit hashes instead of version tags for improved security

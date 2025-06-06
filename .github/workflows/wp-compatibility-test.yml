@@ -249,7 +249,7 @@ jobs:
            */
           
           /**
-           * Simple test case for EngineScript Simple Site Exporter plugin.
+           * Simple test case for Simple WP Site Exporter plugin.
            */
           class Test_EngineScript_Simple_Site_Exporter extends WP_UnitTestCase {
               /**
@@ -278,7 +278,7 @@ jobs:
               convertWarningsToExceptions="true"
           >
               <testsuites>
-                  <testsuite name="EngineScript Simple Site Exporter">
+                  <testsuite name="Simple WP Site Exporter">
                       <directory prefix="test-" suffix=".php">./tests/</directory>
                   </testsuite>
               </testsuites>

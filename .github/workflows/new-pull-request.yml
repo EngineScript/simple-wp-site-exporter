@@ -20,7 +20,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Thanks for contributing to EngineScript Simple Site Exporter! 🎉
+            Thanks for contributing to Simple WP Site Exporter! 🎉
 
 
             We'll review your PR soon!
