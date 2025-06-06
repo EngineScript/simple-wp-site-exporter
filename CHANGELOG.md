@@ -1,13 +1,19 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.6.3 - June 6, 2025
+### Updates
+- **Version Bump**: Updated plugin version to maintain consistency across all files
+
 ## 1.6.2 - June 6, 2025
 ### Plugin Rebrand
 - **Plugin Renamed**: Changed plugin name from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
+- **Plugin File Renamed**: Changed main plugin file from 'simple-site-exporter.php' to 'simple-wp-site-exporter.php'
+- **Repository Moved**: Moved repository from 'EngineScript-Simple-Site-Exporter' to 'Simple-WP-Site-Exporter'
 - **Text Domain Updated**: Updated text domain from 'Simple-Site-Exporter' to 'simple-wp-site-exporter' for consistency
 - **Package Name Updated**: Updated composer package name to 'enginescript/simple-wp-site-exporter'
 - **Directory Names Updated**: Updated export directory from 'enginescript-sse-site-exports' to 'simple-wp-site-exporter-exports'
-- **GitHub Workflows Updated**: Updated all GitHub Actions workflows to reference the new plugin name
-- **Documentation Updated**: Updated README.md, readme.txt, and all documentation to reflect the new plugin name
+- **GitHub Workflows Updated**: Updated all GitHub Actions workflows to reference the new plugin name, filename, and repository
+- **Documentation Updated**: Updated README.md, readme.txt, and all documentation to reflect the new plugin name and repository
 
 ## 1.6.1 - May 24, 2025
 ### WordPress Plugin Check Compliance

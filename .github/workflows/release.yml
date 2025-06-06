@@ -23,7 +23,7 @@ jobs:
       - name: Get latest version
         id: get_version
         run: |
-          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" simple-site-exporter.php)
+          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" simple-wp-site-exporter.php)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
 
@@ -43,7 +43,7 @@ jobs:
         if: steps.check_release.outputs.exists == 'false'
         run: |
           mkdir -p simple-wp-site-exporter
-          cp simple-site-exporter.php simple-wp-site-exporter/
+          cp simple-wp-site-exporter.php simple-wp-site-exporter/
           cp README.md simple-wp-site-exporter/
           cp CHANGELOG.md simple-wp-site-exporter/
           cp LICENSE simple-wp-site-exporter/ || echo "No LICENSE file found"
@@ -88,7 +88,7 @@ jobs:
           TMP_FILE=$(mktemp)
           
           # Update the version badge with the new version and logo
-          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/EngineScript-Simple-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/EngineScript-Simple-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
+          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/Simple-WP-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/Simple-WP-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
           
           # Replace file if changes were made
           if ! cmp -s "$README_FILE" "$TMP_FILE"; then

@@ -229,7 +229,7 @@ jobs:
                   return;
               }, 0);
               
-              require dirname( dirname( __FILE__ ) ) . '/simple-site-exporter.php';
+              require dirname( dirname( __FILE__ ) ) . '/simple-wp-site-exporter.php';
           }
           
           // Start up the WP testing environment.

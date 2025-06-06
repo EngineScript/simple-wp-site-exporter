@@ -164,7 +164,7 @@ jobs:
           mkdir -p build/simple-wp-site-exporter
           
           # Copy main plugin file
-          cp simple-site-exporter.php build/simple-wp-site-exporter/
+          cp simple-wp-site-exporter.php build/simple-wp-site-exporter/
           
           # Copy directories if they exist
           [ -d assets ] && cp -r assets build/simple-wp-site-exporter/ || echo "No assets directory found"

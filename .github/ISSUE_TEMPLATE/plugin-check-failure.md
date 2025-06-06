@@ -1,4 +1,6 @@
 ---
+name: Plugin Check Failure
+about: Automated issue for WordPress Plugin Check failures
 title: WordPress Plugin Check Failure
 labels: bug, plugin-check, automated
 assignees: []

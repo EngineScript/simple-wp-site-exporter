@@ -1,4 +1,6 @@
 ---
+name: Compatibility Test Failure
+about: Automated issue for WordPress/PHP compatibility test failures
 title: WP {{ env.WP_VERSION }} / PHP {{ env.PHP_VERSION }} Compatibility Test Failure
 labels: bug, compatibility, automated
 assignees: []
