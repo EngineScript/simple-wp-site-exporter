@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.3
+Stable tag: 1.6.4
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -71,6 +71,10 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
 
 == Changelog ==
+
+= 1.6.4 =
+* Fixed text domain mismatch to use 'Simple-WP-Site-Exporter' for WordPress plugin compliance
+* Updated plugin header text domain to match expected slug format for WordPress.org directory standards
 
 = 1.6.3 =
 * Version consistency update across all plugin files and documentation

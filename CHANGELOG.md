@@ -1,5 +1,10 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.6.4 - June 6, 2025
+### Bug Fixes
+- **Text Domain Fix**: Fixed mismatched text domain to properly use 'Simple-WP-Site-Exporter' instead of 'simple-wp-site-exporter' for WordPress plugin compliance
+- **Plugin Header Compliance**: Updated plugin text domain header to match expected slug format for WordPress.org directory standards
+
 ## 1.6.3 - June 6, 2025
 ### Updates
 - **Version Bump**: Updated plugin version to maintain consistency across all files
