@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin version
-if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.6.1');
+if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
+    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.2');
 }
 
 /**
@@ -31,7 +31,7 @@ function sse_log($message, $level = 'info') {
         $formatted_message = sprintf(
             '[%s] [%s] %s: %s',
             gmdate('Y-m-d H:i:s'),
-            'Simple Site Exporter',
+            'Simple WP Site Exporter',
             strtoupper($level),
             $message
         );
@@ -88,7 +88,7 @@ function sse_get_execution_time_limit() {
 // --- Admin Menu ---
 function sse_admin_menu() {
     add_management_page(
-        esc_html__( 'Simple Site Exporter', 'simple-wp-site-exporter' ), // Escaped title
+        esc_html__( 'Simple WP Site Exporter', 'simple-wp-site-exporter' ), // Escaped title
         esc_html__( 'Site Exporter', 'simple-wp-site-exporter' ),       // Escaped menu title
         'manage_options', // Capability required
         'simple-wp-site-exporter',

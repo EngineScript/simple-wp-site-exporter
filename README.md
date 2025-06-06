@@ -86,7 +86,7 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 ### Where are the export files stored?
 
 Exports are stored in your WordPress uploads directory, specifically at:
-`[wp-root]/wp-content/uploads/enginescript-sse-site-exports/`
+`[wp-root]/wp-content/uploads/simple-wp-site-exporter-exports/`
 
 ### Why do export files disappear after an hour?
 

@@ -1,8 +1,5 @@
 # This workflow runs continuous integration checks on the Simple WP Site Exporter plugin.
-# It performs code linting for both PHP and JavaScript files and builds t          mkdir -p build/simple-wp-site-exporter
-          
-          # Copy main plugin files
-          cp simple-site-exporter.php build/simple-wp-site-exporter/lugin package.
+# It performs code linting for both PHP and JavaScript files and builds the plugin package.
 # The workflow is triggered on push to main branch and on pull requests to ensure code quality.
 # It creates and stores a plugin zip file as an artifact that can be used for testing.
 

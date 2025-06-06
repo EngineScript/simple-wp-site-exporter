@@ -213,7 +213,7 @@ jobs:
           /**
            * PHPUnit bootstrap file for plugin tests.
            *
-           * @package EngineScript_Simple_Site_Exporter
+           * @package Simple_WP_Site_Exporter
            */
           
           // Give access to tests_add_filter() function.
@@ -243,15 +243,15 @@ jobs:
           cat > tests/test-plugin.php << 'EOF'
           <?php
           /**
-           * Class Test_EngineScript_Simple_Site_Exporter
+           * Class Test_Simple_WP_Site_Exporter
            *
-           * @package EngineScript_Simple_Site_Exporter
+           * @package Simple_WP_Site_Exporter
            */
           
           /**
            * Simple test case for Simple WP Site Exporter plugin.
            */
-          class Test_EngineScript_Simple_Site_Exporter extends WP_UnitTestCase {
+          class Test_Simple_WP_Site_Exporter extends WP_UnitTestCase {
               /**
                * Test that the plugin can be loaded correctly.
                * 

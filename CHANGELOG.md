@@ -27,7 +27,7 @@
 
 ### GitHub Actions Security Updates
 - Pinned all GitHub Actions to specific commit hashes instead of version tags for improved security
-- Updated all workflow references from Simple-WP-Optimizer to Simple Site Exporter
+- Updated all workflow references from Simple-WP-Optimizer to Simple WP Site Exporter
 - Enhanced CI/CD pipeline security with version pinning and proper repository references
 
 ### Code Structure Improvements
