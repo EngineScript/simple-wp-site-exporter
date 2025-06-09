@@ -100,11 +100,20 @@ function sse_get_execution_time_limit() {
     // Get the current execution time limit
     $maxExecTime = ini_get('max_execution_time');
     
-    // If ini_get failed or returned non-numeric value, use default
-    if (false === $maxExecTime || '' === $maxExecTime) {
-        $maxExecTime = 30; // Default PHP value is typically 30 seconds
-    } elseif (!is_numeric($maxExecTime)) {
-        $maxExecTime = 30; // Fallback for non-numeric values
+    // Handle all possible return types from ini_get()
+    if (false === $maxExecTime) {
+        // ini_get failed
+        return 30;
+    }
+    
+    if ('' === $maxExecTime) {
+        // Empty string returned
+        return 30;
+    }
+    
+    if (!is_numeric($maxExecTime)) {
+        // Non-numeric value returned
+        return 30;
     }
     
     return (int)$maxExecTime;
@@ -421,7 +430,6 @@ function sse_add_wordpress_files_to_zip( $zip, $exportDir ) {
 
         foreach ( $files as $fileInfo ) {
             sse_process_file_for_zip( $zip, $fileInfo, $sourcePath, $exportDir );
-            }
         }
     } catch ( Exception $e ) {
         return new WP_Error( 'file_iteration_failed', sprintf( 
