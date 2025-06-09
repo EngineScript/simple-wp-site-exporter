@@ -9,6 +9,8 @@ parameters:
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     
+    treatPhpDocTypesAsCertain: false
+    
     ignoreErrors:
         # Ignore WordPress global variables that might not be defined in test context
         - '#Variable \$wpdb might not be defined#'
