@@ -1270,7 +1270,6 @@ function sse_output_file_content( $filepath, $filename ) {
     sse_log( 'Failed to serve secure file download: ' . $filename, 'error' );
     wp_die( esc_html__( 'Unable to serve file download.', 'Simple-WP-Site-Exporter' ) );
 }
-}
 
 /**
  * Serves a file download with enhanced security validation.
