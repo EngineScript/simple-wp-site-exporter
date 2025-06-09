@@ -1,5 +1,34 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.6.6 - June 9, 2025
+### Security & Best Practices Improvements
+- **CRITICAL**: Added missing secure download and delete handlers for export files
+- **Text Domain Consistency**: Fixed all text domain inconsistencies to use 'simple-wp-site-exporter'
+- **Enhanced Shell Security**: Improved WP-CLI path validation with comprehensive security checks
+- **Path Traversal Protection**: Enhanced file path validation with better edge case handling
+- **Global Variable Handling**: Improved WordPress filesystem API initialization and error handling
+- **Rate Limiting**: Added download rate limiting (1 download per minute per user)
+- **Scheduled Deletion Security**: Added validation to scheduled file deletion to prevent unauthorized deletions
+- **Information Disclosure**: Sanitized error messages to prevent server path exposure
+- **Code Quality**: Removed duplicate function definitions and improved error handling
+
+### New Security Features
+- Enhanced WP-CLI binary validation with version checking
+- Proper filesystem API error handling throughout
+- User capability verification for all download/delete operations
+- Secure file serving with appropriate headers for large files
+- Request source validation and nonce verification
+
+## 1.6.5 - June 8, 2025
+### Code Quality Improvements
+- **PHPMD Compliance**: Refactored entire codebase to address PHP Mess Detector warnings and improve code quality
+- **Function Complexity**: Broke down large functions into smaller, single-responsibility functions for better maintainability
+- **Variable Naming**: Converted variable names to camelCase format to comply with PHPMD standards
+- **Error Handling**: Removed unnecessary error control operators (@) and improved error handling
+- **Code Structure**: Eliminated unnecessary else expressions and duplicate code
+- **Global Variables**: Fixed naming conventions for WordPress global variables
+- **Function Splitting**: Split complex boolean-flag functions into separate, dedicated functions
+
 ## 1.6.4 - June 6, 2025
 ### Bug Fixes
 - **Text Domain Fix**: Fixed mismatched text domain to properly use 'Simple-WP-Site-Exporter' instead of 'simple-wp-site-exporter' for WordPress plugin compliance

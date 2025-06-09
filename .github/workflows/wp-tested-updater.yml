@@ -1,3 +1,10 @@
+
+# This workflow automatically monitors WordPress version compatibility for the plugin.
+# It checks if the "Tested up to" version in readme.txt matches the latest WordPress release.
+# The workflow runs weekly and on pushes to main branch to ensure compatibility information
+# stays current. When a newer WordPress version is available, it creates an issue or pull request
+# to update the compatibility information, helping maintain plugin currency with WordPress releases.
+
 name: WordPress Version Checker
 
 on:

@@ -1,3 +1,14 @@
+# This workflow performs comprehensive WordPress plugin compatibility and quality checks.Add commentMore actions
+# It runs multiple validation processes including:
+# - WordPress Plugin Check for WordPress.org compatibility
+# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.1, 8.2, 8.3)
+# - WordPress compatibility testing across multiple WP versions (6.4, 6.5, 6.6, 6.7, 6.8)
+# - PHPStan static analysis for WordPress-specific code quality
+# - WordPress security vulnerability scanning using pattern analysis
+# - PHPCS code standards validation for WordPress coding standards
+# - Code quality analysis and automated issue creation for failures
+# The workflow ensures the plugin meets WordPress.org standards and maintains compatibility.
+
 name: WordPress Compatibility & Plugin Check
 
 on:

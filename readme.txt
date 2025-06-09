@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.4
+Stable tag: 1.6.6
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -71,6 +71,28 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
 
 == Changelog ==
+
+= 1.6.6 =
+* CRITICAL: Added missing secure download and delete handlers for export files
+* Fixed all text domain inconsistencies to use 'simple-wp-site-exporter'
+* Enhanced shell security with improved WP-CLI path validation and security checks
+* Improved path traversal protection with better edge case handling
+* Enhanced global variable handling for WordPress filesystem API
+* Added download rate limiting (1 download per minute per user)
+* Improved scheduled deletion security with proper file validation
+* Sanitized error messages to prevent server information disclosure
+* Removed duplicate function definitions and improved error handling
+* Added comprehensive security features including user capability verification
+
+= 1.6.5 =
+* Code quality improvements and PHPMD compliance
+* Refactored entire codebase to address PHP Mess Detector warnings
+* Broke down large functions into smaller, single-responsibility functions
+* Converted variable names to camelCase format for better code standards
+* Removed unnecessary error control operators and improved error handling
+* Eliminated unnecessary else expressions and duplicate code
+* Fixed naming conventions for WordPress global variables
+* Split complex boolean-flag functions into separate, dedicated functions
 
 = 1.6.4 =
 * Fixed text domain mismatch to use 'Simple-WP-Site-Exporter' for WordPress plugin compliance
