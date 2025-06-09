@@ -27,7 +27,13 @@ This issue has been automatically created because the Simple WP Site Exporter pl
 3. **Design**: Poor object-oriented design patterns
 4. **Naming**: Inconsistent or unclear naming conventions
 5. **Unused Code**: Dead code that should be removed
-6. **Controversial**: Potentially problematic coding patterns
+
+#### WordPress-Specific Configuration
+This project uses a WordPress-specific PHPMD configuration (`phpmd-wordpress.xml`) that suppresses WordPress-standard patterns:
+- **Superglobals**: WordPress safely uses `$_GET`, `$_POST` with proper sanitization
+- **Exit Expressions**: Required for file downloads and security redirects
+- **Missing Imports**: WordPress core classes like `WP_Error` are auto-loaded
+- **Else Expressions**: Sometimes required for WordPress security patterns
 
 #### Common Issues:
 - **Cyclomatic Complexity**: Methods with too many decision paths
@@ -53,13 +59,16 @@ This issue has been automatically created because the Simple WP Site Exporter pl
 # Install dependencies
 composer install
 
-# Run PHPMD analysis
+# Run PHPMD with WordPress-specific configuration (recommended)
+./vendor/bin/phpmd simple-wp-site-exporter.php text phpmd-wordpress.xml
+
+# Run PHPMD with standard rules (may show WordPress-specific warnings)
 ./vendor/bin/phpmd simple-wp-site-exporter.php text cleancode,codesize,design,naming,unusedcode
 
-# Generate HTML report
-./vendor/bin/phpmd simple-wp-site-exporter.php html cleancode,codesize,design,naming,unusedcode --reportfile phpmd-report.html
+# Generate HTML report with WordPress config
+./vendor/bin/phpmd simple-wp-site-exporter.php html phpmd-wordpress.xml --reportfile phpmd-report.html
 
-# Check specific rules
+# Check specific rules with high priority
 ./vendor/bin/phpmd simple-wp-site-exporter.php text codesize --minimumpriority 1
 ```
 

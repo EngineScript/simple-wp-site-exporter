@@ -19,6 +19,24 @@ if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
 }
 
 /**
+ * WordPress Core Classes Documentation
+ * 
+ * This plugin uses WordPress core classes which are automatically available
+ * in the WordPress environment. These classes don't require explicit imports
+ * or use statements as they are part of WordPress core.
+ * 
+ * Core classes used:
+ * @see WP_Error - WordPress error handling class
+ * @see ZipArchive - PHP ZipArchive class
+ * @see RecursiveIteratorIterator - PHP SPL iterator
+ * @see RecursiveDirectoryIterator - PHP SPL directory iterator
+ * @see SplFileInfo - PHP SPL file information class
+ * @see Exception - PHP base exception class
+ * 
+ * @SuppressWarnings(PHPMD.MissingImport)
+ */
+
+/**
  * Safely log plugin messages
  *
  * @param string $message The message to log
