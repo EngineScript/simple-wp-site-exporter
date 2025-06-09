@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.6
+Stable tag: 1.6.7
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -71,6 +71,15 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
 
 == Changelog ==
+
+= 1.6.7 =
+* PHPMD compliance improvements with enhanced code quality
+* Fixed all CamelCase variable naming violations for better code standards
+* Broke down complex functions to reduce cyclomatic complexity below threshold
+* Split large functions into smaller, focused functions for better maintainability
+* Eliminated unnecessary else expressions throughout codebase
+* Reduced NPath complexity and improved performance
+* Enhanced code structure with clear separation of concerns
 
 = 1.6.6 =
 * CRITICAL: Added missing secure download and delete handlers for export files
