@@ -1,5 +1,13 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.6.9 - June 14, 2025
+### Security Enhancement
+- **SSRF Protection**: Enhanced Server-Side Request Forgery protection in `sse_resolve_parent_directory()` function:
+  - Added proper path validation before filesystem operations
+  - Improved upload directory validation and normalization
+  - Reduced attack surface by validating logical path structure before calling `realpath()` on user input
+  - Enhanced security logging for better monitoring of potential attacks
+
 ## 1.6.8 - June 14, 2025
 ### Fallback Removal and Security Hardening
 - **Fallback Elimination**: Removed all fallback mechanisms to simplify codebase:

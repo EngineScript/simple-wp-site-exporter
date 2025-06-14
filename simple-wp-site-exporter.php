@@ -2,7 +2,7 @@
 /*
 Plugin Name: Simple WP Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.6.8
+Version: 1.6.9
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: Simple-WP-Site-Exporter
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
-    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.8');
+    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.9');
 }
 
 /**
@@ -876,13 +876,32 @@ function sse_validate_parent_directory_safety($parentDir, $uploadDir) {
  * @return string|false Real parent directory path or false on failure.
  */
 function sse_resolve_parent_directory($parentDir, $uploadDir) {
-    if (!is_dir($parentDir) || !is_readable($parentDir)) {
+    // Normalize and validate upload directory first
+    $normalizedUploadDir = wp_normalize_path($uploadDir);
+    $realUploadDir = realpath($normalizedUploadDir);
+    if ($realUploadDir === false) {
+        sse_log('Upload directory cannot be resolved: ' . $uploadDir, 'security');
+        return false;
+    }
+    
+    // Normalize parent directory and perform basic validation
+    $normalizedParentDir = wp_normalize_path($parentDir);
+    
+    // Validate that normalized parent dir starts with normalized upload dir (before realpath)
+    if (strpos($normalizedParentDir, $normalizedUploadDir) !== 0) {
+        sse_log('Parent directory not within normalized upload directory: ' . $parentDir, 'security');
+        return false;
+    }
+    
+    // Only perform filesystem checks after path validation
+    if (!is_dir($normalizedParentDir) || !is_readable($normalizedParentDir)) {
         sse_log('Parent directory validation failed: ' . $parentDir, 'security');
         return false;
     }
     
-    $realParentDir = realpath($parentDir);
-    if ($realParentDir === false || strpos($realParentDir, $uploadDir) !== 0) {
+    // Now safe to resolve real path after validation
+    $realParentDir = realpath($normalizedParentDir);
+    if ($realParentDir === false || strpos($realParentDir, $realUploadDir) !== 0) {
         sse_log('Parent directory real path validation failed', 'security');
         return false;
     }
