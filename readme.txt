@@ -1,28 +1,6 @@
 === Simple WP Site Exporter ===
 Contributors: enginescript
-Tags: backup,== Changelog ==
-
-= 1.6.8 =
-* Fallback Removal and Security Hardening: Removed all fallback mechanisms to simplify codebase
-* Enhanced SSRF Protection: Strengthened Server-Side Request Forgery prevention with pre-validation
-* Text Domain Compliance: Fixed remaining lowercase text domain instances in WP-CLI validation
-* Code Simplification: Reduced overall complexity by 15% through fallback removal
-* Security Audit: Comprehensive review ensuring OWASP and WordPress security best practices
-* Logging Enhancement: Uses only wp_debug_log() (WordPress 5.1+), removed error_log() fallback
-* Directory Validation: Requires realpath() success for security, removed normalized path fallback
-* File Output: Uses only readfile() for performance and security, removed WP_Filesystem fallback
-* ZIP File Paths: Requires getRealPath() success for security, removed pathname fallback
-
-= 1.6.7 =
-* PHPMD, PHPStan, Security, and WordPress Standards Compliance update
-* Variable Naming: Fixed all CamelCase variable naming violations for PHPMD compliance
-* Function Complexity: Broke down complex functions to reduce cyclomatic complexity
-* Security Enhancements: Comprehensive input sanitization and output escaping
-* PHPStan Level 8: Resolved all type handling and unreachable code issues
-* WordPress Plugin Check: Fixed text domain consistency and translator comments
-* Performance Optimization: Streamlined code paths and removed redundant operations
-
-= 1.6.1 =port, migration, site export, database export
+Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
 Stable tag: 1.6.8
@@ -30,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Export your entire WordPress site, including files and database, as a secure downloadable ZIP archive.
+Export your entire WordPress site as a secure downloadable ZIP archive.
 
 == Description ==
 
@@ -91,6 +69,23 @@ Absolutely! While the plugin integrates seamlessly with EngineScript servers, it
 = Will this work on shared hosting environments? =
 
 Yes, the plugin is designed to be compatible with most shared hosting environments. However, large sites may encounter timeout or memory limitations on restrictive hosting plans.
+
+== License ==
+
+This plugin is licensed under the GPL v3 or later.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
