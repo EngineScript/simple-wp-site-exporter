@@ -770,7 +770,60 @@ function sse_validate_file_extension($filePath) {
  * @return string|false Resolved file path or false on failure.
  */
 function sse_resolve_nonexistent_file_path($normalizedFilePath) {
-    // Security: Get WordPress upload directory as our base validation point
+    $uploadInfo = sse_get_upload_directory_info();
+    if ($uploadInfo === false) {
+        return false;
+    }
+    
+    return sse_build_validated_file_path($normalizedFilePath, $uploadInfo);
+}
+
+/**
+ * Builds validated file path from components.
+ * 
+ * @param string $normalizedFilePath The normalized file path.
+ * @param array $uploadInfo Upload directory information.
+ * @return string|false Real file path on success, false on failure.
+ */
+function sse_build_validated_file_path($normalizedFilePath, $uploadInfo) {
+    $parentDir = dirname($normalizedFilePath);
+    $filename = basename($normalizedFilePath);
+    
+    if (!sse_validate_parent_directory_safety($parentDir, $uploadInfo['basedir'])) {
+        return false;
+    }
+    
+    return sse_construct_final_file_path($parentDir, $filename, $uploadInfo['realpath']);
+}
+
+/**
+ * Constructs final file path after validation.
+ * 
+ * @param string $parentDir Parent directory path.
+ * @param string $filename File name.
+ * @param string $uploadRealPath Upload directory real path.
+ * @return string|false Final file path on success, false on failure.
+ */
+function sse_construct_final_file_path($parentDir, $filename, $uploadRealPath) {
+    $realParentDir = sse_resolve_parent_directory($parentDir, $uploadRealPath);
+    if ($realParentDir === false) {
+        return false;
+    }
+    
+    $sanitizedFilename = sse_sanitize_filename($filename);
+    if ($sanitizedFilename === false) {
+        return false;
+    }
+    
+    return trailingslashit($realParentDir) . $sanitizedFilename;
+}
+
+/**
+ * Gets WordPress upload directory information with validation.
+ * 
+ * @return array|false Upload directory info array or false on failure.
+ */
+function sse_get_upload_directory_info() {
     $uploadDir = wp_upload_dir();
     if (!isset($uploadDir['basedir']) || empty($uploadDir['basedir'])) {
         sse_log('Could not determine WordPress upload directory for validation', 'error');
@@ -783,102 +836,74 @@ function sse_resolve_nonexistent_file_path($normalizedFilePath) {
         return false;
     }
     
-    // Security: Only allow paths within WordPress upload directory (strict allowlist)
-    $parentDir = dirname($normalizedFilePath);
-    $filename = basename($normalizedFilePath);
-    
-    // Pre-validate that parent directory path looks safe before any filesystem operations
+    return array(
+        'basedir' => $uploadDir['basedir'],
+        'realpath' => $wpUploadDir
+    );
+}
+
+/**
+ * Validates parent directory path safety.
+ * 
+ * @param string $parentDir The parent directory path.
+ * @param string $uploadDir The upload directory path.
+ * @return bool True if safe, false otherwise.
+ */
+function sse_validate_parent_directory_safety($parentDir, $uploadDir) {
+    // Pre-validate that parent directory path looks safe
     if (strpos($parentDir, '..') !== false || strpos($parentDir, 'wp-config') !== false) {
         sse_log('Rejected unsafe parent directory path: ' . $parentDir, 'security');
         return false;
     }
     
-    // Security: Ensure parent directory is within WordPress upload directory
+    // Ensure parent directory is within WordPress upload directory
     $normalizedParentDir = wp_normalize_path($parentDir);
-    $normalizedUploadDir = wp_normalize_path($uploadDir['basedir']);
+    $normalizedUploadDir = wp_normalize_path($uploadDir);
     
     if (strpos($normalizedParentDir, $normalizedUploadDir) !== 0) {
         sse_log('Parent directory not within WordPress upload directory: ' . $parentDir, 'security');
         return false;
     }
     
-    // Now it's safe to check if directory exists (after validation)
-    if ( !is_dir( $parentDir ) || !is_readable( $parentDir ) ) {
+    return true;
+}
+
+/**
+ * Resolves and validates parent directory.
+ * 
+ * @param string $parentDir The parent directory path.
+ * @param string $uploadDir The upload directory path.
+ * @return string|false Real parent directory path or false on failure.
+ */
+function sse_resolve_parent_directory($parentDir, $uploadDir) {
+    if (!is_dir($parentDir) || !is_readable($parentDir)) {
         sse_log('Parent directory validation failed: ' . $parentDir, 'security');
         return false;
     }
     
-    $realParentDir = realpath( $parentDir );
-    if ( $realParentDir === false || strpos($realParentDir, $wpUploadDir) !== 0 ) {
+    $realParentDir = realpath($parentDir);
+    if ($realParentDir === false || strpos($realParentDir, $uploadDir) !== 0) {
         sse_log('Parent directory real path validation failed', 'security');
         return false;
     }
     
-    // Sanitize filename to prevent directory traversal
-    $filename = sanitize_file_name( $filename );
+    return $realParentDir;
+}
+
+/**
+ * Sanitizes filename to prevent directory traversal.
+ * 
+ * @param string $filename The filename to sanitize.
+ * @return string|false Sanitized filename or false on failure.
+ */
+function sse_sanitize_filename($filename) {
+    $filename = sanitize_file_name($filename);
     if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
         sse_log('Filename contains invalid characters: ' . $filename, 'security');
         return false;
     }
     
-    return trailingslashit( $realParentDir ) . $filename;
-}
-
-/**
- * Resolves real file path, handling non-existent files securely.
- * 
- * @param string $normalizedFilePath The normalized file path.
- * @return string|false Real file path on success, false on failure.
- */
-function sse_resolve_file_path($normalizedFilePath) {
-    // Security: Only allow files with safe extensions and within WordPress directory
-    $allowedExtensions = array('zip', 'sql');
-    $fileExtension = strtolower(pathinfo($normalizedFilePath, PATHINFO_EXTENSION));
-    
-    if (!in_array($fileExtension, $allowedExtensions, true)) {
-        sse_log('Rejected file access - invalid extension: ' . $fileExtension, 'security');
-        return false;
-    }
-    
-    $realFilePath = realpath($normalizedFilePath);
-    
-    // If realpath fails for the file (doesn't exist), validate parent directory more securely
-    if ($realFilePath === false) {
-        $parentDir = dirname($normalizedFilePath);
-        $filename = basename($normalizedFilePath);
-        
-        // Security: Additional validation to prevent SSRF - ensure parent is within WordPress
-        $wpContentDir = realpath(WP_CONTENT_DIR);
-        if ($wpContentDir === false) {
-            sse_log('Could not resolve WP_CONTENT_DIR for security validation', 'error');
-            return false;
-        }
-        
-        // Validate parent directory exists, is readable, and is within WP_CONTENT_DIR
-        if ( !is_dir( $parentDir ) || !is_readable( $parentDir ) ) {
-            sse_log('Parent directory validation failed: ' . $parentDir, 'security');
-            return false;
-        }
-        
-        $realParentDir = realpath( $parentDir );
-        if ( $realParentDir === false || strpos($realParentDir, $wpContentDir) !== 0 ) {
-            sse_log('Parent directory not within WordPress content directory', 'security');
-            return false;
-        }
-        
-        $realFileDir = $realParentDir;
-        
-        // Sanitize filename to prevent directory traversal
-        $filename = sanitize_file_name( $filename );
-        if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-            sse_log('Filename contains invalid characters: ' . $filename, 'security');
-            return false;
-        }
-        
-        $realFilePath = trailingslashit( $realFileDir ) . $filename;
-    }
-    
-    return $realFilePath;
+    return $filename;
 }
 
 /**
