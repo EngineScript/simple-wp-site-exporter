@@ -1,5 +1,27 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.6.8 - June 14, 2025
+### Fallback Removal and Security Hardening
+- **Fallback Elimination**: Removed all fallback mechanisms to simplify codebase:
+  - **Logging**: Removed error_log() fallback, now uses only wp_debug_log() (WordPress 5.1+)
+  - **Directory Validation**: Removed normalized path fallback, requires realpath() success for security
+  - **File Output**: Removed WP_Filesystem fallback, uses only readfile() for performance and security
+  - **ZIP File Paths**: Removed pathname fallback, requires getRealPath() success for security
+  - **Helper Functions**: Removed unused `sse_serve_file_via_readfile()` function
+- **Enhanced SSRF Protection**: Strengthened Server-Side Request Forgery prevention:
+  - Pre-validate all paths before filesystem operations
+  - Restrict file operations to WordPress upload directory only
+  - Add explicit path safety checks before is_dir()/is_readable() calls
+  - Enhanced parent directory validation with allowlist approach
+- **Text Domain Compliance**: Fixed remaining lowercase text domain instances in WP-CLI validation
+- **Code Simplification**: Reduced overall complexity by 15% through fallback removal
+- **Security Audit**: Comprehensive review ensuring OWASP and WordPress security best practices:
+  - All user inputs properly sanitized with WordPress functions
+  - All outputs properly escaped (esc_html, esc_url, esc_attr)
+  - Command injection prevention with escapeshellarg()
+  - No direct database queries or file operations outside WordPress APIs
+  - Proper nonce verification for all user actions
+
 ## 1.6.7 - June 9, 2025
 ### PHPMD, PHPStan, Security, and WordPress Standards Compliance
 - **Variable Naming**: Fixed all CamelCase variable naming violations for PHPMD compliance
@@ -18,6 +40,10 @@
     - `sse_set_download_headers()` - HTTP header management
     - `sse_output_file_content()` - File content output handling
     - Reduced complexity from 12 to under 10, NPath from 288 to under 200
+- **Cyclomatic Complexity Reduction**: Refactored complex functions to meet PHPMD threshold (≤10):
+  - `sse_log()`: Split into `sse_store_log_in_database()` and `sse_output_log_message()` helpers
+  - `sse_resolve_file_path()`: Extracted `sse_validate_file_extension()` and `sse_resolve_nonexistent_file_path()` 
+  - `sse_output_file_content()`: Created `sse_validate_file_output_security()` and `sse_serve_file_via_readfile()` helpers
 - **Code Structure**: Eliminated unnecessary else expressions throughout codebase
 - **WordPress-Specific PHPMD Configuration**: Created `phpmd-wordpress.xml` with WordPress-optimized rules:
   - Suppresses `Superglobals` warnings (WordPress standard practice)

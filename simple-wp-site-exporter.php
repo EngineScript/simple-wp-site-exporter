@@ -2,7 +2,7 @@
 /*
 Plugin Name: Simple WP Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.6.7
+Version: 1.6.8
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: Simple-WP-Site-Exporter
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
-    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.7');
+    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.8');
 }
 
 /**
@@ -35,6 +35,45 @@ if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
  * 
  * @SuppressWarnings(PHPMD.MissingImport)
  */
+
+/**
+ * Stores important log messages in database for review.
+ * 
+ * @param string $message The log message.
+ * @param string $level The log level.
+ * @return void
+ */
+function sse_store_log_in_database($message, $level) {
+    // Store last 20 important messages in an option
+    $logs = get_option('sse_error_logs', array());
+    $logs[] = array(
+        'time' => time(),
+        'level' => $level,
+        'message' => $message,
+        'user_id' => get_current_user_id(),
+        'ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown'
+    );
+    
+    // Keep only the most recent 20 logs
+    if (count($logs) > 20) {
+        $logs = array_slice($logs, -20);
+    }
+    
+    update_option('sse_error_logs', $logs);
+}
+
+/**
+ * Outputs log message to WordPress debug log or error_log.
+ * 
+ * @param string $formattedMessage The formatted log message.
+ * @return void
+ */
+function sse_output_log_message($formattedMessage) {
+    // Use WordPress logging (wp_debug_log is available in WP 5.1+)
+    if (function_exists('wp_debug_log')) {
+        wp_debug_log($formattedMessage);
+    }
+}
 
 /**
  * Safely log plugin messages
@@ -62,35 +101,11 @@ function sse_log($message, $level = 'info') {
         return;
     }
 
-    // Use WordPress logging when available, fallback to standard logging
-    if (function_exists('wp_debug_log')) {
-        wp_debug_log($formattedMessage);
-        return;
-    }
-
-    // Fallback for older WordPress versions that don't have wp_debug_log()
-    // Only log during development/debug mode as controlled by WP_DEBUG
-    // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-    error_log($formattedMessage);
+    sse_output_log_message($formattedMessage);
         
     // Store logs in the database (errors and security events to prevent issues)
     if ($level === 'error' || $level === 'security') {
-        // Store last 20 important messages in an option
-        $logs = get_option('sse_error_logs', array());
-        $logs[] = array(
-            'time' => time(),
-            'level' => $level,
-            'message' => $message,
-            'user_id' => get_current_user_id(),
-            'ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown'
-        );
-        
-        // Keep only the most recent 20 logs
-        if (count($logs) > 20) {
-            $logs = array_slice($logs, -20);
-        }
-        
-        update_option('sse_error_logs', $logs);
+        sse_store_log_in_database($message, $level);
     }
 }
 
@@ -503,11 +518,12 @@ function sse_add_file_to_zip( $zip, $fileInfo, $file, $pathname, $relativePath )
     }
     
     if ( $fileInfo->isFile() ) {
-        // Use real path if available, otherwise fall back to pathname
+        // Use real path (getRealPath() must succeed for security)
         if ( false !== $file ) {
             $fileToAdd = $file;
         } else {
-            $fileToAdd = $pathname;
+            sse_log( "Skipping file with unresolvable real path: " . $pathname, 'warning' );
+            return true; // Skip this file but continue processing
         }
         
         if ( ! $zip->addFile( $fileToAdd, $relativePath ) ) {
@@ -714,6 +730,107 @@ function sse_check_path_traversal($normalizedFilePath) {
  * @return string|false Real file path on success, false on failure.
  */
 function sse_resolve_file_path($normalizedFilePath) {
+    // Security: Only allow files with safe extensions
+    if (!sse_validate_file_extension($normalizedFilePath)) {
+        return false;
+    }
+    
+    $realFilePath = realpath($normalizedFilePath);
+    
+    // If realpath fails for the file (doesn't exist), validate parent directory more securely
+    if ($realFilePath === false) {
+        return sse_resolve_nonexistent_file_path($normalizedFilePath);
+    }
+    
+    return $realFilePath;
+}
+
+/**
+ * Validates file extension against allowed list.
+ * 
+ * @param string $filePath The file path to check.
+ * @return bool True if extension is allowed, false otherwise.
+ */
+function sse_validate_file_extension($filePath) {
+    $allowedExtensions = array('zip', 'sql');
+    $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    
+    if (!in_array($fileExtension, $allowedExtensions, true)) {
+        sse_log('Rejected file access - invalid extension: ' . $fileExtension, 'security');
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Validates and resolves parent directory for non-existent files.
+ * 
+ * @param string $normalizedFilePath The normalized file path.
+ * @return string|false Resolved file path or false on failure.
+ */
+function sse_resolve_nonexistent_file_path($normalizedFilePath) {
+    // Security: Get WordPress upload directory as our base validation point
+    $uploadDir = wp_upload_dir();
+    if (!isset($uploadDir['basedir']) || empty($uploadDir['basedir'])) {
+        sse_log('Could not determine WordPress upload directory for validation', 'error');
+        return false;
+    }
+    
+    $wpUploadDir = realpath($uploadDir['basedir']);
+    if ($wpUploadDir === false) {
+        sse_log('Could not resolve WordPress upload directory real path', 'error');
+        return false;
+    }
+    
+    // Security: Only allow paths within WordPress upload directory (strict allowlist)
+    $parentDir = dirname($normalizedFilePath);
+    $filename = basename($normalizedFilePath);
+    
+    // Pre-validate that parent directory path looks safe before any filesystem operations
+    if (strpos($parentDir, '..') !== false || strpos($parentDir, 'wp-config') !== false) {
+        sse_log('Rejected unsafe parent directory path: ' . $parentDir, 'security');
+        return false;
+    }
+    
+    // Security: Ensure parent directory is within WordPress upload directory
+    $normalizedParentDir = wp_normalize_path($parentDir);
+    $normalizedUploadDir = wp_normalize_path($uploadDir['basedir']);
+    
+    if (strpos($normalizedParentDir, $normalizedUploadDir) !== 0) {
+        sse_log('Parent directory not within WordPress upload directory: ' . $parentDir, 'security');
+        return false;
+    }
+    
+    // Now it's safe to check if directory exists (after validation)
+    if ( !is_dir( $parentDir ) || !is_readable( $parentDir ) ) {
+        sse_log('Parent directory validation failed: ' . $parentDir, 'security');
+        return false;
+    }
+    
+    $realParentDir = realpath( $parentDir );
+    if ( $realParentDir === false || strpos($realParentDir, $wpUploadDir) !== 0 ) {
+        sse_log('Parent directory real path validation failed', 'security');
+        return false;
+    }
+    
+    // Sanitize filename to prevent directory traversal
+    $filename = sanitize_file_name( $filename );
+    if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+        sse_log('Filename contains invalid characters: ' . $filename, 'security');
+        return false;
+    }
+    
+    return trailingslashit( $realParentDir ) . $filename;
+}
+
+/**
+ * Resolves real file path, handling non-existent files securely.
+ * 
+ * @param string $normalizedFilePath The normalized file path.
+ * @return string|false Real file path on success, false on failure.
+ */
+function sse_resolve_file_path($normalizedFilePath) {
     // Security: Only allow files with safe extensions and within WordPress directory
     $allowedExtensions = array('zip', 'sql');
     $fileExtension = strtolower(pathinfo($normalizedFilePath, PATHINFO_EXTENSION));
@@ -811,9 +928,10 @@ function sse_validate_filepath($filePath, $baseDir) {
     $realFilePath = sse_resolve_file_path($normalizedFilePath);
     $realBaseDir = realpath($normalizedBaseDir);
     
-    // If base directory realpath fails, use normalized path as fallback
+    // Base directory must be resolvable for security
     if ($realBaseDir === false) {
-        $realBaseDir = $normalizedBaseDir;
+        sse_log('Could not resolve base directory: ' . $normalizedBaseDir, 'security');
+        return false;
     }
     
     // Validate path is within base directory
@@ -918,7 +1036,7 @@ function sse_validate_filename_format($filename) {
  * Validates export file path and directory security.
  *
  * @param string $filename The filename to validate.
- * @return array|WP_Error File path data on success, WP_Error on failure.
+ * @return array|WP_Error Result array with file data or WP_Error on failure.
  */
 function sse_validate_export_file_path($filename) {
     // Get the full path to the file
@@ -1214,16 +1332,12 @@ function sse_set_download_headers( $filename, $filesize ) {
 }
 
 /**
- * Outputs file content for download using WordPress filesystem.
+ * Validates file output security before serving download.
  * 
- * @param string $filepath The validated file path.
- * @param string $filename The filename for logging.
- * @return void
- * @throws Exception If file cannot be served.
+ * @param string $filepath The file path to validate.
+ * @return bool True if file passes security checks, false otherwise.
  */
-function sse_output_file_content( $filepath, $filename ) {
-    global $wpFilesystem;
-    
+function sse_validate_file_output_security($filepath) {
     // Security: Final validation before file output to prevent SSRF
     $allowedExtensions = array('zip', 'sql');
     $fileExtension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
@@ -1243,28 +1357,27 @@ function sse_output_file_content( $filepath, $filename ) {
         wp_die( esc_html__( 'Access denied.', 'Simple-WP-Site-Exporter' ) );
     }
     
-    // Use WordPress filesystem to read and output the file
-    if ( $wpFilesystem && $wpFilesystem->exists( $filepath ) ) {
-        // For large files, prefer chunked reading to avoid memory issues
-        if ( function_exists( 'readfile' ) && is_readable( $filepath ) && is_file( $filepath ) ) {
-            // Security: This readfile() call is safe - file path has been thoroughly validated above
-            // and is restricted to our controlled export directory with allowed extensions only
-            readfile( $filepath ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Security validated export file download
-            sse_log( 'Secure file download served via readfile: ' . $filename, 'info' );
-            exit;
-        }
-        
-        // Fallback: read entire file using WP_Filesystem for smaller files
-        $fileContents = $wpFilesystem->get_contents( $filepath );
-        if ( false !== $fileContents ) {
-            // Security: Output binary file content safely
-            // This is not user-generated content but validated export files (ZIP/SQL only)
-            // Content-Type headers are set to application/octet-stream to prevent XSS
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Security validated binary export file download
-            echo $fileContents;
-            sse_log( 'Secure file download served via WP_Filesystem: ' . $filename, 'info' );
-            exit;
-        }
+    return true;
+}
+
+/**
+ * Outputs file content for download using WordPress filesystem.
+ * 
+ * @param string $filepath The validated file path.
+ * @param string $filename The filename for logging.
+ * @return void
+ * @throws Exception If file cannot be served.
+ */
+function sse_output_file_content( $filepath, $filename ) {
+    // Security: Validate file before output
+    sse_validate_file_output_security($filepath);
+    
+    // Use readfile() for secure file download
+    if ( function_exists( 'readfile' ) && is_readable( $filepath ) && is_file( $filepath ) ) {
+        // Security: This readfile() call is safe - file path has been thoroughly validated
+        readfile( $filepath ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Security validated export file download
+        sse_log( 'Secure file download served via readfile: ' . $filename, 'info' );
+        exit;
     }
     
     sse_log( 'Failed to serve secure file download: ' . $filename, 'error' );
@@ -1326,12 +1439,12 @@ function sse_get_safe_wp_cli_path() {
  */
 function sse_validate_wp_cli_path($wpCliPath) {
     if ( empty( $wpCliPath ) ) {
-        return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI not found on this server.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI not found on this server.', 'Simple-WP-Site-Exporter' ) );
     }
     
     // Validate path format (must be absolute path)
     if ( strpos( $wpCliPath, '/' ) !== 0 && strpos( $wpCliPath, '\\' ) !== 0 ) {
-        return new WP_Error( 'wp_cli_not_absolute', __( 'WP-CLI path is not absolute.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_not_absolute', __( 'WP-CLI path is not absolute.', 'Simple-WP-Site-Exporter' ) );
     }
     
     return true;
@@ -1347,16 +1460,16 @@ function sse_validate_wp_cli_security($wpCliPath) {
     // Check if path looks suspicious (basic security check)
     if ( strpos( $wpCliPath, ';' ) !== false || strpos( $wpCliPath, '|' ) !== false || 
          strpos( $wpCliPath, '&' ) !== false || strpos( $wpCliPath, '$' ) !== false ) {
-        return new WP_Error( 'wp_cli_suspicious', __( 'Suspicious characters detected in WP-CLI path.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_suspicious', __( 'Suspicious characters detected in WP-CLI path.', 'Simple-WP-Site-Exporter' ) );
     }
     
     // Check if file exists and is executable
     if ( ! file_exists( $wpCliPath ) ) {
-        return new WP_Error( 'wp_cli_not_exists', __( 'WP-CLI executable not found at detected path.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_not_exists', __( 'WP-CLI executable not found at detected path.', 'Simple-WP-Site-Exporter' ) );
     }
     
     if ( ! is_executable( $wpCliPath ) ) {
-        return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI file is not executable.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI file is not executable.', 'Simple-WP-Site-Exporter' ) );
     }
     
     return true;
@@ -1372,7 +1485,7 @@ function sse_verify_wp_cli_binary($wpCliPath) {
     // Additional security: verify it's actually WP-CLI by running --version
     $versionCheck = shell_exec( escapeshellarg( $wpCliPath ) . ' --version 2>/dev/null' );
     if ( empty( $versionCheck ) || strpos( $versionCheck, 'WP-CLI' ) === false ) {
-        return new WP_Error( 'wp_cli_invalid_binary', __( 'Detected file is not a valid WP-CLI executable.', 'simple-wp-site-exporter' ) );
+        return new WP_Error( 'wp_cli_invalid_binary', __( 'Detected file is not a valid WP-CLI executable.', 'Simple-WP-Site-Exporter' ) );
     }
     
     return true;
