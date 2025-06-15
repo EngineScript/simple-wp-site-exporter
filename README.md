@@ -6,7 +6,7 @@
 [![PHP Compatible](https://img.shields.io/badge/PHP-7.4%2B-purple.svg?logo=php)](https://www.php.net/)
 
 ## Current Version
-[![Version](https://img.shields.io/badge/Version-1.6.9-orange.svg?logo=github)](https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-wp-site-exporter-1.6.9.zip)
+[![Version](https://img.shields.io/badge/Version-1.7.0-orange.svg?logo=github)](https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-wp-site-exporter-1.7.0.zip)
 
 ## Description
 A WordPress plugin that exports your entire site, including files and database, as a secure, downloadable ZIP archive.

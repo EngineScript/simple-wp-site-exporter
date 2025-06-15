@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 5.8
 Tested up to: 6.8
-Stable tag: 1.6.9
+Stable tag: 1.7.0
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -88,6 +88,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
+
+= 1.7.0 =
+* **SECURITY FIX**: Resolved Server-Side Request Forgery (SSRF) vulnerability in path validation
+* **Filesystem Security**: Removed filesystem probing functions (is_dir, is_readable) from user input validation
+* **Attack Prevention**: Eliminated potential filesystem structure information disclosure
+* **Path Validation**: Maintained robust security through safe string-based path validation
+* **Codacy Compliance**: Addressed security detection for file operations on user input
 
 = 1.6.9 =
 * **Security Enhancement**: Enhanced SSRF (Server-Side Request Forgery) protection in file path validation

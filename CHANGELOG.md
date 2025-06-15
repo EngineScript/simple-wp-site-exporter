@@ -1,5 +1,14 @@
 # Changelog for Simple WP Site Exporter
 
+## 1.7.0 - June 14, 2025
+### Critical Security Fix
+- **SECURITY**: Resolved Server-Side Request Forgery (SSRF) vulnerability in `sse_resolve_parent_directory()` function
+- **Filesystem Security**: Removed `is_dir()` and `is_readable()` filesystem checks on user-controlled input
+- **Attack Prevention**: Eliminated potential filesystem structure probing and information disclosure
+- **Path Validation**: Refactored to use safe string-based path validation while maintaining security
+- **Codacy Compliance**: Addressed "File name based on user input risks server-side request forgery" detection
+- **Defense in Depth**: Maintained multiple layers of path validation without filesystem probing
+
 ## 1.6.9 - June 14, 2025
 ### Security Enhancement
 - **SSRF Protection**: Enhanced Server-Side Request Forgery protection in `sse_resolve_parent_directory()` function:

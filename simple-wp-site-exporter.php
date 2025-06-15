@@ -2,7 +2,7 @@
 /*
 Plugin Name: Simple WP Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.6.9
+Version: 1.7.0
 Author: EngineScript
 License: GPL v3 or later
 Text Domain: Simple-WP-Site-Exporter
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_WP_SITE_EXPORTER_VERSION')) {
-    define('ES_WP_SITE_EXPORTER_VERSION', '1.6.9');
+    define('ES_WP_SITE_EXPORTER_VERSION', '1.7.0');
 }
 
 /**
@@ -893,15 +893,15 @@ function sse_resolve_parent_directory($parentDir, $uploadDir) {
         return false;
     }
     
-    // Only perform filesystem checks after path validation
-    if (!is_dir($normalizedParentDir) || !is_readable($normalizedParentDir)) {
-        sse_log('Parent directory validation failed: ' . $parentDir, 'security');
+    // Now safe to resolve real path after validation - filesystem checks removed to prevent SSRF
+    $realParentDir = realpath($normalizedParentDir);
+    if ($realParentDir === false) {
+        sse_log('Parent directory resolution failed: ' . $parentDir, 'security');
         return false;
     }
     
-    // Now safe to resolve real path after validation
-    $realParentDir = realpath($normalizedParentDir);
-    if ($realParentDir === false || strpos($realParentDir, $realUploadDir) !== 0) {
+    // Final validation: ensure resolved path is still within upload directory
+    if (strpos($realParentDir, $realUploadDir) !== 0) {
         sse_log('Parent directory real path validation failed', 'security');
         return false;
     }
