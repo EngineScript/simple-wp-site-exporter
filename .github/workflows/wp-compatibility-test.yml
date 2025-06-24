@@ -188,14 +188,9 @@ jobs:
 
       - name: Run PHPMD
         run: |
-          # Use WordPress-specific PHPMD configuration to suppress WordPress-specific patterns
-          if [ -f phpmd-wordpress.xml ]; then
-            echo "Using WordPress-specific PHPMD configuration..."
-            phpmd . text phpmd-wordpress.xml --exclude vendor,tests,node_modules
-          else
-            echo "WordPress PHPMD config not found, using standard rules..."
-            phpmd . text cleancode,codesize,controversial,design,naming,unusedcode --exclude vendor,tests,node_modules
-          fi
+          # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
+          echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
+          phpmd simple-wp-site-exporter.php text phpmd-wordpress.xml
 
       - name: Create issue on PHPMD failure
         if: ${{ failure() }}
