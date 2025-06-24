@@ -196,7 +196,7 @@ function sse_exporter_page_html() {
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+        <h1><?php echo esc_html( get_admin_page_title() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() used for proper escaping ?></h1>
         <p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'Simple-WP-Site-Exporter' ); ?></p>
         <p><strong><?php esc_html_e( 'Warning:', 'Simple-WP-Site-Exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'Simple-WP-Site-Exporter' ); ?></p>
         <p style="margin-top: 15px;">
@@ -273,12 +273,12 @@ function sse_handle_export() {
  * @return bool True if request is valid, false otherwise.
  */
 function sse_validate_export_request() { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-    $post_action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : '';
+    $post_action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification happens below
     if ( 'sse_export_site' !== $post_action ) {
         return false;
     }
 
-    $post_nonce = isset( $_POST['sse_export_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ) : '';
+    $post_nonce = isset( $_POST['sse_export_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- This line retrieves nonce for verification
     if ( ! $post_nonce || ! wp_verify_nonce( $post_nonce, 'sse_export_action' ) ) {
         wp_die( esc_html__( 'Nonce verification failed! Please try again.', 'Simple-WP-Site-Exporter' ), 403 );
     }
@@ -344,13 +344,13 @@ function sse_setup_export_directories() {
  */
 function sse_create_index_file( $export_dir ) {
     $index_file_path = trailingslashit( $export_dir ) . 'index.php';
-    if ( file_exists( $index_file_path ) ) {
+    if ( file_exists( $index_file_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Checking controlled export directory
         return;
     }
 
     global $wp_filesystem;
     if ( ! $wp_filesystem ) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php'; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- WordPress core filesystem API
         if ( ! WP_Filesystem() ) {
             sse_log('Failed to initialize WordPress filesystem API', 'error');
             return;
@@ -393,14 +393,14 @@ function sse_export_database( $export_dir ) {
 
     $command = sprintf(
         '%s db export %s --path=%s --allow-root',
-        escapeshellarg($wp_cli_path),
-        escapeshellarg($db_filepath),
-        escapeshellarg(ABSPATH)
+        escapeshellarg($wp_cli_path), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg($db_filepath), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg(ABSPATH) // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
     );
     
     $output = shell_exec($command . ' 2>&1');
     
-    if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) {
+    if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
         $error_message = ! empty($output) ? trim($output) : 'WP-CLI command failed silently.';
         return new WP_Error( 'db_export_failed', $error_message );
     }
