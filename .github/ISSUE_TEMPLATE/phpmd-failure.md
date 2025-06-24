@@ -29,7 +29,7 @@ This issue has been automatically created because the Simple WP Site Exporter pl
 5. **Unused Code**: Dead code that should be removed
 
 #### WordPress-Specific Configuration
-This project uses a WordPress-specific PHPMD configuration (`phpmd-wordpress.xml`) that suppresses WordPress-standard patterns:
+This project uses a WordPress-specific PHPMD configuration (`phpmd.xml`) that suppresses WordPress-standard patterns:
 - **Superglobals**: WordPress safely uses `$_GET`, `$_POST` with proper sanitization
 - **Exit Expressions**: Required for file downloads and security redirects
 - **Missing Imports**: WordPress core classes like `WP_Error` are auto-loaded
@@ -60,13 +60,13 @@ This project uses a WordPress-specific PHPMD configuration (`phpmd-wordpress.xml
 composer install
 
 # Run PHPMD with WordPress-specific configuration (recommended)
-./vendor/bin/phpmd simple-wp-site-exporter.php text phpmd-wordpress.xml
+./vendor/bin/phpmd simple-wp-site-exporter.php text phpmd.xml
 
 # Run PHPMD with standard rules (may show WordPress-specific warnings)
 ./vendor/bin/phpmd simple-wp-site-exporter.php text cleancode,codesize,design,naming,unusedcode
 
 # Generate HTML report with WordPress config
-./vendor/bin/phpmd simple-wp-site-exporter.php html phpmd-wordpress.xml --reportfile phpmd-report.html
+./vendor/bin/phpmd simple-wp-site-exporter.php html phpmd.xml --reportfile phpmd-report.html
 
 # Check specific rules with high priority
 ./vendor/bin/phpmd simple-wp-site-exporter.php text codesize --minimumpriority 1

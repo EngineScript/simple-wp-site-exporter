@@ -13,7 +13,7 @@ This document summarizes all the compliance improvements made to ensure the Simp
 - **Missing Imports**: Properly documented WordPress core class usage
 
 ### WordPress-Specific PHPMD Configuration
-- Created `phpmd-wordpress.xml` custom ruleset
+- Created `phpmd.xml` custom ruleset
 - Suppresses false positives for WordPress patterns:
   - Superglobals usage (with proper sanitization)
   - WordPress core class imports (WP_Error, etc.)
@@ -94,7 +94,7 @@ Broke down complex functions into smaller, focused units:
 - `readme.txt` - Version and changelog updates
 
 ### Configuration Files
-- `phpmd-wordpress.xml` - Custom PHPMD ruleset for WordPress
+- `phpmd.xml` - Custom PHPMD ruleset for WordPress
 - `.github/workflows/wp-compatibility-test.yml` - Updated to use custom PHPMD config
 
 ### Documentation

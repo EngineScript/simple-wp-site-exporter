@@ -190,7 +190,7 @@ jobs:
         run: |
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
-          phpmd simple-wp-site-exporter.php text phpmd-wordpress.xml
+          phpmd simple-wp-site-exporter.php text phpmd.xml
 
       - name: Create issue on PHPMD failure
         if: ${{ failure() }}
