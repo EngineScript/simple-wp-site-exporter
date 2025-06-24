@@ -447,7 +447,7 @@ function sse_create_site_archive( $export_paths, $database_file ) {
         return new WP_Error( 'zip_create_failed', sprintf( 
             /* translators: %s: filename */
             __( 'Could not create zip file at %s', 'Simple-WP-Site-Exporter' ), 
-            basename($zip_filepath) 
+            basename($zip_filepath) // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename -- Safe usage: $zip_filepath is constructed from controlled inputs (WordPress upload dir + sanitized filename), not user input
         ) );
     }
 

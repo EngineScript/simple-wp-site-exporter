@@ -145,12 +145,8 @@
     </rule>
 
     <!-- WordPress.PHP.YodaConditions -->
-    <rule ref="WordPress.PHP.YodaConditions">
-        <!-- Allow non-Yoda conditions for better readability in some contexts -->
-        <properties>
-            <property name="allow" value="comparison,assignment"/>
-        </properties>
-    </rule>
+    <!-- Note: Yoda conditions are required by WordPress standards -->
+    <rule ref="WordPress.PHP.YodaConditions"/>
 
     <!-- Generic.Commenting.Fixme -->
     <rule ref="Generic.Commenting.Fixme">
