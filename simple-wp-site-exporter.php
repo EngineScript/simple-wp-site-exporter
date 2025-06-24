@@ -1,16 +1,16 @@
 <?php
 /*
-Plugin Name: Simple WP Site Exporter
-Description: Exports the site files and database as a zip archive.
-Version: 1.7.0
-Author: EngineScript
-License: GPL v3 or later
-Text Domain: Simple-WP-Site-Exporter
+    Plugin Name: Simple WP Site Exporter
+    Description: Exports the site files and database as a zip archive.
+    Version: 1.7.0
+    Author: EngineScript
+    License: GPL v3 or later
+    Text Domain: Simple-WP-Site-Exporter
 */
 
 // Prevent direct access. Note: Using return here instead of exit.
 if ( ! defined( 'ABSPATH' ) ) {
-    return; // Prevent direct access
+	return; // Prevent direct access.
 }
 
 // Define plugin version.
@@ -42,17 +42,19 @@ if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
  *
  * @return string Client IP address or 'unknown' if not available.
  */
-function sse_get_client_ip() {
+function sse_get_client_ip()
+{
 	// WordPress-style IP detection with validation.
-	$ip = 'unknown';
+	$client_ip = 'unknown';
 	
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- $_SERVER['REMOTE_ADDR'] is safe for IP logging when properly sanitized
 	if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-		$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+		$client_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 	}
 	
 	// Basic IP validation.
-	if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-		return $ip;
+	if ( filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
+		return $client_ip;
 	}
 	
 	return 'unknown';
@@ -67,7 +69,8 @@ function sse_get_client_ip() {
  * @param string $level   The log level.
  * @return void
  */
-function sse_store_log_in_database( $message, $level ) {
+function sse_store_log_in_database( $message, $level )
+{
 	// Store last 20 important messages in an option.
 	$logs   = get_option( 'sse_error_logs', [] );
 	$logs[] = [
@@ -85,7 +88,7 @@ function sse_store_log_in_database( $message, $level ) {
 
 	update_option( 'sse_error_logs', $logs );
 
-} //end sse_store_log_in_database()
+} //end sse_store_log_in_database() //end sse_store_log_in_database()
 
 
 /**
@@ -94,7 +97,8 @@ function sse_store_log_in_database( $message, $level ) {
  * @param string $formatted_message The formatted log message.
  * @return void
  */
-function sse_output_log_message( $formatted_message ) {
+function sse_output_log_message( $formatted_message )
+{
 	// Use WordPress logging (wp_debug_log is available in WP 5.1+).
 	if ( function_exists( 'wp_debug_log' ) ) {
 		wp_debug_log( $formatted_message );
@@ -110,7 +114,8 @@ function sse_output_log_message( $formatted_message ) {
  * @param string $level   The log level (error, warning, info).
  * @return void
  */
-function sse_log( $message, $level = 'info' ) {
+function sse_log( $message, $level = 'info' )
+{
 	// Check if WP_DEBUG is enabled.
 	if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 		return;
@@ -141,10 +146,11 @@ function sse_log( $message, $level = 'info' ) {
 
 /**
  * Safely get the PHP execution time limit
- * 
+ *
  * @return int Current PHP execution time limit in seconds
  */
-function sse_get_execution_time_limit() {
+function sse_get_execution_time_limit()
+{
     // Get the current execution time limit
     $max_exec_time = ini_get('max_execution_time');
     
@@ -165,10 +171,12 @@ function sse_get_execution_time_limit() {
     }
     
     return (int)$max_exec_time;
-}
+
+} //end sse_get_execution_time_limit()
 
 // --- Admin Menu ---
-function sse_admin_menu() {
+function sse_admin_menu()
+{
     add_management_page(
         esc_html__( 'Simple WP Site Exporter', 'Simple-WP-Site-Exporter' ), // Escaped title
         esc_html__( 'Site Exporter', 'Simple-WP-Site-Exporter' ),       // Escaped menu title
@@ -180,7 +188,8 @@ function sse_admin_menu() {
 add_action( 'admin_menu', 'sse_admin_menu' );
 
 // --- Exporter Page HTML ---
-function sse_exporter_page_html() {
+function sse_exporter_page_html()
+{
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_die( esc_html__( 'You do not have permission to view this page.', 'Simple-WP-Site-Exporter' ), 403 );
     }
@@ -270,7 +279,8 @@ function sse_handle_export() {
  *
  * @return bool True if request is valid, false otherwise.
  */
-function sse_validate_export_request() { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+function sse_validate_export_request()
+{ // phpcs:ignore WordPress.Security.NonceVerification.Missing
 	$post_action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : '';
 	if ( 'sse_export_site' !== $post_action ) {
 		return false;
@@ -295,7 +305,8 @@ function sse_validate_export_request() { // phpcs:ignore WordPress.Security.Nonc
  *
  * @return void
  */
-function sse_prepare_execution_environment() {
+function sse_prepare_execution_environment()
+{
 	$max_exec_time    = sse_get_execution_time_limit();
 	$target_exec_time = 1800; // 30 minutes in seconds.
 
@@ -555,12 +566,12 @@ function sse_add_file_to_zip( $zip, $file_info, $file, $pathname, $relative_path
     
     if ( $file_info->isFile() ) {
         // Use real path (getRealPath() must succeed for security)
-        if ( false !== $file ) {
-            $file_to_add = $file;
-        } else {
+        if ( false === $file ) {
             sse_log( "Skipping file with unresolvable real path: " . $pathname, 'warning' );
             return true; // Skip this file but continue processing
         }
+        
+        $file_to_add = $file;
         
         if ( ! $zip->addFile( $file_to_add, $relative_path ) ) {
             sse_log( "Failed to add file to zip: " . $relative_path . " (Source: " . $file_to_add . ")", 'error' );
@@ -893,10 +904,10 @@ function sse_validate_parent_directory_safety($parent_dir, $upload_dir) {
     }
     
     // Ensure parent directory is within WordPress upload directory
-    $normalized_parent_dir = wp_normalize_path($parent_dir);
-    $normalized_upload_dir = wp_normalize_path($upload_dir);
+    $norm_parent_dir = wp_normalize_path($parent_dir);
+    $norm_upload_dir = wp_normalize_path($upload_dir);
     
-    if (strpos($normalized_parent_dir, $normalized_upload_dir) !== 0) {
+    if (strpos($norm_parent_dir, $norm_upload_dir) !== 0) {
         sse_log('Parent directory not within WordPress upload directory: ' . $parent_dir, 'security');
         return false;
     }
@@ -913,24 +924,24 @@ function sse_validate_parent_directory_safety($parent_dir, $upload_dir) {
  */
 function sse_resolve_parent_directory($parent_dir, $upload_dir) {
     // Normalize and validate upload directory first
-    $normalized_upload_dir = wp_normalize_path($upload_dir);
-    $real_upload_dir = realpath($normalized_upload_dir);
+    $norm_upload_dir = wp_normalize_path($upload_dir);
+    $real_upload_dir = realpath($norm_upload_dir);
     if ($real_upload_dir === false) {
         sse_log('Upload directory cannot be resolved: ' . $upload_dir, 'security');
         return false;
     }
     
     // Normalize parent directory and perform basic validation
-    $normalized_parent_dir = wp_normalize_path($parent_dir);
+    $norm_parent_dir = wp_normalize_path($parent_dir);
     
     // Validate that normalized parent dir starts with normalized upload dir (before realpath)
-    if (strpos($normalized_parent_dir, $normalized_upload_dir) !== 0) {
+    if (strpos($norm_parent_dir, $norm_upload_dir) !== 0) {
         sse_log('Parent directory not within normalized upload directory: ' . $parent_dir, 'security');
         return false;
     }
     
     // Now safe to resolve real path after validation - filesystem checks removed to prevent SSRF
-    $real_parent_dir = realpath($normalized_parent_dir);
+    $real_parent_dir = realpath($norm_parent_dir);
     if ($real_parent_dir === false) {
         sse_log('Parent directory resolution failed: ' . $parent_dir, 'security');
         return false;
