@@ -45,7 +45,7 @@ if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
 function sse_get_client_ip() {
     // WordPress-style IP detection with validation.
     $client_ip = 'unknown';
-    
+
     // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- $_SERVER['REMOTE_ADDR'] is safe for IP logging when properly sanitized
     if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
         $client_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
@@ -165,11 +165,16 @@ function sse_get_execution_time_limit() {
         return 30;
     }
     
-    return (int)$max_exec_time;
+    return (int) $max_exec_time;
 
 } //end sse_get_execution_time_limit()
 
 // --- Admin Menu ---
+/**
+ * Adds the Site Exporter page to the WordPress admin menu.
+ *
+ * @return void
+ */
 function sse_admin_menu() {
     add_management_page(
         esc_html__( 'Simple WP Site Exporter', 'Simple-WP-Site-Exporter' ), // Escaped title
@@ -182,6 +187,11 @@ function sse_admin_menu() {
 add_action( 'admin_menu', 'sse_admin_menu' );
 
 // --- Exporter Page HTML ---
+/**
+ * Renders the exporter page HTML interface.
+ *
+ * @return void
+ */
 function sse_exporter_page_html() {
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_die( esc_html__( 'You do not have permission to view this page.', 'Simple-WP-Site-Exporter' ), 403 );
@@ -203,7 +213,7 @@ function sse_exporter_page_html() {
             <?php
             // printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
             printf(
-                /* translators: %s: directory path */
+                // translators: %s: directory path
                 esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'Simple-WP-Site-Exporter' ),
                 '<code>' . esc_html( $display_path ) . '</code>'
             );
@@ -236,6 +246,8 @@ function sse_exporter_page_html() {
 // --- Handle Export Action ---
 /**
  * Handles the site export process when the form is submitted.
+ *
+ * @return void
  */
 function sse_handle_export() {
     if ( ! sse_validate_export_request() ) {

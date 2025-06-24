@@ -140,16 +140,10 @@ jobs:
           # Verify installation and show available standards
           phpcs -i
 
-      - name: Run PHPCS
+      - name: Run PHPCS with custom configuration
         run: |
-          # Use WordPress-Core standard which has fewer dependencies
-          phpcs --standard=WordPress-Core --extensions=php --ignore=vendor,tests,node_modules . || exit 0
-          
-          # If WordPress-Core fails, try PSR12 as fallback
-          if [ $? -ne 0 ]; then
-            echo "WordPress-Core standard failed, trying PSR12..."
-            phpcs --standard=PSR12 --extensions=php --ignore=vendor,tests,node_modules .
-          fi
+          # Use the project's phpcs.xml configuration
+          phpcs --standard=phpcs.xml --report=summary --report-width=120 .
 
       - name: Create issue on PHPCS failure
         if: ${{ failure() }}
