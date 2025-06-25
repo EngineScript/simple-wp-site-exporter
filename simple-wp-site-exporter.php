@@ -410,7 +410,8 @@ function sse_export_database( $export_dir ) {
         escapeshellarg(ABSPATH) // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
     );
     
-    $output = shell_exec($command . ' 2>&1');
+    $output = shell_exec($command . ' 2>&1'); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
+    
     
     if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
         $error_message = ! empty($output) ? trim($output) : 'WP-CLI command failed silently.';
@@ -1509,7 +1510,7 @@ function sse_serve_file_download( $fileData ) {
  */
 function sse_get_safe_wp_cli_path() {
     // First try to get WP-CLI path
-    $wp_cli_path = trim( shell_exec( 'which wp 2>/dev/null' ) );
+    $wp_cli_path = trim( shell_exec( 'which wp 2>/dev/null' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI path discovery: uses system 'which' command with constant parameters
     
     $basic_validation = sse_validate_wp_cli_path($wp_cli_path);
     if (is_wp_error($basic_validation)) {
@@ -1581,7 +1582,7 @@ function sse_validate_wp_cli_security($wp_cli_path) {
  */
 function sse_verify_wp_cli_binary($wp_cli_path) {
     // Additional security: verify it's actually WP-CLI by running --version
-    $version_check = shell_exec( escapeshellarg( $wp_cli_path ) . ' --version 2>/dev/null' );
+    $version_check = shell_exec( escapeshellarg( $wp_cli_path ) . ' --version 2>/dev/null' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI binary verification: path is validated and escaped with escapeshellarg()
     if ( empty( $version_check ) || strpos( $version_check, 'WP-CLI' ) === false ) {
         return new WP_Error( 'wp_cli_invalid_binary', __( 'Detected file is not a valid WP-CLI executable.', 'Simple-WP-Site-Exporter' ) );
     }
