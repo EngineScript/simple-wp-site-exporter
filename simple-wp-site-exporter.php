@@ -19,6 +19,20 @@ if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
 }
 
 /**
+ * Load plugin textdomain for internationalization.
+ *
+ * @return void
+ */
+function sse_load_textdomain() {
+    load_plugin_textdomain(
+        'Simple-WP-Site-Exporter',
+        false,
+        dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+    );
+}
+add_action( 'plugins_loaded', 'sse_load_textdomain' );
+
+/**
  * WordPress Core Classes Documentation
  *
  * This plugin uses WordPress core classes which are automatically available

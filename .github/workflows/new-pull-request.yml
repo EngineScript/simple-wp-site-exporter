@@ -22,7 +22,16 @@ jobs:
           body: |
             Thanks for contributing to Simple WP Site Exporter! 🎉
 
-
-            We'll review your PR soon!
-          # Token is implicitly provided with the defined permissions
-          # token: ${{ secrets.GITHUB_TOKEN }} # This line can be removed
+            **Before we review:**
+            - [ ] Have you tested your changes with WordPress 6.5+?
+            - [ ] Are your changes compatible with PHP 7.4+?
+            - [ ] Have you followed WordPress coding standards?
+            - [ ] Did you update the CHANGELOG.md if needed?
+            
+            **Security Reminder:**
+            This plugin handles sensitive site databases, so please ensure:
+            - All user inputs are properly sanitized
+            - All outputs are properly escaped
+            - No security vulnerabilities are introduced
+            
+            We'll review your PR soon! 🚀

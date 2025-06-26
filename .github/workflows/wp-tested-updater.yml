@@ -1,4 +1,3 @@
-
 # This workflow automatically monitors WordPress version compatibility for the plugin.
 # It checks if the "Tested up to" version in readme.txt matches the latest WordPress release.
 # The workflow runs weekly and on pushes to main branch to ensure compatibility information
