@@ -43,19 +43,19 @@ You must read files completely and thoroughly, with a minimum of 1000 lines per 
 ## WordPress Coding Standards
 
 - Use WordPress coding standards for PHP, JavaScript, and CSS:
-- [PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/)
-- [JavaScript Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/)
-- [CSS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/css/)
+  - [PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/)
+  - [JavaScript Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/)
+  - [CSS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/css/)
 - Use WordPress coding standards for HTML and template files:
-- [HTML Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/html/)
+  - [HTML Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/html/)
 - Use WordPress coding standards for accessibility:
-- [Accessibility Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/accessibility/)
+  - [Accessibility Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/accessibility/)
 - Use WordPress Gutenberg Project Coding Guidelines:
-- [Gutenberg Project Coding Guidelines](https://developer.wordpress.org/block-editor/contributors/code/coding-guidelines/)
+  - [Gutenberg Project Coding Guidelines](https://developer.wordpress.org/block-editor/contributors/code/coding-guidelines/)
 - Use WordPress JavaScript Documentation Standards:
-- [JavaScript Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/javascript/)
+  - [JavaScript Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/javascript/)
 - Use WordPress PHP Documentation Standards:
-- [PHP Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/)
+  - [PHP Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/)
 
 ## Supported Versions
 
@@ -80,10 +80,13 @@ You must read files completely and thoroughly, with a minimum of 1000 lines per 
   - documentation files (e.g., docs/README.md)
 - Use semantic versioning (MAJOR.MINOR.PATCH) for all releases.
 - Always add new information to the changelog when we make changes to the codebase, even if a new version is not released.
-- When adding new information to the changelog, changes will first be added to an "Unreleased" section at the top of the changelog file, and then later moved to a new version section when a new version is released.
+- When adding new information to the changelogs, changes will first be added to an "Unreleased" section at the top of the changelog file, and then later moved to a new version section when a new version is released. Be sure to follow this pattern and do not skip any of the changelog files.
 - Do not automatically update the version number in the plugin header or other files. Instead, provide a clear and concise change summary that includes the version number and a brief description of the changes made.
-- When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, changelog.txt, and changelog.md even when a new version is not released.
+- When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, changelog.txt, and changelog.md, even when a new version is not released.
+- Please do not skip these locations, as all of the changelog files must be in sync with each other, and the version numbers must be consistent across all files.
 - I will instruct you when to update the version number, and you should not do this automatically. Always ask for confirmation before updating the version number.
+- When the version number is updated, ensure that the new version number is reflected in all relevant files, including the plugin header, changelog files, and documentation files.
+- WHen the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
 
 # General Coding Standards
 
