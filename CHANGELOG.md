@@ -1,13 +1,14 @@
 # Changelog for Simple WP Site Exporter
 
 ## Unreleased
+### Documentation Workflow Updates
+- **Version Control**: Removed `changelog.txt` file to streamline documentation; maintaining only `readme.txt` (WordPress.org) and `CHANGELOG.md` (developers)
 
 ## 1.8.0 - June 26, 2025
 ### WordPress Standards Compliance Enhancement
 - **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
 - **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  
 - **Language Files**: Created `languages/simple-wp-site-exporter.pot` with all translatable strings
-- **Version Control**: Added `changelog.txt` file as specified in copilot instructions for complete version documentation
 - **Documentation Consistency**: Updated README.md, readme.txt, and phpcs.xml to reflect WordPress 6.5+ baseline
 - **Workflow Updates**: Modified compatibility testing to use WordPress 6.5+ as minimum test version
 - **Standards Alignment**: Ensured all code, workflows, and documentation strictly follow WordPress coding standards

@@ -89,6 +89,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
+= Unreleased =
+* **Documentation Workflow**: Removed changelog.txt file to streamline documentation process
+* **Version Control**: Maintaining only readme.txt (WordPress.org) and CHANGELOG.md (developers) for changelog management
+
 = 1.7.0 =
 * **SECURITY FIX**: Resolved Server-Side Request Forgery (SSRF) vulnerability in path validation
 * **Filesystem Security**: Removed filesystem probing functions (is_dir, is_readable) from user input validation

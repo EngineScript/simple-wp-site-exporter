@@ -21,7 +21,7 @@ Change summaries should never be created in the form of new .md files.
 
 # Code Analysis and Reading Standards
 
-You must read files completely and thoroughly, with a minimum of 1000 lines per read operation when analyzing code. Never truncate files or stop reading at arbitrary limits like 50 or 100 lines - this lazy approach provides incomplete context and leads to poor suggestions. When you encounter any file, read it from the very first line to the absolute last line, processing all functions, classes, variables, imports, exports, and code structures. Your analysis must be based on the complete file content, not partial snapshots. Always read at least 1000 lines minimum per read operation, and if the file is larger, continue reading until you've processed the entire file. Do not use phrases like "showing first X lines" or "truncated for brevity" or "rest of file omitted" - these indicate lazy, incomplete analysis. Instead, demonstrate that you've read the complete file by referencing specific sections throughout the entire codebase, understanding the full context of how functions interact, how variables are used across the entire file, and how the complete code structure works together. Your suggestions and recommendations must reflect knowledge of the entire file, not just the beginning portions. Take the time to read everything properly because thoroughness and accuracy based on complete file knowledge is infinitely more valuable than quick, incomplete reviews that miss critical context and lead to incorrect suggestions.
+You must read files completely and thoroughly, with a minimum of 1500 lines per read operation when analyzing code. Never truncate files or stop reading at arbitrary limits like 50 or 100 lines - this lazy approach provides incomplete context and leads to poor suggestions. When you encounter any file, read it from the very first line to the absolute last line, processing all functions, classes, variables, imports, exports, and code structures. Your analysis must be based on the complete file content, not partial snapshots. Always read at least 1000 lines minimum per read operation, and if the file is larger, continue reading until you've processed the entire file. Do not use phrases like "showing first X lines" or "truncated for brevity" or "rest of file omitted" - these indicate lazy, incomplete analysis. Instead, demonstrate that you've read the complete file by referencing specific sections throughout the entire codebase, understanding the full context of how functions interact, how variables are used across the entire file, and how the complete code structure works together. Your suggestions and recommendations must reflect knowledge of the entire file, not just the beginning portions. Take the time to read everything properly because thoroughness and accuracy based on complete file knowledge is infinitely more valuable than quick, incomplete reviews that miss critical context and lead to incorrect suggestions.
 
 # Coding Standards and Preferences
 
@@ -70,8 +70,8 @@ You must read files completely and thoroughly, with a minimum of 1000 lines per 
 - Release versions, software tested versions, and minimum software supported versions for this project are listed in numerous places, when updating the release version for this project, ensure that all of these locations are updated accordingly.
 - Version Locations:
   - README.md
-  - changelog.txt
-  - changelog.md
+  - readme.txt (for WordPress.org)
+  - CHANGELOG.md
   - plugin header (in the main plugin file)
   - plugin section: "// Define plugin constants"
   - plugin *.pot files (e.g., languages/plugin-name.pot)
@@ -82,8 +82,9 @@ You must read files completely and thoroughly, with a minimum of 1000 lines per 
 - Always add new information to the changelog when we make changes to the codebase, even if a new version is not released.
 - When adding new information to the changelogs, changes will first be added to an "Unreleased" section at the top of the changelog file, and then later moved to a new version section when a new version is released. Be sure to follow this pattern and do not skip any of the changelog files.
 - Do not automatically update the version number in the plugin header or other files. Instead, provide a clear and concise change summary that includes the version number and a brief description of the changes made.
-- When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, changelog.txt, and changelog.md, even when a new version is not released.
-- Please do not skip these locations, as all of the changelog files must be in sync with each other, and the version numbers must be consistent across all files.
+- When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, and CHANGELOG.md, even when a new version is not released.
+- Note: changelog.txt has been removed from this project. Only maintain readme.txt (for WordPress.org) and CHANGELOG.md (for developers).
+- Please do not skip these locations, as the changelog files must be in sync with each other, and the version numbers must be consistent across all files.
 - I will instruct you when to update the version number, and you should not do this automatically. Always ask for confirmation before updating the version number.
 - When the version number is updated, ensure that the new version number is reflected in all relevant files, including the plugin header, changelog files, and documentation files.
 - WHen the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
