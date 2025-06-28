@@ -1232,27 +1232,27 @@ function sse_validate_file_deletion($filename) {
  * @return void
  */
 function sse_handle_secure_download() { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( ! isset( $_GET['sse_secure_download'] ) || ! isset( $_GET['sse_download_nonce'] ) ) {
-		return;
-	}
+    if ( ! isset( $_GET['sse_secure_download'] ) || ! isset( $_GET['sse_download_nonce'] ) ) {
+        return;
+    }
 
-	// Verify nonce.
-	$nonce = sanitize_text_field( wp_unslash( $_GET['sse_download_nonce'] ) );
-	if ( ! wp_verify_nonce( $nonce, 'sse_secure_download' ) ) {
-		wp_die( esc_html__( 'Security check failed. Please try again.', 'Simple-WP-Site-Exporter' ), 403 );
-	}
+    // Verify nonce.
+    $nonce = sanitize_text_field( wp_unslash( $_GET['sse_download_nonce'] ) );
+    if ( ! wp_verify_nonce( $nonce, 'sse_secure_download' ) ) {
+        wp_die( esc_html__( 'Security check failed. Please try again.', 'Simple-WP-Site-Exporter' ), 403 );
+    }
 
-	// Verify user capabilities.
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to download export files.', 'Simple-WP-Site-Exporter' ), 403 );
-	}
+    // Verify user capabilities.
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( esc_html__( 'You do not have permission to download export files.', 'Simple-WP-Site-Exporter' ), 403 );
+    }
 
-	$filename   = sanitize_file_name( wp_unslash( $_GET['sse_secure_download'] ) );
-	$validation = sse_validate_download_request( $filename );
+    $filename   = sanitize_file_name( wp_unslash( $_GET['sse_secure_download'] ) );
+    $validation = sse_validate_download_request( $filename );
 
-	if ( is_wp_error( $validation ) ) {
-		wp_die( esc_html( $validation->get_error_message() ), 404 );
-	}
+    if ( is_wp_error( $validation ) ) {
+        wp_die( esc_html( $validation->get_error_message() ), 404 );
+    }
 
     // Rate limiting check
     if ( ! sse_check_download_rate_limit() ) {
@@ -1269,27 +1269,27 @@ add_action( 'admin_init', 'sse_handle_secure_download' );
  * @return void
  */
 function sse_handle_export_deletion() { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( ! isset( $_GET['sse_delete_export'] ) || ! isset( $_GET['sse_delete_nonce'] ) ) {
-		return;
-	}
+    if ( ! isset( $_GET['sse_delete_export'] ) || ! isset( $_GET['sse_delete_nonce'] ) ) {
+        return;
+    }
 
-	// Verify nonce.
-	$nonce = sanitize_text_field( wp_unslash( $_GET['sse_delete_nonce'] ) );
-	if ( ! wp_verify_nonce( $nonce, 'sse_delete_export' ) ) {
-		wp_die( esc_html__( 'Security check failed. Please try again.', 'Simple-WP-Site-Exporter' ), 403 );
-	}
+    // Verify nonce.
+    $nonce = sanitize_text_field( wp_unslash( $_GET['sse_delete_nonce'] ) );
+    if ( ! wp_verify_nonce( $nonce, 'sse_delete_export' ) ) {
+        wp_die( esc_html__( 'Security check failed. Please try again.', 'Simple-WP-Site-Exporter' ), 403 );
+    }
 
-	// Verify user capabilities.
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to delete export files.', 'Simple-WP-Site-Exporter' ), 403 );
-	}
+    // Verify user capabilities.
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( esc_html__( 'You do not have permission to delete export files.', 'Simple-WP-Site-Exporter' ), 403 );
+    }
 
-	$filename   = sanitize_file_name( wp_unslash( $_GET['sse_delete_export'] ) );
-	$validation = sse_validate_file_deletion( $filename );
+    $filename   = sanitize_file_name( wp_unslash( $_GET['sse_delete_export'] ) );
+    $validation = sse_validate_file_deletion( $filename );
 
-	if ( is_wp_error( $validation ) ) {
-		wp_die( esc_html( $validation->get_error_message() ), 404 );
-	}
+    if ( is_wp_error( $validation ) ) {
+        wp_die( esc_html( $validation->get_error_message() ), 404 );
+    }
 
     if ( sse_safely_delete_file( $validation['filepath'] ) ) {
         add_action( 'admin_notices', function() {
