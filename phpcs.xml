@@ -70,7 +70,7 @@
         <properties>
             <!-- Set the text domain for internationalization -->
             <property name="text_domain" type="array">
-                <element value="optimizations-ace-mc"/>
+                <element value="Simple-WP-Site-Exporter"/>
             </property>
         </properties>
     </rule>
@@ -82,7 +82,7 @@
 
     <!-- WordPress PHP compatibility -->
     <rule ref="PHPCompatibilityWP"/>
-    <config name="minimum_supported_wp_version" value="6.5"/>
+    <config name="minimum_supported_wp_version" value="6.8"/>
     <config name="testVersion" value="7.4-"/>
 
     <!-- Show progress -->
