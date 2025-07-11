@@ -151,12 +151,6 @@ jobs:
         run: |
           # Use WordPress-Core standard which has fewer dependencies
           phpcs --standard=WordPress-Core --extensions=php --ignore=vendor,tests,node_modules . || exit 0
-          
-          # If WordPress-Core fails, try PSR12 as fallback
-          if [ $? -ne 0 ]; then
-            echo "WordPress-Core standard failed, trying PSR12..."
-            phpcs --standard=PSR12 --extensions=php --ignore=vendor,tests,node_modules .
-          fi
 
       - name: Create issue on PHPCS failure
         if: ${{ failure() }}
