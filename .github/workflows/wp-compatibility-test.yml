@@ -150,7 +150,7 @@ jobs:
       - name: Run PHPCS
         run: |
           # Use WordPress-Core standard which has fewer dependencies
-          phpcs --standard=WordPress-Core --extensions=php --ignore=vendor,tests,node_modules . || exit 0
+          phpcs --standard=WordPress-extra --extensions=php --ignore=vendor,tests,node_modules . || exit 0
 
       - name: Create issue on PHPCS failure
         if: ${{ failure() }}
