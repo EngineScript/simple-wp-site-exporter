@@ -222,7 +222,7 @@ jobs:
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
           # Run PHPMD but don't fail the build on naming convention issues
-          phpmd optimizations-ace-mc.php text phpmd.xml || echo "PHPMD completed with warnings (WordPress naming conventions may differ from PHPMD defaults)"
+          phpmd simple-wp-site-exporter.php text phpmd.xml || echo "PHPMD completed with warnings (WordPress naming conventions may differ from PHPMD defaults)"
 
       - name: Create issue on PHPMD failure
         if: ${{ failure() }}
@@ -584,7 +584,7 @@ jobs:
           /**
            * PHPUnit bootstrap file for plugin tests.
            *
-           * @package Simple_WP_Optimizer
+           * @package Simple_WP_Site_Exporter
            */
           
           require_once '/tmp/wordpress-tests-lib/includes/functions.php';
@@ -594,7 +594,7 @@ jobs:
                   return;
               }, 0);
               
-              require dirname( dirname( __FILE__ ) ) . '/simple-wp-optimizer.php';
+              require dirname( dirname( __FILE__ ) ) . '/simple-wp-site-exporter.php';
           }
           
           tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
@@ -607,14 +607,14 @@ jobs:
           cat > tests/test-plugin.php << 'EOF'
           <?php
           /**
-           * Class Test_Simple_WP_Optimizer
+           * Class Test_Simple_WP_Site_Exporter
            *
-           * @package Simple_WP_Optimizer
+           * @package Simple_WP_Site_Exporter
            */
           
-          class Test_Simple_WP_Optimizer extends WP_UnitTestCase {
+          class Test_Simple_WP_Site_Exporter extends WP_UnitTestCase {
               public function test_plugin_loaded() {
-                  $this->assertTrue(function_exists('es_optimizer_init_settings'), 'Plugin was not loaded correctly');
+                  $this->assertTrue(function_exists('sse_admin_menu'), 'Plugin was not loaded correctly');
               }
               
               public function test_wordpress_version_compatibility() {
@@ -689,10 +689,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Always fetch the latest commit, disable any caching
-          fetch-depth: 0
-          clean: true
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
