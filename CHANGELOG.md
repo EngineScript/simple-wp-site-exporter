@@ -1,13 +1,13 @@
 # Changelog for Simple WP Site Exporter
 
-## Unreleased
+## 1.8.1 - July 11, 2025
 ### Documentation Workflow Updates
-- **Version Control**: Removed `changelog.txt` file to streamline documentation; maintaining only `readme.txt` (WordPress.org) and `CHANGELOG.md` (developers)
+- **Version Control**: Removed `changelog.txt` file to streamline documentation; maintaining only `readme.txt` (WordPress.org) and `CHANGELOG.md` (for developers).
 
 ### Code Standards Compliance
-- **Indentation**: Fixed tab indentation violations in `sse_handle_secure_download()` and `sse_handle_export_deletion()` functions to use spaces as required by WordPress coding standards
+- **Indentation**: Fixed tab indentation violations in `sse_handle_secure_download()` and `sse_handle_export_deletion()` functions to use spaces as required by WordPress coding standards.
 
-## 1.8.0 - June 26, 2025
+## 1.8.1 - June 26, 2025
 ### WordPress Standards Compliance Enhancement
 - **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
 - **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Simple WP Site Exporter
  * Description: Exports the site files and database as a zip archive.
- * Version: 1.8.0
+ * Version: 1.8.1
  * Author: EngineScript
  * License: GPL v3 or later
  * Text Domain: Simple-WP-Site-Exporter
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version.
 if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
-    define( 'ES_WP_SITE_EXPORTER_VERSION', '1.8.0' );
+    define( 'ES_WP_SITE_EXPORTER_VERSION', '1.8.1' );
 }
 
 /**
