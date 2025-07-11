@@ -6,6 +6,8 @@
  * Author: EngineScript
  * License: GPL v3 or later
  * Text Domain: Simple-WP-Site-Exporter
+ *
+ * @package Simple_WP_Site_Exporter
  */
 
 // Prevent direct access. Note: Using return here instead of exit.
