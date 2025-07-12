@@ -134,12 +134,12 @@ jobs:
         run: |
           # Install PHPCS and WordPress Coding Standards using the dealerdirect installer
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --dev squizlabs/php_codesniffer:"^3.7"
-          composer global require --dev wp-coding-standards/wpcs:"^3.0"
-          composer global require --dev phpcompatibility/php-compatibility:"^9.3"
-          composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1" 
-          composer global require --dev automattic/vipwpcs:"^3.0"
-          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.0"
+          composer global require --dev squizlabs/php_codesniffer:"^3.7.2"
+          composer global require --dev wp-coding-standards/wpcs:"^3.1.0"
+          composer global require --dev phpcompatibility/php-compatibility:"^9.3.5"
+          composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1.7" 
+          composer global require --dev automattic/vipwpcs:"^3.0.1"
+          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1.1"
           
           # Add composer bin to PATH
           echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
