@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="WordPress Plugin Coding Standards">
-    <description>WordPress coding standards with spaces enforcement for Optimizations ACE MC plugin</description>
+    <description>WordPress coding standards</description>
 
     <!-- Files to check -->
     <file>.</file>
@@ -35,6 +35,16 @@
             <property name="indent" value="4"/>
             <property name="tabIndent" value="false"/>
         </properties>
+    </rule>
+
+    <!-- Disallow Rule Flagging Space Indents -->
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent">
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+    </rule>
+
+        <!-- Disallow Rule Flagging Space Indents -->
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed">
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed"/>
     </rule>
 
     <!-- Disallow inline tabs -->
