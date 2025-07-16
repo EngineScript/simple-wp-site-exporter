@@ -95,7 +95,7 @@
     <rule ref="WordPress.NamingConventions.ValidHookName"/>
 
     <!-- WordPress PHP compatibility -->
-    <rule ref="PHPCompatibilityWP"/>
+    <rule ref="PHPCompatibilityWP">
         <include-pattern>*\.php$</include-pattern>
     </rule>
     <config name="minimum_supported_wp_version" value="6.8"/>
