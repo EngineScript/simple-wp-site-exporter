@@ -1,0 +1,12 @@
+.github/*
+.vscode/*
+.gitignore
+.wordpress-version-checker.json
+composer.json
+composer.lock
+phpcs.xml
+phpmd.xml
+phpstan.neon
+.distignore
+.github
+.vscode
