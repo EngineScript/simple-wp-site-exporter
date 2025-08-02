@@ -88,7 +88,7 @@ jobs:
           TMP_FILE=$(mktemp)
           
           # Update the version badge with the new version and logo
-          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/Simple-WP-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/Simple-WP-Site-Exporter\/releases\/latest\/download\/simple-wp-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
+          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/simple-wp-site-exporter\/releases\/latest\/download\/simple-wp-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/simple-wp-site-exporter\/releases\/latest\/download\/simple-wp-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
           
           # Replace file if changes were made
           if ! cmp -s "$README_FILE" "$TMP_FILE"; then

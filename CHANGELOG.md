@@ -1,6 +1,10 @@
 # Changelog for Simple WP Site Exporter
 
-## Unreleased
+## 1.8.3 - August 2, 2025
+### WordPress Plugin Directory Compliance
+- **Text Domain Fix**: Updated text domain from 'Simple-WP-Site-Exporter' to 'simple-wp-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
+- **Load Textdomain Removal**: Removed discouraged `load_plugin_textdomain()` function call as WordPress automatically handles translations for plugins hosted on WordPress.org since version 4.6
+- **Plugin Header Update**: Fixed "Text Domain" header to use only lowercase letters, numbers, and hyphens as required by WordPress standards
 
 ### Security Fix
 - **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
@@ -12,7 +16,15 @@
 ### Code Standards Compliance
 - **Indentation**: Fixed tab indentation violations in `sse_handle_secure_download()` and `sse_handle_export_deletion()` functions to use spaces as required by WordPress coding standards.
 
-## 1.8.1 - June 26, 2025
+### WordPress Standards Compliance Enhancement
+- **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
+- **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  
+- **Language Files**: Created `languages/simple-wp-site-exporter.pot` with all translatable strings
+- **Documentation Consistency**: Updated README.md, readme.txt, and phpcs.xml to reflect WordPress 6.5+ baseline
+- **Workflow Updates**: Modified compatibility testing to use WordPress 6.5+ as minimum test version
+- **Standards Alignment**: Ensured all code, workflows, and documentation strictly follow WordPress coding standards
+
+## 1.8.0 - June 26, 2025
 ### WordPress Standards Compliance Enhancement
 - **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
 - **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  
@@ -93,7 +105,7 @@
   - Enhanced file download security with proper output handling
 - **Output Escaping**: Added proper phpcs:ignore comments for binary file downloads
 - **Text Domain Consistency**: Fixed all remaining text domain inconsistencies:
-  - Changed remaining 'simple-wp-site-exporter' instances to 'Simple-WP-Site-Exporter'
+  - Changed remaining 'simple-wp-site-exporter' instances to 'simple-wp-site-exporter'
   - Updated all translation function calls for consistency
   - Fixed output escaping in `wp_die()` calls using `esc_html__()` instead of `__()`
   - Added proper escaping for WP_Error messages in `wp_die()` calls
@@ -189,7 +201,7 @@
 
 ## 1.6.4 - June 6, 2025
 ### Bug Fixes
-- **Text Domain Fix**: Fixed mismatched text domain to properly use 'Simple-WP-Site-Exporter' instead of 'simple-wp-site-exporter' for WordPress plugin compliance
+- **Text Domain Fix**: Fixed mismatched text domain to properly use 'simple-wp-site-exporter' instead of 'simple-wp-site-exporter' for WordPress plugin compliance
 - **Plugin Header Compliance**: Updated plugin text domain header to match expected slug format for WordPress.org directory standards
 
 ## 1.6.3 - June 6, 2025
@@ -200,7 +212,7 @@
 ### Plugin Rebrand
 - **Plugin Renamed**: Changed plugin name from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
 - **Plugin File Renamed**: Changed main plugin file from 'simple-site-exporter.php' to 'simple-wp-site-exporter.php'
-- **Repository Moved**: Moved repository from 'EngineScript-Simple-Site-Exporter' to 'Simple-WP-Site-Exporter'
+- **Repository Moved**: Moved repository from 'EngineScript-Simple-Site-Exporter' to 'simple-wp-site-exporter'
 - **Text Domain Updated**: Updated text domain from 'Simple-Site-Exporter' to 'simple-wp-site-exporter' for consistency
 - **Package Name Updated**: Updated composer package name to 'enginescript/simple-wp-site-exporter'
 - **Directory Names Updated**: Updated export directory from 'enginescript-sse-site-exports' to 'simple-wp-site-exporter-exports'

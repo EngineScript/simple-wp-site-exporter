@@ -1,12 +1,12 @@
 # Simple WP Site Exporter
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/82faf62ae1df432b89df2d6808b756ea)](https://app.codacy.com/gh/EngineScript/Simple-WP-Site-Exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/82faf62ae1df432b89df2d6808b756ea)](https://app.codacy.com/gh/EngineScript/simple-wp-site-exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?logo=gnu)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![WordPress Compatible](https://img.shields.io/badge/WordPress-6.5%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
 [![PHP Compatible](https://img.shields.io/badge/PHP-7.4%2B-purple.svg?logo=php)](https://www.php.net/)
 
 ## Current Version
-[![Version](https://img.shields.io/badge/Version-1.8.1-orange.svg?logo=github)](https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-wp-site-exporter-1.8.1.zip)
+[![Version](https://img.shields.io/badge/Version-1.8.1-orange.svg?logo=github)](https://github.com/EngineScript/simple-wp-site-exporter/releases/latest/download/simple-wp-site-exporter-1.8.1.zip)
 
 ## Description
 A WordPress plugin that exports your entire site, including files and database, as a secure, downloadable ZIP archive.
@@ -118,4 +118,4 @@ Simple WP Site Exporter is developed and maintained by [EngineScript](https://gi
 
 ## Support
 
-For support, feature requests, or bug reports, please [create an issue](https://github.com/EngineScript/Simple-WP-Site-Exporter/issues) on our GitHub repository.
+For support, feature requests, or bug reports, please [create an issue](https://github.com/EngineScript/simple-wp-site-exporter/issues) on our GitHub repository.
