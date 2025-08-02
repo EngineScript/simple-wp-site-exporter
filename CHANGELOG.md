@@ -1,5 +1,10 @@
 # Changelog for Simple WP Site Exporter
 
+## Unreleased
+
+### Security Fix
+- **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
+
 ## 1.8.1 - July 11, 2025
 ### Documentation Workflow Updates
 - **Version Control**: Removed `changelog.txt` file to streamline documentation; maintaining only `readme.txt` (WordPress.org) and `CHANGELOG.md` (for developers).

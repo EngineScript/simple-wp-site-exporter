@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Simple WP Site Exporter
  * Description: Exports the site files and database as a zip archive.
- * Version: 1.8.1
+ * Version: 1.8.2
  * Author: EngineScript
  * License: GPL v3 or later
  * Text Domain: Simple-WP-Site-Exporter
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version.
 if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
-    define( 'ES_WP_SITE_EXPORTER_VERSION', '1.8.1' );
+    define( 'ES_WP_SITE_EXPORTER_VERSION', '1.8.2' );
 }
 
 /**
@@ -389,6 +389,38 @@ function sse_create_index_file( $export_dir ) {
     }
 
     sse_log('Failed to write index.php file or directory not writable: ' . $export_dir, 'error');
+}
+
+/**
+ * Finds a safe path to the WP-CLI executable.
+ *
+ * @return string|WP_Error The path to WP-CLI on success, or a WP_Error on failure.
+ */
+function sse_get_safe_wp_cli_path() {
+    // Check for WP-CLI in common paths.
+    $common_paths = array(
+        ABSPATH . 'wp-cli.phar',
+        dirname( ABSPATH ) . '/wp-cli.phar',
+        '/usr/local/bin/wp',
+        '/usr/bin/wp',
+    );
+
+    foreach ( $common_paths as $path ) {
+        if ( is_executable( $path ) ) {
+            return $path;
+        }
+    }
+
+    // Check if 'wp' is in the system's PATH.
+    // Use 'where' for Windows and 'command -v' for Unix-like systems.
+    $command = ( strtoupper( substr( PHP_OS, 0, 3 ) ) === 'WIN' ) ? 'where wp' : 'command -v wp';
+    $path    = shell_exec( $command ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Safe command to find executable.
+
+    if ( ! empty( $path ) ) {
+        return trim( $path );
+    }
+
+    return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI executable not found. Please ensure it is installed and in your server\'s PATH.', 'Simple-WP-Site-Exporter' ) );
 }
 
 /**
@@ -998,7 +1030,7 @@ function sse_sanitize_filename( $filename ) {
  * 
  * @param string|false $real_file_path The real file path or false if resolution failed.
  * @param string $real_base_dir The real base directory path.
- * @return bool True if file is within base directory, false otherwise.
+ * @return bool True if the file is within the base directory, false otherwise.
  */
 function sse_check_path_within_base( $real_file_path, $real_base_dir ) {
     // Ensure both paths are available for comparison
@@ -1518,91 +1550,4 @@ function sse_serve_file_download( $fileData ) {
     
     // Output file content
     sse_output_file_content( $sanitizedData['filepath'], $sanitizedData['filename'] );
-}
-
-/**
- * Safely get and validate WP-CLI path with enhanced security checks.
- *
- * @return string|WP_Error WP-CLI path on success, WP_Error on failure.
- */
-function sse_get_safe_wp_cli_path() {
-    // First try to get WP-CLI path
-    $wp_cli_path = trim( shell_exec( 'which wp 2>/dev/null' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI path discovery: uses system 'which' command with constant parameters
-    
-    $basic_validation = sse_validate_wp_cli_path($wp_cli_path);
-    if (is_wp_error($basic_validation)) {
-        return $basic_validation;
-    }
-    
-    $security_check = sse_validate_wp_cli_security($wp_cli_path);
-    if (is_wp_error($security_check)) {
-        return $security_check;
-    }
-    
-    $binary_verification = sse_verify_wp_cli_binary($wp_cli_path);
-    if (is_wp_error($binary_verification)) {
-        return $binary_verification;
-    }
-    
-    return $wp_cli_path;
-}
-
-/**
- * Validates basic WP-CLI path format.
- *
- * @param string $wp_cli_path The WP-CLI path to validate.
- * @return true|WP_Error True on success, WP_Error on failure.
- */
-function sse_validate_wp_cli_path($wp_cli_path) {
-    if ( empty( $wp_cli_path ) ) {
-        return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI not found on this server.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    // Validate path format (must be absolute path)
-    if ( strpos( $wp_cli_path, '/' ) !== 0 && strpos( $wp_cli_path, '\\' ) !== 0 ) {
-        return new WP_Error( 'wp_cli_not_absolute', __( 'WP-CLI path is not absolute.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    return true;
-}
-
-/**
- * Validates WP-CLI path for security issues.
- *
- * @param string $wp_cli_path The WP-CLI path to validate.
- * @return true|WP_Error True on success, WP_Error on failure.
- */
-function sse_validate_wp_cli_security($wp_cli_path) {
-    // Check if path looks suspicious (basic security check)
-    if ( strpos( $wp_cli_path, ';' ) !== false || strpos( $wp_cli_path, '|' ) !== false || 
-         strpos( $wp_cli_path, '&' ) !== false || strpos( $wp_cli_path, '$' ) !== false ) {
-        return new WP_Error( 'wp_cli_suspicious', __( 'Suspicious characters detected in WP-CLI path.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    // Check if file exists and is executable
-    if ( ! file_exists( $wp_cli_path ) ) {
-        return new WP_Error( 'wp_cli_not_exists', __( 'WP-CLI executable not found at detected path.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    if ( ! is_executable( $wp_cli_path ) ) {
-        return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI file is not executable.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    return true;
-}
-
-/**
- * Verifies that the binary is actually WP-CLI.
- *
- * @param string $wp_cli_path The WP-CLI path to verify.
- * @return true|WP_Error True on success, WP_Error on failure.
- */
-function sse_verify_wp_cli_binary($wp_cli_path) {
-    // Additional security: verify it's actually WP-CLI by running --version
-    $version_check = shell_exec( escapeshellarg( $wp_cli_path ) . ' --version 2>/dev/null' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI binary verification: path is validated and escaped with escapeshellarg()
-    if ( empty( $version_check ) || strpos( $version_check, 'WP-CLI' ) === false ) {
-        return new WP_Error( 'wp_cli_invalid_binary', __( 'Detected file is not a valid WP-CLI executable.', 'Simple-WP-Site-Exporter' ) );
-    }
-    
-    return true;
 }

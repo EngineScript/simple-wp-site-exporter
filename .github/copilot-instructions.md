@@ -35,10 +35,8 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - Follow WordPress theme and plugin development guidelines.
 - Use WordPress REST API for custom endpoints and data retrieval.
 - Ensure all code is compatible with the WordPress ecosystem, including themes and plugins.
-- As this is a WordPress-focused project, avoid using frameworks or libraries that are not compatible with WordPress.
-- Do not use frameworks or libraries that are not commonly used in the WordPress ecosystem.
+- As this is a WordPress-focused project, avoid using frameworks or libraries that are not compatible or commonly used with WordPress.
 - Avoid using non-standard or experimental features that are not widely adopted in the WordPress community.
-- For any project that utilizes WooCommerce, ensure minimum version compatibility with WooCommerce 5.0+.
 
 ## WordPress Coding Standards
 
@@ -63,7 +61,7 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
   - WordPress 6.5+ (minimum)
   - PHP 7.4+ (minimum)
   - WooCommerce 5.0+ (if applicable)
-- Do not use features or functions that are not available in these versions.
+- Do not use features or functions that are deprecated or not available in these versions.
 
 ## Version Control and Documentation
 
@@ -86,8 +84,8 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - Note: changelog.txt has been removed from this project. Only maintain readme.txt (for WordPress.org) and CHANGELOG.md (for developers).
 - Please do not skip these locations, as the changelog files must be in sync with each other, and the version numbers must be consistent across all files.
 - I will instruct you when to update the version number, and you should not do this automatically. Always ask for confirmation before updating the version number.
-- When the version number is updated, ensure that the new version number is reflected in all relevant files, including the plugin header, changelog files, and documentation files.
-- WHen the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
+- When the version number is updated, ensure that the new version number is reflected in all relevant files, as outlined in Version Locations above.
+- When the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
 
 # General Coding Standards
 
@@ -132,7 +130,7 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - If you encounter a security vulnerability in the codebase, do not disclose it publicly. Instead, report it privately to the project maintainers or through a responsible disclosure process.
 - If you are unsure about the security implications of a specific code change, ask for clarification or guidance before proceeding.
 - Always follow the principle of least privilege when implementing security features, ensuring that users and processes have only the permissions they need to perform their tasks.
-- If you encounter a security vulnerability in a third-party library or dependency, check if there is an updated version that addresses the issue. If not, consider alternatives or report the vulnerability to the library maintainers.
+- If you encounter a security vulnerability in a third-party library or dependency, check if there is an updated version that addresses the issue. If not, consider alternatives and notify me of the situation.
 - If there is a possible security vulnerability in the codebase, you should always ask for confirmation before proceeding with any changes. This ensures that the project maintainers are aware of the potential risk and can provide guidance on how to address it safely.
 - If I ask you to make changes that could potentially introduce security vulnerabilities, you should always ask for confirmation before proceeding. This ensures that the project maintainers are aware of the potential risk and can provide guidance on how to address it safely.
 
@@ -150,7 +148,6 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - Only ask for confirmation when an action is destructive (e.g., data loss, deletion)
 - Always attempt to identify and fix bugs automatically
 - Only ask for manual intervention if domain-specific knowledge is required
-- Auto-generate missing files, boilerplate, and tests when possible
 - Auto-lint and format code using standard tools (e.g., Prettier, ESLint, dotnet format)
 - Changes should be made directly to the file in question. Example: admin.php should be modified directly, not by creating a new file like admin-changes.php.
 - New files may be created when appropriate, but they should be relevant to the task at hand, so long as they are not a rewrite of an existing file. We want to avoid unnecessary duplication of files.
