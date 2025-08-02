@@ -84,7 +84,7 @@
         <properties>
             <!-- Set the text domain for internationalization -->
             <property name="text_domain" type="array">
-                <element value="Simple-WP-Site-Exporter"/>
+                <element value="simple-wp-site-exporter"/>
             </property>
         </properties>
     </rule>
