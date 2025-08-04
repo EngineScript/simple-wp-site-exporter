@@ -62,7 +62,6 @@ function sse_get_client_ip() {
     return 'unknown';
 } // end sse_get_client_ip()
 
-
 /**
  * Stores important log messages in database for review.
  *
@@ -89,7 +88,6 @@ function sse_store_log_in_database( $message, $level ) {
     update_option( 'sse_error_logs', $logs );
 } // end sse_store_log_in_database()
 
-
 /**
  * Outputs log message to WordPress debug log or error_log.
  *
@@ -102,7 +100,6 @@ function sse_output_log_message( $formatted_message ) {
         wp_debug_log( $formatted_message );
     }
 } // end sse_output_log_message()
-
 
 /**
  * Safely log plugin messages
@@ -300,7 +297,6 @@ function sse_validate_export_request() { // phpcs:ignore WordPress.Security.Nonc
     return true;
 } // end sse_validate_export_request()
 
-
 /**
  * Prepares the execution environment for export operations.
  *
@@ -440,7 +436,6 @@ function sse_export_database( $export_dir ) {
 
     $output = shell_exec( $command . ' 2>&1' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
 
-
     if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
         $error_message = ! empty( $output ) ? trim( $output ) : 'WP-CLI command failed silently.';
         return new WP_Error( 'db_export_failed', $error_message );
@@ -465,9 +460,9 @@ function sse_create_site_archive( $export_paths, $database_file ) {
         return new WP_Error( 'zip_not_available', __( 'ZipArchive class is not available on your server. Cannot create zip file.', 'simple-wp-site-exporter' ) );
     }
 
-    $site_name  = sanitize_file_name( get_bloginfo( 'name' ) );
-    $timestamp  = gmdate( 'Y-m-d_H-i-s' );
-    $random_str = substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
+    $site_name    = sanitize_file_name( get_bloginfo( 'name' ) );
+    $timestamp    = gmdate( 'Y-m-d_H-i-s' );
+    $random_str   = substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
     $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
     $zip_filepath = trailingslashit( $export_paths['export_dir'] ) . $zip_filename;
 
@@ -546,21 +541,12 @@ function sse_add_wordpress_files_to_zip( $zip, $export_dir ) {
 }
 
 /**
- * Processes a single file for addition to the zip archive.
- *
- * @param ZipArchive $zip The zip archive object.
- * @param SplFileInfo $file_info File information object.
- * @param string $source_path The source path.
- * @param string $export_dir The export directory to exclude.
- * @return true|null True on success, null to continue, WP_Error on failure.
- */
-/**
  * Process a single file for addition to ZIP archive.
  *
- * @param ZipArchive  $zip ZIP archive object.
- * @param SplFileInfo $file_info File information object.
+ * @param ZipArchive  $zip         ZIP archive object.
+ * @param SplFileInfo $file_info   File information object.
  * @param string      $source_path Source directory path.
- * @param string      $export_dir Export directory to exclude.
+ * @param string      $export_dir  Export directory to exclude.
  * @return true|null True on success, null if skipped.
  */
 function sse_process_file_for_zip( $zip, $file_info, $source_path, $export_dir ) {
@@ -690,30 +676,31 @@ function sse_show_success_notice( $zip_result ) {
                 admin_url()
             );
 
-        $display_zip_path = str_replace( ABSPATH, '[wp-root]/', $zip_result['filepath'] );
-        $display_zip_path = preg_replace( '|/+|', '/', $display_zip_path );
-        ?>
-        <div class="notice notice-success is-dismissible">
-            <p>
-                <?php esc_html_e( 'Site export successfully created!', 'simple-wp-site-exporter' ); ?>
-                <a href="<?php echo esc_url( $download_url ); ?>" class="button" style="margin-left: 10px;">
-                    <?php esc_html_e( 'Download Export File', 'simple-wp-site-exporter' ); ?>
-                </a>
-                <a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary" style="margin-left: 10px;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this export file?', 'simple-wp-site-exporter' ); ?>');">
-                    <?php esc_html_e( 'Delete Export File', 'simple-wp-site-exporter' ); ?>
-                </a>
-            </p>
-            <p><small><?php
-                printf(
-                    /* translators: %s: file path */
-                    esc_html__( 'File location: %s', 'simple-wp-site-exporter' ),
-                    '<code title="' . esc_attr__( 'Path is relative to WordPress root directory', 'simple-wp-site-exporter' ) . '">' .
-                    esc_html( $display_zip_path ) . '</code>'
-                );
-				?>
-</small></p>
-        </div>
-        <?php
+            $display_zip_path = str_replace( ABSPATH, '[wp-root]/', $zip_result['filepath'] );
+            $display_zip_path = preg_replace( '|/+|', '/', $display_zip_path );
+            ?>
+            <div class="notice notice-success is-dismissible">
+                <p>
+                    <?php esc_html_e( 'Site export successfully created!', 'simple-wp-site-exporter' ); ?>
+                    <a href="<?php echo esc_url( $download_url ); ?>" class="button" style="margin-left: 10px;">
+                        <?php esc_html_e( 'Download Export File', 'simple-wp-site-exporter' ); ?>
+                    </a>
+                    <a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary" style="margin-left: 10px;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this export file?', 'simple-wp-site-exporter' ); ?>');">
+                        <?php esc_html_e( 'Delete Export File', 'simple-wp-site-exporter' ); ?>
+                    </a>
+                </p>
+                <p><small>
+                    <?php
+                    printf(
+                        /* translators: %s: file path */
+                        esc_html__( 'File location: %s', 'simple-wp-site-exporter' ),
+                        '<code title="' . esc_attr__( 'Path is relative to WordPress root directory', 'simple-wp-site-exporter' ) . '">' .
+                        esc_html( $display_zip_path ) . '</code>'
+                    );
+                    ?>
+                </small></p>
+            </div>
+            <?php
         }
     );
     sse_log( 'Export successful. File saved to ' . $zip_result['filepath'], 'info' );
@@ -740,17 +727,24 @@ function sse_cleanup_files( $files ) {
  */
 function sse_schedule_export_cleanup( $zip_filepath ) {
     if ( ! wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) ) ) {
-        wp_schedule_single_event( time() + (5 * 60), 'sse_delete_export_file', array( $zip_filepath ) );
+        wp_schedule_single_event( time() + ( 5 * 60 ), 'sse_delete_export_file', array( $zip_filepath ) );
     }
 }
 add_action( 'admin_init', 'sse_handle_export' );
 
 // --- Scheduled Deletion Handler ---
+
+/**
+ * Handles scheduled deletion of export files.
+ *
+ * @param string $file File path to delete.
+ * @return void
+ */
 function sse_delete_export_file_handler( $file ) {
-    // Validate that this is actually an export file before deletion
+    // Validate that this is actually an export file before deletion.
     $filename = basename( $file );
 
-    // Use the same validation as manual deletion for consistency
+    // Use the same validation as manual deletion for consistency.
     $validation = sse_validate_export_file_for_deletion( $filename );
     if ( is_wp_error( $validation ) ) {
         sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $validation->get_error_message(), 'warning' );
@@ -768,32 +762,32 @@ function sse_delete_export_file_handler( $file ) {
 add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
 
 /**
- * Safely delete a file using WordPress Filesystem API
+ * Safely delete a file using WordPress Filesystem API.
  *
- * @param string $filepath Path to the file to delete
- * @return bool Whether the file was deleted successfully
+ * @param string $filepath Path to the file to delete.
+ * @return bool Whether the file was deleted successfully.
  */
 function sse_safely_delete_file( $filepath ) {
     global $wp_filesystem;
 
-    // Initialize the WordPress filesystem
-    if (empty($wp_filesystem)) {
+    // Initialize the WordPress filesystem.
+    if ( empty( $wp_filesystem ) ) {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         if ( ! WP_Filesystem() ) {
-            sse_log('Failed to initialize WordPress filesystem API', 'error');
+            sse_log( 'Failed to initialize WordPress filesystem API', 'error' );
             return false;
         }
     }
 
     if ( ! $wp_filesystem ) {
-        sse_log('WordPress filesystem API not available', 'error');
+        sse_log( 'WordPress filesystem API not available', 'error' );
         return false;
     }
 
-    // Check if the file exists using WP Filesystem
-    if ($wp_filesystem->exists($filepath)) {
-        // Delete the file using WordPress Filesystem API
-        return $wp_filesystem->delete($filepath, false, 'f');
+    // Check if the file exists using WP Filesystem.
+    if ( $wp_filesystem->exists( $filepath ) ) {
+        // Delete the file using WordPress Filesystem API.
+        return $wp_filesystem->delete( $filepath, false, 'f' );
     }
 
     return false;
@@ -822,33 +816,33 @@ function sse_check_path_traversal( $normalized_file_path ) {
  * @return string|false Real file path on success, false on failure.
  */
 function sse_resolve_file_path( $normalized_file_path ) {
-    // Security: Only allow files with safe extensions
+    // Security: Only allow files with safe extensions.
     if ( ! sse_validate_file_extension( $normalized_file_path ) ) {
         return false;
     }
-    
+
     $real_file_path = realpath( $normalized_file_path );
-    
-    // If realpath fails for the file (doesn't exist), validate parent directory more securely
-    if ($real_file_path === false) {
-        return sse_resolve_nonexistent_file_path($normalized_file_path);
+
+    // If realpath fails for the file (doesn't exist), validate parent directory more securely.
+    if ( false === $real_file_path ) {
+        return sse_resolve_nonexistent_file_path( $normalized_file_path );
     }
-    
+
     return $real_file_path;
 }
 
 /**
  * Validates file extension against allowed list.
- * 
+ *
  * @param string $file_path The file path to check.
  * @return bool True if extension is allowed, false otherwise.
  */
 function sse_validate_file_extension( $file_path ) {
     $allowed_extensions = array( 'zip', 'sql' );
-    $file_extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
-    
+    $file_extension     = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
+
     if ( ! in_array( $file_extension, $allowed_extensions, true ) ) {
-        sse_log('Rejected file access - invalid extension: ' . $file_extension, 'security');
+        sse_log( 'Rejected file access - invalid extension: ' . $file_extension, 'security' );
         return false;
     }
     
@@ -863,51 +857,51 @@ function sse_validate_file_extension( $file_path ) {
  */
 function sse_resolve_nonexistent_file_path( $normalized_file_path ) {
     $upload_info = sse_get_upload_directory_info();
-    if ($upload_info === false) {
+    if ( false === $upload_info ) {
         return false;
     }
-    
-    return sse_build_validated_file_path($normalized_file_path, $upload_info);
+
+    return sse_build_validated_file_path( $normalized_file_path, $upload_info );
 }
 
 /**
  * Builds validated file path from components.
- * 
+ *
  * @param string $normalized_file_path The normalized file path.
- * @param array $upload_info Upload directory information.
+ * @param array  $upload_info          Upload directory information.
  * @return string|false Real file path on success, false on failure.
  */
 function sse_build_validated_file_path( $normalized_file_path, $upload_info ) {
     $parent_dir = dirname( $normalized_file_path );
-    $filename = basename( $normalized_file_path );
+    $filename   = basename( $normalized_file_path );
     
     if ( ! sse_validate_parent_directory_safety( $parent_dir, $upload_info['basedir'] ) ) {
         return false;
     }
     
-    return sse_construct_final_file_path($parent_dir, $filename, $upload_info['realpath']);
+    return sse_construct_final_file_path( $parent_dir, $filename, $upload_info['realpath'] );
 }
 
 /**
  * Constructs final file path after validation.
- * 
- * @param string $parent_dir Parent directory path.
- * @param string $filename File name.
+ *
+ * @param string $parent_dir       Parent directory path.
+ * @param string $filename         File name.
  * @param string $upload_real_path Upload directory real path.
  * @return string|false Final file path on success, false on failure.
  */
 function sse_construct_final_file_path( $parent_dir, $filename, $upload_real_path ) {
-    $real_parent_dir = sse_resolve_parent_directory($parent_dir, $upload_real_path);
-    if ($real_parent_dir === false) {
+    $real_parent_dir = sse_resolve_parent_directory( $parent_dir, $upload_real_path );
+    if ( false === $real_parent_dir ) {
         return false;
     }
-    
-    $sanitized_filename = sse_sanitize_filename($filename);
-    if ($sanitized_filename === false) {
+
+    $sanitized_filename = sse_sanitize_filename( $filename );
+    if ( false === $sanitized_filename ) {
         return false;
     }
-    
-    return trailingslashit($real_parent_dir) . $sanitized_filename;
+
+    return trailingslashit( $real_parent_dir ) . $sanitized_filename;
 }
 
 /**
@@ -1319,15 +1313,18 @@ function sse_handle_export_deletion() { // phpcs:ignore WordPress.Security.Nonce
     }
 
     if ( sse_safely_delete_file( $validation['filepath'] ) ) {
-        add_action( 'admin_notices', function() {
-            ?>
-            <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e( 'Export file successfully deleted.', 'simple-wp-site-exporter' ); ?></p>
-            </div>
-            <?php
-        });
+        add_action(
+            'admin_notices',
+            function () {
+                ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php esc_html_e( 'Export file successfully deleted.', 'simple-wp-site-exporter' ); ?></p>
+                </div>
+                <?php
+            }
+        );
         sse_log( 'Manual deletion of export file: ' . $validation['filepath'], 'info' );
-        
+
         // Redirect back to the export page to prevent resubmission.
         wp_safe_redirect( admin_url( 'tools.php?page=simple-wp-site-exporter' ) );
         exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress standard: exit required after wp_safe_redirect.
