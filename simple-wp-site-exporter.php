@@ -201,7 +201,7 @@ function sse_exporter_page_html() {
     }
     $export_dir_name = 'simple-wp-site-exporter-exports';
     $export_dir_path = trailingslashit( $upload_dir['basedir'] ) . $export_dir_name;
-    $display_path = str_replace( ABSPATH, '', $export_dir_path );
+    $display_path    = str_replace( ABSPATH, '', $export_dir_path );
     ?>
     <div class="wrap">
         <h1><?php echo esc_html( get_admin_page_title() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() used for proper escaping ?></h1>
@@ -211,7 +211,7 @@ function sse_exporter_page_html() {
             <?php
             // printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
             printf(
-                // translators: %s: directory path
+                // translators: %s: directory path.
                 esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'simple-wp-site-exporter' ),
                 '<code>' . esc_html( $display_path ) . '</code>'
             );
@@ -332,15 +332,15 @@ function sse_setup_export_directories() {
     }
 
     $export_dir_name = 'simple-wp-site-exporter-exports';
-    $export_dir = trailingslashit( $upload_dir['basedir'] ) . $export_dir_name;
-    $export_url = trailingslashit( $upload_dir['baseurl'] ) . $export_dir_name;
+    $export_dir      = trailingslashit( $upload_dir['basedir'] ) . $export_dir_name;
+    $export_url      = trailingslashit( $upload_dir['baseurl'] ) . $export_dir_name;
 
     wp_mkdir_p( $export_dir );
     sse_create_index_file( $export_dir );
 
     return array(
-        'export_dir' => $export_dir,
-        'export_url' => $export_url,
+        'export_dir'      => $export_dir,
+        'export_url'      => $export_url,
         'export_dir_name' => $export_dir_name,
     );
 }
@@ -374,7 +374,7 @@ function sse_create_index_file( $export_dir ) {
         return;
     }
 
-    sse_log('Failed to write index.php file or directory not writable: ' . $export_dir, 'error');
+    sse_log( 'Failed to write index.php file or directory not writable: ' . $export_dir, 'error' );
 }
 
 /**
@@ -416,8 +416,8 @@ function sse_get_safe_wp_cli_path() {
  * @return array|WP_Error Array with file info on success, WP_Error on failure.
  */
 function sse_export_database( $export_dir ) {
-    $site_name = sanitize_file_name( get_bloginfo( 'name' ) );
-    $timestamp = gmdate( 'Y-m-d_H-i-s' );
+    $site_name   = sanitize_file_name( get_bloginfo( 'name' ) );
+    $timestamp   = gmdate( 'Y-m-d_H-i-s' );
     $db_filename = "db_dump_{$site_name}_{$timestamp}.sql";
     $db_filepath = trailingslashit( $export_dir ) . $db_filename;
 
@@ -425,7 +425,7 @@ function sse_export_database( $export_dir ) {
         return new WP_Error( 'shell_exec_disabled', __( 'shell_exec function is disabled on this server.', 'simple-wp-site-exporter' ) );
     }
 
-    // Enhanced WP-CLI path validation
+    // Enhanced WP-CLI path validation.
     $wp_cli_path = sse_get_safe_wp_cli_path();
     if ( is_wp_error( $wp_cli_path ) ) {
         return $wp_cli_path;
@@ -433,20 +433,20 @@ function sse_export_database( $export_dir ) {
 
     $command = sprintf(
         '%s db export %s --path=%s --allow-root',
-        escapeshellarg($wp_cli_path), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
-        escapeshellarg($db_filepath), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
-        escapeshellarg(ABSPATH) // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg( $wp_cli_path ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg( $db_filepath ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg( ABSPATH ) // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
     );
 
-    $output = shell_exec($command . ' 2>&1'); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
+    $output = shell_exec( $command . ' 2>&1' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
 
 
     if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
-        $error_message = ! empty($output) ? trim($output) : 'WP-CLI command failed silently.';
+        $error_message = ! empty( $output ) ? trim( $output ) : 'WP-CLI command failed silently.';
         return new WP_Error( 'db_export_failed', $error_message );
     }
 
-    sse_log("Database export successful", 'info');
+    sse_log( 'Database export successful', 'info' );
     return array(
         'filename' => $db_filename,
         'filepath' => $db_filepath,
@@ -465,9 +465,9 @@ function sse_create_site_archive( $export_paths, $database_file ) {
         return new WP_Error( 'zip_not_available', __( 'ZipArchive class is not available on your server. Cannot create zip file.', 'simple-wp-site-exporter' ) );
     }
 
-    $site_name = sanitize_file_name( get_bloginfo( 'name' ) );
-    $timestamp = gmdate( 'Y-m-d_H-i-s' );
-    $random_str = substr( bin2hex( random_bytes(4) ), 0, 7 );
+    $site_name  = sanitize_file_name( get_bloginfo( 'name' ) );
+    $timestamp  = gmdate( 'Y-m-d_H-i-s' );
+    $random_str = substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
     $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
     $zip_filepath = trailingslashit( $export_paths['export_dir'] ) . $zip_filename;
 
@@ -483,7 +483,7 @@ function sse_create_site_archive( $export_paths, $database_file ) {
         );
     }
 
-    // Add database dump to zip
+    // Add database dump to zip.
     if ( ! $zip->addFile( $database_file['filepath'], $database_file['filename'] ) ) {
         $zip->close();
         return new WP_Error( 'zip_db_add_failed', __( 'Failed to add database file to zip archive.', 'simple-wp-site-exporter' ) );
@@ -501,7 +501,7 @@ function sse_create_site_archive( $export_paths, $database_file ) {
         return new WP_Error( 'zip_finalize_failed', __( 'Failed to finalize or save the zip archive after processing files.', 'simple-wp-site-exporter' ) );
     }
 
-    sse_log("Site archive created successfully: " . $zip_filepath, 'info');
+    sse_log( 'Site archive created successfully: ' . $zip_filepath, 'info' );
     return array(
         'filename' => $zip_filename,
         'filepath' => $zip_filepath,
@@ -511,14 +511,14 @@ function sse_create_site_archive( $export_paths, $database_file ) {
 /**
  * Adds WordPress files to the zip archive.
  *
- * @param ZipArchive $zip The zip archive object.
- * @param string $export_dir The export directory to exclude.
+ * @param ZipArchive $zip        The zip archive object.
+ * @param string     $export_dir The export directory to exclude.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_add_wordpress_files_to_zip( $zip, $export_dir ) {
     $source_path = realpath( ABSPATH );
     if ( ! $source_path ) {
-        sse_log( "Could not resolve real path for ABSPATH. Using ABSPATH directly.", 'warning' );
+        sse_log( 'Could not resolve real path for ABSPATH. Using ABSPATH directly.', 'warning' );
         $source_path = ABSPATH;
     }
 
@@ -557,23 +557,23 @@ function sse_add_wordpress_files_to_zip( $zip, $export_dir ) {
 /**
  * Process a single file for addition to ZIP archive.
  *
- * @param ZipArchive $zip ZIP archive object.
+ * @param ZipArchive  $zip ZIP archive object.
  * @param SplFileInfo $file_info File information object.
- * @param string $source_path Source directory path.
- * @param string $export_dir Export directory to exclude.
+ * @param string      $source_path Source directory path.
+ * @param string      $export_dir Export directory to exclude.
  * @return true|null True on success, null if skipped.
  */
 function sse_process_file_for_zip( $zip, $file_info, $source_path, $export_dir ) {
     if ( ! $file_info->isReadable() ) {
-        sse_log( "Skipping unreadable file/dir: " . $file_info->getPathname(), 'warning' );
+        sse_log( 'Skipping unreadable file/dir: ' . $file_info->getPathname(), 'warning' );
         return null;
     }
 
-    $file = $file_info->getRealPath();
-    $pathname = $file_info->getPathname();
+    $file          = $file_info->getRealPath();
+    $pathname      = $file_info->getPathname();
     $relative_path = ltrim( substr( $pathname, strlen( $source_path ) ), '/' );
 
-    if ( empty($relative_path) ) {
+    if ( empty( $relative_path ) ) {
         return null;
     }
 
@@ -587,32 +587,32 @@ function sse_process_file_for_zip( $zip, $file_info, $source_path, $export_dir )
 /**
  * Adds a file or directory to the zip archive.
  *
- * @param ZipArchive $zip The zip archive object.
+ * @param ZipArchive  $zip The zip archive object.
  * @param SplFileInfo $file_info File information object.
  * @param string|false $file Real file path or false if getRealPath() failed.
- * @param string $pathname Original pathname.
- * @param string $relative_path Relative path in archive.
+ * @param string       $pathname Original pathname.
+ * @param string       $relative_path Relative path in archive.
  * @return true
  */
 function sse_add_file_to_zip( $zip, $file_info, $file, $pathname, $relative_path ) {
     if ( $file_info->isDir() ) {
         if ( ! $zip->addEmptyDir( $relative_path ) ) {
-            sse_log( "Failed to add directory to zip: " . $relative_path, 'error' );
+            sse_log( 'Failed to add directory to zip: ' . $relative_path, 'error' );
         }
         return true;
     }
 
     if ( $file_info->isFile() ) {
-        // Use real path (getRealPath() must succeed for security)
+        // Use real path (getRealPath() must succeed for security).
         if ( false === $file ) {
-            sse_log( "Skipping file with unresolvable real path: " . $pathname, 'warning' );
-            return true; // Skip this file but continue processing
+            sse_log( 'Skipping file with unresolvable real path: ' . $pathname, 'warning' );
+            return true; // Skip this file but continue processing.
         }
 
         $file_to_add = $file;
 
         if ( ! $zip->addFile( $file_to_add, $relative_path ) ) {
-            sse_log( "Failed to add file to zip: " . $relative_path . " (Source: " . $file_to_add . ")", 'error' );
+            sse_log( 'Failed to add file to zip: ' . $relative_path . ' (Source: ' . $file_to_add . ')', 'error' );
         }
     }
 
@@ -628,17 +628,17 @@ function sse_add_file_to_zip( $zip, $file_info, $file, $pathname, $relative_path
  * @return bool True if file should be excluded.
  */
 function sse_should_exclude_file( $pathname, $relative_path, $export_dir ) {
-    // Exclude export directory
+    // Exclude export directory.
     if ( strpos( $pathname, $export_dir ) === 0 ) {
         return true;
     }
 
-    // Exclude cache and temporary directories
+    // Exclude cache and temporary directories.
     if ( preg_match( '#^wp-content/(cache|upgrade|temp)/#', $relative_path ) ) {
         return true;
     }
 
-    // Exclude version control and system files
+    // Exclude version control and system files.
     if ( preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relative_path ) ) {
         return true;
     }
@@ -652,14 +652,17 @@ function sse_should_exclude_file( $pathname, $relative_path, $export_dir ) {
  * @param string $message The error message to display.
  */
 function sse_show_error_notice( $message ) {
-    add_action( 'admin_notices', function() use ( $message ) {
-        ?>
-        <div class="notice notice-error is-dismissible">
-            <p><?php echo esc_html( $message ); ?></p>
-        </div>
-        <?php
-    });
-    sse_log( "Export error: " . $message, 'error' );
+    add_action(
+        'admin_notices',
+        function () use ( $message ) {
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p><?php echo esc_html( $message ); ?></p>
+            </div>
+            <?php
+        }
+    );
+    sse_log( 'Export error: ' . $message, 'error' );
 }
 
 /**
@@ -668,22 +671,24 @@ function sse_show_error_notice( $message ) {
  * @param array $zip_result The zip file information.
  */
 function sse_show_success_notice( $zip_result ) {
-    add_action( 'admin_notices', function() use ( $zip_result ) {
-        $download_url = add_query_arg(
-            array(
-                'sse_secure_download' => $zip_result['filename'],
-                'sse_download_nonce' => wp_create_nonce('sse_secure_download')
-            ),
-            admin_url()
-        );
+    add_action(
+        'admin_notices',
+        function () use ( $zip_result ) {
+            $download_url = add_query_arg(
+                array(
+                    'sse_secure_download' => $zip_result['filename'],
+                    'sse_download_nonce'  => wp_create_nonce( 'sse_secure_download' ),
+                ),
+                admin_url()
+            );
 
-        $delete_url = add_query_arg(
-            array(
-                'sse_delete_export' => $zip_result['filename'],
-                'sse_delete_nonce' => wp_create_nonce('sse_delete_export')
-            ),
-            admin_url()
-        );
+            $delete_url = add_query_arg(
+                array(
+                    'sse_delete_export' => $zip_result['filename'],
+                    'sse_delete_nonce'  => wp_create_nonce( 'sse_delete_export' ),
+                ),
+                admin_url()
+            );
 
         $display_zip_path = str_replace( ABSPATH, '[wp-root]/', $zip_result['filepath'] );
         $display_zip_path = preg_replace( '|/+|', '/', $display_zip_path );
@@ -709,8 +714,9 @@ function sse_show_success_notice( $zip_result ) {
 </small></p>
         </div>
         <?php
-    });
-    sse_log("Export successful. File saved to " . $zip_result['filepath'], 'info');
+        }
+    );
+    sse_log( 'Export successful. File saved to ' . $zip_result['filepath'], 'info' );
 }
 
 /**
@@ -722,7 +728,7 @@ function sse_cleanup_files( $files ) {
     foreach ( $files as $file ) {
         if ( file_exists( $file ) ) {
             sse_safely_delete_file( $file );
-            sse_log("Cleaned up temporary file: " . $file, 'info');
+            sse_log( 'Cleaned up temporary file: ' . $file, 'info' );
         }
     }
 }
