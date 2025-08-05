@@ -356,7 +356,7 @@ function sse_create_index_file( $export_dir ) {
     if ( ! $wp_filesystem ) {
         require_once ABSPATH . 'wp-admin/includes/file.php'; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- WordPress core filesystem API
         if ( ! WP_Filesystem() ) {
-            sse_log('Failed to initialize WordPress filesystem API', 'error');
+            sse_log( 'Failed to initialize WordPress filesystem API', 'error' );
             return;
         }
     }
@@ -795,7 +795,7 @@ function sse_safely_delete_file( $filepath ) {
 
 /**
  * Validates a file path for directory traversal attempts.
- * 
+ *
  * @param string $normalized_file_path The normalized file path to check.
  * @return bool True if path is safe, false if contains traversal patterns.
  */
@@ -912,19 +912,19 @@ function sse_construct_final_file_path( $parent_dir, $filename, $upload_real_pat
 function sse_get_upload_directory_info() {
     $upload_dir = wp_upload_dir();
     if ( ! isset( $upload_dir['basedir'] ) || empty( $upload_dir['basedir'] ) ) {
-        sse_log('Could not determine WordPress upload directory for validation', 'error');
+        sse_log( 'Could not determine WordPress upload directory for validation', 'error' );
         return false;
     }
-    
+
     $wp_upload_dir = realpath( $upload_dir['basedir'] );
-    if ( $wp_upload_dir === false ) {
-        sse_log('Could not resolve WordPress upload directory real path', 'error');
+    if ( false === $wp_upload_dir ) {
+        sse_log( 'Could not resolve WordPress upload directory real path', 'error' );
         return false;
     }
     
     return array(
-        'basedir' => $upload_dir['basedir'],
-        'realpath' => $wp_upload_dir
+        'basedir'  => $upload_dir['basedir'],
+        'realpath' => $wp_upload_dir,
     );
 }
 
@@ -936,18 +936,18 @@ function sse_get_upload_directory_info() {
  * @return bool True if safe, false otherwise.
  */
 function sse_validate_parent_directory_safety( $parent_dir, $upload_dir ) {
-    // Pre-validate that parent directory path looks safe
-    if (strpos($parent_dir, '..') !== false || strpos($parent_dir, 'wp-config') !== false) {
-        sse_log('Rejected unsafe parent directory path: ' . $parent_dir, 'security');
+    // Pre-validate that parent directory path looks safe.
+    if ( strpos( $parent_dir, '..' ) !== false || strpos( $parent_dir, 'wp-config' ) !== false ) {
+        sse_log( 'Rejected unsafe parent directory path: ' . $parent_dir, 'security' );
         return false;
     }
-    
-    // Ensure parent directory is within WordPress upload directory
-    $norm_parent_dir = wp_normalize_path($parent_dir);
-    $norm_upload_dir = wp_normalize_path($upload_dir);
-    
-    if (strpos($norm_parent_dir, $norm_upload_dir) !== 0) {
-        sse_log('Parent directory not within WordPress upload directory: ' . $parent_dir, 'security');
+
+    // Ensure parent directory is within WordPress upload directory.
+    $norm_parent_dir = wp_normalize_path( $parent_dir );
+    $norm_upload_dir = wp_normalize_path( $upload_dir );
+
+    if ( strpos( $norm_parent_dir, $norm_upload_dir ) !== 0 ) {
+        sse_log( 'Parent directory not within WordPress upload directory: ' . $parent_dir, 'security' );
         return false;
     }
     
@@ -962,33 +962,33 @@ function sse_validate_parent_directory_safety( $parent_dir, $upload_dir ) {
  * @return string|false Real parent directory path or false on failure.
  */
 function sse_resolve_parent_directory( $parent_dir, $upload_dir ) {
-    // Normalize and validate upload directory first
-    $norm_upload_dir = wp_normalize_path($upload_dir);
+    // Normalize and validate upload directory first.
+    $norm_upload_dir = wp_normalize_path( $upload_dir );
     $real_upload_dir = realpath( $norm_upload_dir );
-    if ($real_upload_dir === false) {
-        sse_log('Upload directory cannot be resolved: ' . $upload_dir, 'security');
+    if ( false === $real_upload_dir ) {
+        sse_log( 'Upload directory cannot be resolved: ' . $upload_dir, 'security' );
         return false;
     }
-    
-    // Normalize parent directory and perform basic validation
-    $norm_parent_dir = wp_normalize_path($parent_dir);
-    
-    // Validate that normalized parent dir starts with normalized upload dir (before realpath)
-    if (strpos($norm_parent_dir, $norm_upload_dir) !== 0) {
-        sse_log('Parent directory not within normalized upload directory: ' . $parent_dir, 'security');
+
+    // Normalize parent directory and perform basic validation.
+    $norm_parent_dir = wp_normalize_path( $parent_dir );
+
+    // Validate that normalized parent dir starts with normalized upload dir (before realpath).
+    if ( strpos( $norm_parent_dir, $norm_upload_dir ) !== 0 ) {
+        sse_log( 'Parent directory not within normalized upload directory: ' . $parent_dir, 'security' );
         return false;
     }
-    
-    // Now safe to resolve real path after validation - filesystem checks removed to prevent SSRF
+
+    // Now safe to resolve real path after validation - filesystem checks removed to prevent SSRF.
     $real_parent_dir = realpath( $norm_parent_dir );
-    if ($real_parent_dir === false) {
-        sse_log('Parent directory resolution failed: ' . $parent_dir, 'security');
+    if ( false === $real_parent_dir ) {
+        sse_log( 'Parent directory resolution failed: ' . $parent_dir, 'security' );
         return false;
     }
-    
-    // Final validation: ensure resolved path is still within upload directory
-    if (strpos($real_parent_dir, $real_upload_dir) !== 0) {
-        sse_log('Parent directory real path validation failed', 'security');
+
+    // Final validation: ensure resolved path is still within upload directory.
+    if ( strpos( $real_parent_dir, $real_upload_dir ) !== 0 ) {
+        sse_log( 'Parent directory real path validation failed', 'security' );
         return false;
     }
     
@@ -1002,9 +1002,9 @@ function sse_resolve_parent_directory( $parent_dir, $upload_dir ) {
  * @return string|false Sanitized filename or false on failure.
  */
 function sse_sanitize_filename( $filename ) {
-    $filename = sanitize_file_name($filename);
-    if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-        sse_log('Filename contains invalid characters: ' . $filename, 'security');
+    $filename = sanitize_file_name( $filename );
+    if ( strpos( $filename, '..' ) !== false || strpos( $filename, '/' ) !== false || strpos( $filename, '\\' ) !== false ) {
+        sse_log( 'Filename contains invalid characters: ' . $filename, 'security' );
         return false;
     }
     
@@ -1019,16 +1019,16 @@ function sse_sanitize_filename( $filename ) {
  * @return bool True if the file is within the base directory, false otherwise.
  */
 function sse_check_path_within_base( $real_file_path, $real_base_dir ) {
-    // Ensure both paths are available for comparison
-    if ($real_file_path === false) {
+    // Ensure both paths are available for comparison.
+    if ( false === $real_file_path ) {
         return false;
     }
-    
-    // Ensure the file path starts with the base directory (with trailing slash)
-    $real_base_dir = rtrim($real_base_dir, '/') . '/';
-    $real_file_path = rtrim($real_file_path, '/') . '/';
-    
-    $is_within_base = strpos($real_file_path, $real_base_dir) === 0;
+
+    // Ensure the file path starts with the base directory (with trailing slash).
+    $real_base_dir  = rtrim( $real_base_dir, '/' ) . '/';
+    $real_file_path = rtrim( $real_file_path, '/' ) . '/';
+
+    $is_within_base = strpos( $real_file_path, $real_base_dir ) === 0;
     
     if ( ! $is_within_base ) {
         sse_log('Path validation failed - path outside base directory. File: ' . $real_file_path . ', Base: ' . $real_base_dir, 'warning');
@@ -1054,18 +1054,18 @@ function sse_validate_filepath($file_path, $base_dir) {
         return false;
     }
     
-    // Resolve real paths to prevent directory traversal
-    $real_file_path = sse_resolve_file_path($normalized_file_path);
-    $real_base_dir = realpath( $normalized_base_dir );
-    
-    // Base directory must be resolvable for security
-    if ($real_base_dir === false) {
-        sse_log('Could not resolve base directory: ' . $normalized_base_dir, 'security');
+    // Resolve real paths to prevent directory traversal.
+    $real_file_path = sse_resolve_file_path( $normalized_file_path );
+    $real_base_dir  = realpath( $normalized_base_dir );
+
+    // Base directory must be resolvable for security.
+    if ( false === $real_base_dir ) {
+        sse_log( 'Could not resolve base directory: ' . $normalized_base_dir, 'security' );
         return false;
     }
-    
-    // Validate path is within base directory
-    return sse_check_path_within_base($real_file_path, $real_base_dir);
+
+    // Validate path is within base directory.
+    return sse_check_path_within_base( $real_file_path, $real_base_dir );
 }
 
 /**
@@ -1144,19 +1144,19 @@ function sse_validate_basic_export_file($filename) {
  * @param string $filename The filename to validate.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_validate_filename_format($filename) {
-    if (empty($filename)) {
-        return new WP_Error('invalid_request', esc_html__('No file specified.', 'simple-wp-site-exporter'));
+function sse_validate_filename_format( $filename ) {
+    if ( empty( $filename ) ) {
+        return new WP_Error( 'invalid_request', esc_html__( 'No file specified.', 'simple-wp-site-exporter' ) );
     }
-    
-    // Prevent path traversal attacks
-    if (strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-        return new WP_Error('invalid_filename', esc_html__('Invalid filename.', 'simple-wp-site-exporter'));
+
+    // Prevent path traversal attacks.
+    if ( strpos( $filename, '/' ) !== false || strpos( $filename, '\\' ) !== false ) {
+        return new WP_Error( 'invalid_filename', esc_html__( 'Invalid filename.', 'simple-wp-site-exporter' ) );
     }
-    
-    // Validate that it's our export file format
+
+    // Validate that it's our export file format.
     if ( ! preg_match( '/^site_export_sse_[a-f0-9]{7}_[a-zA-Z0-9_-]+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip$/', $filename ) ) {
-        return new WP_Error('invalid_format', esc_html__('Invalid export file format.', 'simple-wp-site-exporter'));
+        return new WP_Error( 'invalid_format', esc_html__( 'Invalid export file format.', 'simple-wp-site-exporter' ) );
     }
     
     return true;
@@ -1191,21 +1191,21 @@ function sse_validate_export_file_path($filename) {
  * @param string $file_path The file path to check.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_validate_file_existence($file_path) {
+function sse_validate_file_existence( $file_path ) {
     global $wp_filesystem;
-    
-    // Initialize the WordPress filesystem
-    if (empty($wp_filesystem)) {
+
+    // Initialize the WordPress filesystem.
+    if ( empty( $wp_filesystem ) ) {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         if ( ! WP_Filesystem() ) {
-            sse_log('Failed to initialize WordPress filesystem API', 'error');
-            return new WP_Error('filesystem_init_failed', esc_html__('Failed to initialize WordPress filesystem API.', 'simple-wp-site-exporter'));
+            sse_log( 'Failed to initialize WordPress filesystem API', 'error' );
+            return new WP_Error( 'filesystem_init_failed', esc_html__( 'Failed to initialize WordPress filesystem API.', 'simple-wp-site-exporter' ) );
         }
     }
-    
-    // Check if file exists using WP Filesystem
+
+    // Check if file exists using WP Filesystem.
     if ( ! $wp_filesystem->exists( $file_path ) ) {
-        return new WP_Error('file_not_found', esc_html__('Export file not found.', 'simple-wp-site-exporter'));
+        return new WP_Error( 'file_not_found', esc_html__( 'Export file not found.', 'simple-wp-site-exporter' ) );
     }
     
     return true;
@@ -1329,14 +1329,17 @@ function sse_handle_export_deletion() { // phpcs:ignore WordPress.Security.Nonce
         wp_safe_redirect( admin_url( 'tools.php?page=simple-wp-site-exporter' ) );
         exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress standard: exit required after wp_safe_redirect.
     }
-    
-    add_action( 'admin_notices', function() {
-        ?>
-        <div class="notice notice-error is-dismissible">
-            <p><?php esc_html_e( 'Failed to delete export file.', 'simple-wp-site-exporter' ); ?></p>
-        </div>
-        <?php
-    });
+
+    add_action(
+        'admin_notices',
+        function () {
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p><?php esc_html_e( 'Failed to delete export file.', 'simple-wp-site-exporter' ); ?></p>
+            </div>
+            <?php
+        }
+    );
     sse_log( 'Failed manual deletion of export file: ' . $validation['filepath'], 'error' );
 
     // Redirect back to the export page to prevent resubmission.

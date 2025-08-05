@@ -1,5 +1,16 @@
 # Changelog for Simple WP Site Exporter
 
+## Unreleased
+### Code Quality Improvements
+- **WordPress Coding Standards**: Comprehensive PHPCS compliance fixes across all functions
+  - Fixed function documentation block spacing and alignment
+  - Standardized parameter formatting with proper spacing (e.g., `function( $param )`)
+  - Corrected Yoda conditions for all boolean comparisons (e.g., `false === $variable`)
+  - Aligned array formatting with consistent spacing (e.g., `'key' => 'value'`)
+  - Fixed multi-line function call formatting and indentation
+  - Resolved all remaining WordPress coding standards violations
+- **Code Consistency**: Enhanced code readability and maintainability through standardized formatting
+
 ## 1.8.3 - August 2, 2025
 ### WordPress Plugin Directory Compliance
 - **Text Domain Fix**: Updated text domain from 'Simple-WP-Site-Exporter' to 'simple-wp-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
