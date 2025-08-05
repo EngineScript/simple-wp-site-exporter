@@ -851,7 +851,7 @@ function sse_validate_file_extension( $file_path ) {
 
 /**
  * Validates and resolves parent directory for non-existent files.
- * 
+ *
  * @param string $normalized_file_path The normalized file path.
  * @return string|false Resolved file path or false on failure.
  */
@@ -1400,9 +1400,9 @@ function sse_validate_download_file_data( $file_data ) {
  */
 function sse_validate_download_file_access( $filepath ) {
     // Security: Whitelist approach - only allow files in our controlled export directory.
-    $upload_dir      = wp_upload_dir();
-    $export_dir      = trailingslashit( $upload_dir['basedir'] ) . 'simple-wp-site-exporter-exports';
-    
+    $upload_dir = wp_upload_dir();
+    $export_dir = trailingslashit( $upload_dir['basedir'] ) . 'simple-wp-site-exporter-exports';
+
     // Security: Additional validation to prevent SSRF attacks.
     // Ensure file extension is in our allowed list.
     $allowed_extensions = array( 'zip', 'sql' );
@@ -1480,7 +1480,7 @@ function sse_set_download_headers( $filename, $filesize ) {
 function sse_validate_file_output_security( $filepath ) {
     // Security: Final validation before file output to prevent SSRF.
     $allowed_extensions = array( 'zip', 'sql' );
-    $file_extension = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
+    $file_extension     = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
     if ( ! in_array( $file_extension, $allowed_extensions, true ) ) {
         sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . $file_extension, 'security' );
         wp_die( esc_html__( 'Access denied - invalid file type.', 'simple-wp-site-exporter' ) );
