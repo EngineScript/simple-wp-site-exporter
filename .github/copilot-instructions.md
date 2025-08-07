@@ -5,23 +5,21 @@ Coding standards, domain knowledge, and preferences that AI should follow.
 
 # Work Environment
 
-This project is coded entirely in a remote development environment using GitHub Codespaces. The AI will never ask me to run Terminal commands or use a local development environment. All code changes, tests, and debugging will be done within remote repositories on GitHub. 
+This project is coded entirely in a remote development environment using GitHub Codespaces. All code changes, tests, and debugging will be done within remote repositories on GitHub.
 
-Change summaries should be concise and clear, focusing on the specific changes made. The AI should not ask for confirmation before making changes, as all code modifications will be done directly in the remote environment. 
+The AI will never ask me to run terminal commands or use a local development environment.
 
 # Responses
 
 When delivering responses, the AI should provide clear, concise, and actionable information. Responses should be formatted in a way that is easy to read and understand, with a focus on clarity and precision. The AI should avoid unnecessary verbosity or complexity in its explanations.
 
-Responses, change summaries, and code comments should be written in English. The AI should not use any other languages or dialects, including regional variations of English. All communication should be clear and professional, adhering to standard English grammar and spelling conventions. 
+Responses, change summaries, and code comments should be written in American English. All communication should be clear and professional, adhering to standard English grammar and spelling conventions. 
 
-Responses should be delivered only in the chat interface. Formatting and styling should be utilized to enhance readability.
-
-Change summaries should never be created in the form of new .md files.
+Responses should be delivered only in the chat interface and should never be created in the form of new .md files. Formatting and styling within the chat window should be utilized to enhance readability.
 
 # Code Analysis and Reading Standards
 
-You must read files completely and thoroughly, with a minimum of 1500 lines per read operation when analyzing code. Never truncate files or stop reading at arbitrary limits like 50 or 100 lines - this lazy approach provides incomplete context and leads to poor suggestions. When you encounter any file, read it from the very first line to the absolute last line, processing all functions, classes, variables, imports, exports, and code structures. Your analysis must be based on the complete file content, not partial snapshots. Always read at least 1000 lines minimum per read operation, and if the file is larger, continue reading until you've processed the entire file. Do not use phrases like "showing first X lines" or "truncated for brevity" or "rest of file omitted" - these indicate lazy, incomplete analysis. Instead, demonstrate that you've read the complete file by referencing specific sections throughout the entire codebase, understanding the full context of how functions interact, how variables are used across the entire file, and how the complete code structure works together. Your suggestions and recommendations must reflect knowledge of the entire file, not just the beginning portions. Take the time to read everything properly because thoroughness and accuracy based on complete file knowledge is infinitely more valuable than quick, incomplete reviews that miss critical context and lead to incorrect suggestions.
+You must read files completely and thoroughly, with a minimum of 2000 lines per read operation when analyzing code. Never truncate files or stop reading at arbitrary limits like 50 or 100 lines - this lazy approach provides incomplete context and leads to poor suggestions. Take the time to read everything properly because thoroughness and accuracy based on complete file knowledge is infinitely more valuable than quick, incomplete reviews that miss critical context and lead to incorrect suggestions.
 
 # Coding Standards and Preferences
 
@@ -81,16 +79,16 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - When adding new information to the changelogs, changes will first be added to an "Unreleased" section at the top of the changelog file, and then later moved to a new version section when a new version is released. Be sure to follow this pattern and do not skip any of the changelog files.
 - Do not automatically update the version number in the plugin header or other files. Instead, provide a clear and concise change summary that includes the version number and a brief description of the changes made.
 - When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, and CHANGELOG.md, even when a new version is not released.
-- Note: changelog.txt has been removed from this project. Only maintain readme.txt (for WordPress.org) and CHANGELOG.md (for developers).
+- Maintain changelogs at readme.txt (for WordPress.org) and CHANGELOG.md (for developers).
 - Please do not skip these locations, as the changelog files must be in sync with each other, and the version numbers must be consistent across all files.
-- I will instruct you when to update the version number, and you should not do this automatically. Always ask for confirmation before updating the version number.
+- I will instruct you when to update the version number, and you should not do this automatically.
 - When the version number is updated, ensure that the new version number is reflected in all relevant files, as outlined in Version Locations above.
 - When the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
 
 # General Coding Standards
 
-- The above standards are prioritized over general coding standards.
-- The standards below are general coding standards that apply to all code, including WordPress code. Do not apply them if they conflict with WordPress standards.
+- WordPress coding standards should be prioritized over general coding standards.
+- The standards below are general coding standards that apply to all code, including WordPress code. Do not apply them if they conflict with WordPress standards and best practices.
 
 ## Accessibility & UX
 
@@ -151,3 +149,10 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - Auto-lint and format code using standard tools (e.g., Prettier, ESLint, dotnet format)
 - Changes should be made directly to the file in question. Example: admin.php should be modified directly, not by creating a new file like admin-changes.php.
 - New files may be created when appropriate, but they should be relevant to the task at hand, so long as they are not a rewrite of an existing file. We want to avoid unnecessary duplication of files.
+
+# Final Step for Each Task
+
+- After completing a task:
+  - Review your changes to ensure they have met the WordPress coding standards and best practices.
+  - Perform a final check to ensure we have not introduced any security vulnerabilities such as XSS, CSRF, or SQL injection.
+  - In the chat interface, deliver a summary of the security checks performed, including any potential vulnerabilities identified and how they were addressed. Do not allow yourself to skip this step as it is crucial for maintaining the security and integrity of the codebase.

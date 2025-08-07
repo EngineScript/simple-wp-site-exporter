@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the Simple WP Site Exporter plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Simple WP Site Exporter 1.8.1\n"
+"Project-Id-Version: Simple WP Site Exporter 1.8.4\n"
 "Report-Msgid-Bugs-To: https://github.com/EngineScript/simple-wp-site-exporter/issues\n"
 "POT-Creation-Date: 2025-06-26 12:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"

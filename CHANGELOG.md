@@ -1,6 +1,8 @@
 # Changelog for Simple WP Site Exporter
 
 ## Unreleased
+
+## 1.8.4 - August 7, 2025
 ### Code Quality Improvements
 - **WordPress Coding Standards**: Comprehensive PHPCS compliance fixes across all functions
   - Fixed function documentation block spacing and alignment

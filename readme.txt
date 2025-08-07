@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.5
 Tested up to: 6.8
-Stable tag: 1.8.3
+Stable tag: 1.8.4
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -98,7 +98,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 = 1.8.2 =
 * **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
 
-= Unreleased =
+
+= 1.8.4 =
 * **WordPress Coding Standards**: Comprehensive PHPCS compliance fixes across all functions
 * **Code Quality**: Fixed function documentation block spacing and alignment
 * **Parameter Formatting**: Standardized parameter formatting with proper spacing (e.g., `function( $param )`)
