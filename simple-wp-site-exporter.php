@@ -930,7 +930,7 @@ function sse_get_upload_directory_info() {
 
 /**
  * Validates parent directory path safety.
- * 
+ *
  * @param string $parent_dir The parent directory path.
  * @param string $upload_dir The upload directory path.
  * @return bool True if safe, false otherwise.
@@ -956,7 +956,7 @@ function sse_validate_parent_directory_safety( $parent_dir, $upload_dir ) {
 
 /**
  * Resolves and validates parent directory.
- * 
+ *
  * @param string $parent_dir The parent directory path.
  * @param string $upload_dir The upload directory path.
  * @return string|false Real parent directory path or false on failure.
@@ -997,7 +997,7 @@ function sse_resolve_parent_directory( $parent_dir, $upload_dir ) {
 
 /**
  * Sanitizes filename to prevent directory traversal.
- * 
+ *
  * @param string $filename The filename to sanitize.
  * @return string|false Sanitized filename or false on failure.
  */
@@ -1013,7 +1013,7 @@ function sse_sanitize_filename( $filename ) {
 
 /**
  * Checks if a file path is within the allowed base directory.
- * 
+ *
  * @param string|false $real_file_path The real file path or false if resolution failed.
  * @param string       $real_base_dir  The real base directory path.
  * @return bool True if the file is within the base directory, false otherwise.
@@ -1039,7 +1039,7 @@ function sse_check_path_within_base( $real_file_path, $real_base_dir ) {
 
 /**
  * Validate that a file path is within the allowed directory.
- * 
+ *
  * @param string $file_path The file path to validate.
  * @param string $base_dir  The base directory that the file should be within.
  * @return bool True if the file path is safe, false otherwise.
@@ -1070,7 +1070,7 @@ function sse_validate_filepath( $file_path, $base_dir ) {
 
 /**
  * Validates export file for download operations.
- * 
+ *
  * @param string $filename The filename to validate.
  * @return array|WP_Error Result array with file data or WP_Error on failure.
  */
@@ -1100,7 +1100,7 @@ function sse_validate_export_file_for_download( $filename ) {
 
 /**
  * Validates export file for deletion operations.
- * 
+ *
  * @param string $filename The filename to validate.
  * @return array|WP_Error Result array with file data or WP_Error on failure.
  */
@@ -1110,7 +1110,7 @@ function sse_validate_export_file_for_deletion( $filename ) {
 
 /**
  * Performs basic validation common to both download and deletion operations.
- * 
+ *
  * @param string $filename The filename to validate.
  * @return array|WP_Error Result array with file data or WP_Error on failure.
  */
@@ -1228,7 +1228,7 @@ function sse_validate_request_referer() {
 
 /**
  * Validate export download request parameters.
- * 
+ *
  * @param string $filename The filename to validate.
  * @return array|WP_Error Result array with file path and size or WP_Error on failure.
  */
@@ -1434,7 +1434,7 @@ function sse_validate_download_file_access( $filepath ) {
 
 /**
  * Sets appropriate headers for file download.
- * 
+ *
  * @param string $filename  The filename for download.
  * @param int    $filesize  The file size in bytes.
  * @return void
@@ -1473,7 +1473,7 @@ function sse_set_download_headers( $filename, $filesize ) {
 
 /**
  * Validates file output security before serving download.
- * 
+ *
  * @param string $filepath The file path to validate.
  * @return bool True if file passes security checks, false otherwise.
  */
@@ -1502,7 +1502,7 @@ function sse_validate_file_output_security( $filepath ) {
 
 /**
  * Outputs file content for download using WordPress filesystem.
- * 
+ *
  * @param string $filepath The validated file path.
  * @param string $filename The filename for logging.
  * @return void

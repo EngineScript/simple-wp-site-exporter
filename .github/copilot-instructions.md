@@ -154,5 +154,6 @@ You must read files completely and thoroughly, with a minimum of 2000 lines per 
 
 - After completing a task:
   - Review your changes to ensure they have met the WordPress coding standards and best practices.
+  - Ensure all changes are documented in the changelog files.
   - Perform a final check to ensure we have not introduced any security vulnerabilities such as XSS, CSRF, or SQL injection.
   - In the chat interface, deliver a summary of the security checks performed, including any potential vulnerabilities identified and how they were addressed. Do not allow yourself to skip this step as it is crucial for maintaining the security and integrity of the codebase.
