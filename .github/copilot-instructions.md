@@ -121,16 +121,9 @@ You must read files completely and thoroughly, with a minimum of 2000 lines per 
 - Use prepared statements for database queries
 - Use secure authentication and authorization mechanisms
 - When using third-party libraries or APIs, ensure they are well-maintained and secure
-- Regularly update dependencies to their latest stable versions
-- Use HTTPS for all API requests and data transmission
-- When handling sensitive data, ensure it is encrypted both in transit and at rest
-- If you suspect a security vulnerability, immediately notify the project maintainers and provide details for investigation
-- If you encounter a security vulnerability in the codebase, do not disclose it publicly. Instead, report it privately to the project maintainers or through a responsible disclosure process.
-- If you are unsure about the security implications of a specific code change, ask for clarification or guidance before proceeding.
 - Always follow the principle of least privilege when implementing security features, ensuring that users and processes have only the permissions they need to perform their tasks.
-- If you encounter a security vulnerability in a third-party library or dependency, check if there is an updated version that addresses the issue. If not, consider alternatives and notify me of the situation.
-- If there is a possible security vulnerability in the codebase, you should always ask for confirmation before proceeding with any changes. This ensures that the project maintainers are aware of the potential risk and can provide guidance on how to address it safely.
-- If I ask you to make changes that could potentially introduce security vulnerabilities, you should always ask for confirmation before proceeding. This ensures that the project maintainers are aware of the potential risk and can provide guidance on how to address it safely.
+- If there is a possible security vulnerability in the codebase, you should always ask for confirmation before proceeding.
+- If I ask you to make changes that could potentially introduce security vulnerabilities, you should always ask for confirmation before proceeding.
 
 ## Code Quality & Architecture
 
@@ -155,5 +148,7 @@ You must read files completely and thoroughly, with a minimum of 2000 lines per 
 - After completing a task:
   - Review your changes to ensure they have met the WordPress coding standards and best practices.
   - Ensure all changes are documented in the changelog files.
+  - Ensure all user inputs are properly sanitized and validated.
+  - Ensure all outputs are properly escaped.
   - Perform a final check to ensure we have not introduced any security vulnerabilities such as XSS, CSRF, or SQL injection.
   - In the chat interface, deliver a summary of the security checks performed, including any potential vulnerabilities identified and how they were addressed. Do not allow yourself to skip this step as it is crucial for maintaining the security and integrity of the codebase.

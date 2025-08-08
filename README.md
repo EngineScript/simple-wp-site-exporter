@@ -17,7 +17,7 @@ EngineScript Simple WP Site Exporter provides WordPress administrators with a st
 
 - **One-Click Export**: Create a complete site backup with just one click
 - **Database Export**: Includes a full database dump in your export
-- **Automatic Cleanup**: Exports are automatically deleted after 1 hour to save disk space
+- **Automatic Cleanup**: Exports are automatically deleted after 5 minutes to save disk space
 - **Secure Downloads**: All exports use WordPress security tokens for protected access
 - **WP-CLI Integration**: Leverages WP-CLI for efficient database exports when available
 - **Export Management**: Download or manually delete export files as needed
@@ -56,7 +56,7 @@ The export format is specifically designed to work with EngineScript's site impo
 
 - **Download**: Click the "Download Export File" button next to any export
 - **Delete**: Click "Delete Export File" to remove an export you no longer need
-- **Auto-Cleanup**: Exports are automatically deleted after 1 hour
+- **Auto-Cleanup**: Exports are automatically deleted after 5 minutes
 
 ## Requirements
 
@@ -88,9 +88,9 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 Exports are stored in your WordPress uploads directory, specifically at:
 `[wp-root]/wp-content/uploads/simple-wp-site-exporter-exports/`
 
-### Why do export files disappear after an hour?
+### Why do export files disappear after 5 minutes?
 
-For security and disk space considerations, all exports are automatically deleted after 1 hour. This ensures sensitive site data isn't left stored indefinitely.
+For security and disk space considerations, all exports are automatically deleted after 5 minutes. This ensures sensitive site data isn't left stored indefinitely.
 
 ### Can I create multiple exports?
 

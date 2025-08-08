@@ -20,6 +20,11 @@ if ( ! defined( 'ES_WP_SITE_EXPORTER_VERSION' ) ) {
     define( 'ES_WP_SITE_EXPORTER_VERSION', '1.8.4' );
 }
 
+// Define allowed file extensions for export operations.
+if ( ! defined( 'SSE_ALLOWED_EXTENSIONS' ) ) {
+    define( 'SSE_ALLOWED_EXTENSIONS', array( 'zip', 'sql' ) );
+}
+
 /**
  * WordPress Core Classes Documentation
  *
@@ -217,6 +222,28 @@ function sse_exporter_page_html() {
         <form method="post" action="" style="margin-top: 15px;">
             <?php wp_nonce_field( 'sse_export_action', 'sse_export_nonce' ); ?>
             <input type="hidden" name="action" value="sse_export_site">
+            
+            <table class="form-table" style="margin-bottom: 20px;">
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label for="sse_max_file_size"><?php esc_html_e( 'Maximum File Size', 'simple-wp-site-exporter' ); ?></label>
+                        </th>
+                        <td>
+                            <select name="sse_max_file_size" id="sse_max_file_size">
+                                <option value="0"><?php esc_html_e( 'No limit (include all files)', 'simple-wp-site-exporter' ); ?></option>
+                                <option value="104857600"><?php esc_html_e( '100 MB', 'simple-wp-site-exporter' ); ?></option>
+                                <option value="524288000"><?php esc_html_e( '500 MB', 'simple-wp-site-exporter' ); ?></option>
+                                <option value="1073741824"><?php esc_html_e( '1 GB', 'simple-wp-site-exporter' ); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e( 'Files larger than this size will be excluded from the export. Choose "No limit" to include all files regardless of size.', 'simple-wp-site-exporter' ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
             <?php submit_button( esc_html__( 'Export Site', 'simple-wp-site-exporter' ) ); ?>
         </form>
         <hr>
@@ -249,29 +276,44 @@ function sse_handle_export() {
         return;
     }
 
-    sse_prepare_execution_environment();
-
-    $export_paths = sse_setup_export_directories();
-    if ( is_wp_error( $export_paths ) ) {
-        wp_die( esc_html( $export_paths->get_error_message() ) );
-    }
-
-    $database_file = sse_export_database( $export_paths['export_dir'] );
-    if ( is_wp_error( $database_file ) ) {
-        sse_show_error_notice( $database_file->get_error_message() );
+    // Check for and set an export lock.
+    if ( get_transient( 'sse_export_lock' ) ) {
+        sse_show_error_notice( __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'simple-wp-site-exporter' ) );
         return;
     }
+    // Set lock with a 1-hour expiration to prevent permanent locks on failure.
+    set_transient( 'sse_export_lock', time(), HOUR_IN_SECONDS );
 
-    $zip_result = sse_create_site_archive( $export_paths, $database_file );
-    if ( is_wp_error( $zip_result ) ) {
+    try {
+        sse_prepare_execution_environment();
+
+        $export_paths = sse_setup_export_directories();
+        if ( is_wp_error( $export_paths ) ) {
+            sse_show_error_notice( $export_paths->get_error_message() );
+            return;
+        }
+
+        $database_file = sse_export_database( $export_paths['export_dir'] );
+        if ( is_wp_error( $database_file ) ) {
+            sse_show_error_notice( $database_file->get_error_message() );
+            return;
+        }
+
+        $zip_result = sse_create_site_archive( $export_paths, $database_file );
+        if ( is_wp_error( $zip_result ) ) {
+            sse_cleanup_files( array( $database_file['filepath'] ) );
+            sse_show_error_notice( $zip_result->get_error_message() );
+            return;
+        }
+
         sse_cleanup_files( array( $database_file['filepath'] ) );
-        sse_show_error_notice( $zip_result->get_error_message() );
-        return;
+        sse_schedule_export_cleanup( $zip_result['filepath'] );
+        sse_show_success_notice( $zip_result );
+    } finally {
+        // Always release the lock and clean up user preferences.
+        delete_transient( 'sse_export_lock' );
+        delete_transient( 'sse_export_max_file_size_' . get_current_user_id() );
     }
-
-    sse_cleanup_files( array( $database_file['filepath'] ) );
-    sse_schedule_export_cleanup( $zip_result['filepath'] );
-    sse_show_success_notice( $zip_result );
 }
 
 /**
@@ -293,6 +335,10 @@ function sse_validate_export_request() { // phpcs:ignore WordPress.Security.Nonc
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_die( esc_html__( 'You do not have permission to perform this action.', 'simple-wp-site-exporter' ), 403 );
     }
+
+    // Store the user's max file size selection for use during export.
+    $max_file_size = isset( $_POST['sse_max_file_size'] ) ? absint( $_POST['sse_max_file_size'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above
+    set_transient( 'sse_export_max_file_size_' . get_current_user_id(), $max_file_size, HOUR_IN_SECONDS );
 
     return true;
 } // end sse_validate_export_request()
@@ -399,7 +445,11 @@ function sse_get_safe_wp_cli_path() {
     $path    = shell_exec( $command ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Safe command to find executable.
 
     if ( ! empty( $path ) ) {
-        return trim( $path );
+        $trimmed = trim( $path );
+        // Additional verification: ensure resolved path exists and is executable (defense-in-depth).
+        if ( file_exists( $trimmed ) && is_executable( $trimmed ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled path verification
+            return $trimmed;
+        }
     }
 
     return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI executable not found. Please ensure it is installed and in your server\'s PATH.', 'simple-wp-site-exporter' ) );
@@ -427,18 +477,36 @@ function sse_export_database( $export_dir ) {
         return $wp_cli_path;
     }
 
-    $command = sprintf(
-        '%s db export %s --path=%s --allow-root',
+    // Only append --allow-root if we are actually running as root (hardening).
+    $allow_root_flag = ( function_exists( 'posix_geteuid' ) && 0 === @posix_geteuid() ) ? ' --allow-root' : '';
+    $command         = sprintf(
+        '%s db export %s --path=%s%s',
         escapeshellarg( $wp_cli_path ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
         escapeshellarg( $db_filepath ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
-        escapeshellarg( ABSPATH ) // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        escapeshellarg( ABSPATH ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
+        $allow_root_flag
     );
 
     $output = shell_exec( $command . ' 2>&1' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
 
     if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
-        $error_message = ! empty( $output ) ? trim( $output ) : 'WP-CLI command failed silently.';
-        return new WP_Error( 'db_export_failed', $error_message );
+        // Sanitize WP-CLI output to avoid leaking absolute paths or sensitive data.
+        $safe_output = '';
+        if ( ! empty( $output ) ) {
+            $lines = array_slice( preg_split( '/\r?\n/', $output ), 0, 5 ); // Limit to first 5 lines.
+            $lines = array_map(
+                static function ( $line ) {
+                    // Remove absolute paths (rudimentary) and collapse whitespace.
+                    $line = preg_replace( '#(/|[A-Za-z]:\\\\)[^\s]+#', '[path]', $line );
+                    $line = preg_replace( '/\s+/', ' ', $line );
+                    return trim( $line );
+                },
+                $lines
+            );
+            $safe_output = implode( ' | ', $lines );
+        }
+        $error_message = $safe_output ? $safe_output : 'WP-CLI command failed silently.';
+        return new WP_Error( 'db_export_failed', esc_html( $error_message ) );
     }
 
     sse_log( 'Database export successful', 'info' );
@@ -563,7 +631,7 @@ function sse_process_file_for_zip( $zip, $file_info, $source_path, $export_dir )
         return null;
     }
 
-    if ( sse_should_exclude_file( $pathname, $relative_path, $export_dir ) ) {
+    if ( sse_should_exclude_file( $pathname, $relative_path, $export_dir, $file_info ) ) {
         return null;
     }
 
@@ -608,12 +676,13 @@ function sse_add_file_to_zip( $zip, $file_info, $file, $pathname, $relative_path
 /**
  * Determines if a file should be excluded from the export.
  *
- * @param string $pathname The full pathname.
- * @param string $relative_path The relative path.
- * @param string $export_dir The export directory to exclude.
+ * @param string      $pathname      The full pathname.
+ * @param string      $relative_path The relative path.
+ * @param string      $export_dir    The export directory to exclude.
+ * @param SplFileInfo $file_info     File information object.
  * @return bool True if file should be excluded.
  */
-function sse_should_exclude_file( $pathname, $relative_path, $export_dir ) {
+function sse_should_exclude_file( $pathname, $relative_path, $export_dir, $file_info ) {
     // Exclude export directory.
     if ( strpos( $pathname, $export_dir ) === 0 ) {
         return true;
@@ -627,6 +696,26 @@ function sse_should_exclude_file( $pathname, $relative_path, $export_dir ) {
     // Exclude version control and system files.
     if ( preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relative_path ) ) {
         return true;
+    }
+
+    // Exclude files based on size.
+    if ( $file_info->isFile() ) {
+        // Get the user's selected file size limit.
+        $user_max_file_size = get_transient( 'sse_export_max_file_size_' . get_current_user_id() );
+        
+        /**
+         * Filters the maximum allowed file size for inclusion in the export.
+         *
+         * @since 1.8.5
+         *
+         * @param int $max_file_size Maximum file size in bytes. Default is user's selection or 0 (no limit).
+         */
+        $max_file_size = apply_filters( 'sse_max_file_size_for_export', $user_max_file_size ? $user_max_file_size : 0 );
+
+        if ( $max_file_size > 0 && $file_info->getSize() > $max_file_size ) {
+            sse_log( 'Excluding large file: ' . $pathname . ' (Size: ' . size_format( $file_info->getSize() ) . ', Limit: ' . size_format( $max_file_size ) . ')', 'info' );
+            return true;
+        }
     }
 
     return false;
@@ -751,12 +840,15 @@ function sse_delete_export_file_handler( $file ) {
         return;
     }
 
-    if ( file_exists( $file ) ) {
+    if ( file_exists( $file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled scheduled deletion validation
         if ( sse_safely_delete_file( $file ) ) {
             sse_log( 'Scheduled deletion successful: ' . $file, 'info' );
             return;
         }
         sse_log( 'Scheduled deletion failed: ' . $file, 'error' );
+    } else {
+        // Graceful handling: file already gone (likely manually deleted) - not an error.
+        sse_log( 'Scheduled deletion skipped - file already removed: ' . $file, 'info' );
     }
 }
 add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
@@ -838,10 +930,9 @@ function sse_resolve_file_path( $normalized_file_path ) {
  * @return bool True if extension is allowed, false otherwise.
  */
 function sse_validate_file_extension( $file_path ) {
-    $allowed_extensions = array( 'zip', 'sql' );
-    $file_extension     = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
+    $file_extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
 
-    if ( ! in_array( $file_extension, $allowed_extensions, true ) ) {
+    if ( ! in_array( $file_extension, SSE_ALLOWED_EXTENSIONS, true ) ) {
         sse_log( 'Rejected file access - invalid extension: ' . $file_extension, 'security' );
         return false;
     }
@@ -1377,17 +1468,47 @@ function sse_check_download_rate_limit() {
  * @throws Exception If validation fails.
  */
 function sse_validate_download_file_data( $file_data ) {
-    // Additional security validation.
-    if ( ! is_array( $file_data ) ||
-         ! isset( $file_data['filepath'], $file_data['filename'], $file_data['filesize'] ) ) {
-        sse_log( 'Invalid file data provided for download', 'error' );
+    // Additional security validation & strict typing.
+    if ( ! is_array( $file_data ) ) {
+        sse_log( 'Invalid file data type (not array) for download', 'error' );
         wp_die( esc_html__( 'Invalid file data.', 'simple-wp-site-exporter' ) );
     }
-    
+
+    $required = array( 'filepath', 'filename', 'filesize' );
+    foreach ( $required as $key ) {
+        if ( ! array_key_exists( $key, $file_data ) ) {
+            sse_log( 'Missing required file data key: ' . $key, 'error' );
+            wp_die( esc_html__( 'Invalid file data.', 'simple-wp-site-exporter' ) );
+        }
+    }
+
+    $filepath_raw = $file_data['filepath'];
+    $filename_raw = $file_data['filename'];
+    $filesize_raw = $file_data['filesize'];
+
+    if ( ! is_string( $filepath_raw ) || ! is_string( $filename_raw ) ) {
+        sse_log( 'File data values must be strings', 'error' );
+        wp_die( esc_html__( 'Invalid file data.', 'simple-wp-site-exporter' ) );
+    }
+
+    if ( ! is_numeric( $filesize_raw ) ) {
+        sse_log( 'File size not numeric', 'error' );
+        wp_die( esc_html__( 'Invalid file data.', 'simple-wp-site-exporter' ) );
+    }
+
+    $filepath = sanitize_text_field( $filepath_raw );
+    $filename = sanitize_file_name( $filename_raw );
+    $filesize = (int) $filesize_raw;
+
+    if ( $filesize <= 0 ) {
+        sse_log( 'Non-positive file size encountered for download', 'error' );
+        wp_die( esc_html__( 'Invalid file size.', 'simple-wp-site-exporter' ) );
+    }
+
     return array(
-        'filepath' => sanitize_text_field( $file_data['filepath'] ),
-        'filename' => sanitize_file_name( $file_data['filename'] ),
-        'filesize' => absint( $file_data['filesize'] )
+        'filepath' => $filepath,
+        'filename' => $filename,
+        'filesize' => $filesize,
     );
 }
 
@@ -1405,10 +1526,8 @@ function sse_validate_download_file_access( $filepath ) {
 
     // Security: Additional validation to prevent SSRF attacks.
     // Ensure file extension is in our allowed list.
-    $allowed_extensions = array( 'zip', 'sql' );
-    $file_extension     = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
-    if ( ! in_array( $file_extension, $allowed_extensions, true ) ) {
-        sse_log( 'Security: Attempted access to file with disallowed extension: ' . $file_extension, 'security' );
+    if ( ! sse_validate_file_extension( $filepath ) ) {
+        sse_log( 'Security: Attempted access to file with disallowed extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
         wp_die( esc_html__( 'Access denied - invalid file type.', 'simple-wp-site-exporter' ) );
     }
     
@@ -1479,10 +1598,8 @@ function sse_set_download_headers( $filename, $filesize ) {
  */
 function sse_validate_file_output_security( $filepath ) {
     // Security: Final validation before file output to prevent SSRF.
-    $allowed_extensions = array( 'zip', 'sql' );
-    $file_extension     = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
-    if ( ! in_array( $file_extension, $allowed_extensions, true ) ) {
-        sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . $file_extension, 'security' );
+    if ( ! sse_validate_file_extension( $filepath ) ) {
+        sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
         wp_die( esc_html__( 'Access denied - invalid file type.', 'simple-wp-site-exporter' ) );
     }
     

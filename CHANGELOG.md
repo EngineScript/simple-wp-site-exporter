@@ -1,6 +1,24 @@
 # Changelog for Simple WP Site Exporter
 
 ## Unreleased
+### Performance Enhancements
+- **Export Locking**: Implemented a lock using transients (`sse_export_lock`) to prevent concurrent export processes and reduce server load.
+- **User-Configurable File Size Limits**: Added a user-friendly dropdown in the export form to exclude files larger than selected sizes (100MB, 500MB, 1GB, or no limit).
+
+### Code Quality Improvements
+- **Centralized Configuration**: Created `SSE_ALLOWED_EXTENSIONS` constant to eliminate code duplication for file extension validation.
+- **Unified Validation**: Consolidated file extension validation logic into a single reusable function.
+
+### User Experience Improvements
+- **Enhanced Export Form**: Added intuitive file size limit selection directly in the export interface, eliminating the need for developers to write custom filter code.
+
+### Security Hardening
+- **WP-CLI Verification**: Added executable/existence verification for PATH-discovered WP-CLI binary
+- **Error Output Sanitization**: Sanitized WP-CLI failure output (path masking, line limiting) to prevent filesystem disclosure
+- **Graceful Scheduled Deletion**: Treats missing file during scheduled cleanup as info (likely already removed) instead of error
+- **Conditional Root Flag**: Added conditional inclusion of `--allow-root` only when actually running as root
+- **Strict Download Validation**: Hardened download file data validation (type checks, required keys, numeric size enforcement)
+- **Secure File Data Handling**: Added stronger sanitization and non-positive size rejection before serving downloads
 
 ## 1.8.4 - August 7, 2025
 ### Code Quality Improvements
