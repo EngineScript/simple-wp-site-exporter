@@ -478,7 +478,13 @@ function sse_export_database( $export_dir ) {
     }
 
     // Only append --allow-root if we are actually running as root (hardening).
-    $allow_root_flag = ( function_exists( 'posix_geteuid' ) && 0 === @posix_geteuid() ) ? ' --allow-root' : '';
+    $allow_root_flag = '';
+    if ( function_exists( 'posix_geteuid' ) ) {
+        $uid = posix_geteuid();
+        if ( false !== $uid && 0 === $uid ) {
+            $allow_root_flag = ' --allow-root';
+        }
+    }
     $command         = sprintf(
         '%s db export %s --path=%s%s',
         escapeshellarg( $wp_cli_path ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
@@ -493,8 +499,8 @@ function sse_export_database( $export_dir ) {
         // Sanitize WP-CLI output to avoid leaking absolute paths or sensitive data.
         $safe_output = '';
         if ( ! empty( $output ) ) {
-            $lines = array_slice( preg_split( '/\r?\n/', $output ), 0, 5 ); // Limit to first 5 lines.
-            $lines = array_map(
+            $lines       = array_slice( preg_split( '/\r?\n/', $output ), 0, 5 ); // Limit to first 5 lines.
+            $lines       = array_map(
                 static function ( $line ) {
                     // Remove absolute paths (rudimentary) and collapse whitespace.
                     $line = preg_replace( '#(/|[A-Za-z]:\\\\)[^\s]+#', '[path]', $line );
