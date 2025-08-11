@@ -485,7 +485,7 @@ function sse_export_database( $export_dir ) {
             $allow_root_flag = ' --allow-root';
         }
     }
-    $command         = sprintf(
+    $command = sprintf(
         '%s db export %s --path=%s%s',
         escapeshellarg( $wp_cli_path ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
         escapeshellarg( $db_filepath ), // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.escapeshellarg_escapeshellarg -- Required for shell command security
