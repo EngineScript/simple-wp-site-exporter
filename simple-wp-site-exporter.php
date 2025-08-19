@@ -184,7 +184,36 @@ function sse_admin_menu() {
         'sse_exporter_page_html'
     );
 }
-add_action( 'admin_menu', 'sse_admin_menu' );
+
+/**
+ * Initialize the Simple WP Site Exporter plugin.
+ *
+ * This function is hooked to 'plugins_loaded' to ensure that all other plugins
+ * and WordPress core functions are available before initializing this plugin.
+ * This prevents load order issues and conflicts with other plugins.
+ *
+ * @since 1.8.5
+ * @return void
+ */
+function sse_init_plugin() {
+    // Hook admin menu creation.
+    add_action( 'admin_menu', 'sse_admin_menu' );
+    
+    // Hook export handler.
+    add_action( 'admin_init', 'sse_handle_export' );
+    
+    // Hook scheduled deletion handler.
+    add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
+    
+    // Hook secure download handler.
+    add_action( 'admin_init', 'sse_handle_secure_download' );
+    
+    // Hook export deletion handler.
+    add_action( 'admin_init', 'sse_handle_export_deletion' );
+}
+
+// Initialize the plugin when all plugins are loaded.
+add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 // --- Exporter Page HTML ---
 /**
@@ -825,7 +854,6 @@ function sse_schedule_export_cleanup( $zip_filepath ) {
         wp_schedule_single_event( time() + ( 5 * 60 ), 'sse_delete_export_file', array( $zip_filepath ) );
     }
 }
-add_action( 'admin_init', 'sse_handle_export' );
 
 // --- Scheduled Deletion Handler ---
 
@@ -857,7 +885,6 @@ function sse_delete_export_file_handler( $file ) {
         sse_log( 'Scheduled deletion skipped - file already removed: ' . $file, 'info' );
     }
 }
-add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
 
 /**
  * Safely delete a file using WordPress Filesystem API.
@@ -1379,7 +1406,6 @@ function sse_handle_secure_download() { // phpcs:ignore WordPress.Security.Nonce
 
     sse_serve_file_download( $validation );
 }
-add_action( 'admin_init', 'sse_handle_secure_download' );
 
 /**
  * Handles manual deletion of export files.
@@ -1443,7 +1469,6 @@ function sse_handle_export_deletion() { // phpcs:ignore WordPress.Security.Nonce
     wp_safe_redirect( admin_url( 'tools.php?page=simple-wp-site-exporter' ) );
     exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress standard: exit required after wp_safe_redirect.
 }
-add_action( 'admin_init', 'sse_handle_export_deletion' );
 
 /**
  * Implements basic rate limiting for downloads.

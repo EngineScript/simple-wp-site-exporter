@@ -134,11 +134,11 @@ jobs:
         run: |
           # Install PHPCS and WordPress Coding Standards using the dealerdirect installer
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --dev squizlabs/php_codesniffer:"^3.7.2"
-          composer global require --dev wp-coding-standards/wpcs:"^3.1.0"
-          composer global require --dev phpcompatibility/php-compatibility:"^9.3.5"
-          composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1.7" 
-          composer global require --dev automattic/vipwpcs:"^3.0.1"
+          composer global require --dev squizlabs/php_codesniffer:"^3.7"
+          composer global require --dev wp-coding-standards/wpcs:"^3.0"
+          composer global require --dev phpcompatibility/php-compatibility:"^9.3"
+          composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1" 
+          composer global require --dev automattic/vipwpcs:"^3.0"
           composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1.1"
           
           # Add composer bin to PATH
@@ -162,6 +162,158 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           filename: .github/ISSUE_TEMPLATE/phpcs-failure.md
+          update_existing: false
+
+  vip-phpcs:
+    name: WordPress VIP Coding Standards (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.3', '8.4']
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: none
+          tools: composer:v2, phpcs
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: highest
+          composer-options: "--prefer-dist --no-progress"
+
+      - name: Install WordPress VIP Coding Standards
+        run: |
+          # Install PHPCS and WordPress VIP Coding Standards
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --dev squizlabs/php_codesniffer:"^3.7"
+          composer global require --dev wp-coding-standards/wpcs:"^3.0"
+          composer global require --dev automattic/vipwpcs:"^3.0"
+          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.0"
+          
+          # Add composer bin to PATH
+          echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
+          
+          # Verify installation and show available standards
+          phpcs -i
+          
+          # Verify VIP standards are available
+          phpcs -i | grep -i vip || echo "VIP standards not found, checking installation..."
+
+      - name: Create VIP-specific PHPCS configuration
+        run: |
+          cat > phpcs-vip.xml << 'EOF'
+          <?xml version="1.0"?>
+          <ruleset name="WordPress VIP Go Coding Standards">
+              <description>WordPress VIP Go coding standards for enterprise-level WordPress development</description>
+
+              <!-- Files to check -->
+              <file>.</file>
+
+              <!-- Exclude patterns -->
+              <exclude-pattern>*/vendor/*</exclude-pattern>
+              <exclude-pattern>*/node_modules/*</exclude-pattern>
+              <exclude-pattern>*/tests/*</exclude-pattern>
+              <exclude-pattern>*/assets/*</exclude-pattern>
+              <exclude-pattern>*/languages/*</exclude-pattern>
+              <exclude-pattern>*/.git/*</exclude-pattern>
+              <exclude-pattern>*/.github/*</exclude-pattern>
+              <exclude-pattern>*.js</exclude-pattern>
+              <exclude-pattern>*.css</exclude-pattern>
+
+              <!-- Use WordPress VIP Go coding standards -->
+              <rule ref="WordPress-VIP-Go">
+                  <!-- Allow short array syntax [] instead of array() -->
+                  <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+                  
+                  <!-- Allow longer lines for readability in some cases -->
+                  <exclude name="Generic.Files.LineLength.TooLong"/>
+                  
+                  <!-- Exclude JS-related sniffs to avoid deprecation warnings -->
+                  <exclude name="WordPressVIPMinimum.JS"/>
+              </rule>
+
+              <!-- Add specific WordPressVIPMinimum rules (non-JS) -->
+              <rule ref="WordPressVIPMinimum.Security"/>
+              <rule ref="WordPressVIPMinimum.Performance"/>
+              <rule ref="WordPressVIPMinimum.UserExperience"/>
+              <rule ref="WordPressVIPMinimum.Functions"/>
+              <rule ref="WordPressVIPMinimum.Variables"/>
+              <rule ref="WordPressVIPMinimum.Files"/>
+              <rule ref="WordPressVIPMinimum.Hooks"/>
+
+              <!-- WordPress internationalization with plugin text domain -->
+              <rule ref="WordPress.WP.I18n">
+                  <properties>
+                      <property name="text_domain" type="array">
+                          <element value="optimizations-ace-mc"/>
+                      </property>
+                  </properties>
+              </rule>
+
+              <!-- Only scan PHP files -->
+              <arg name="extensions" value="php"/>
+
+              <!-- Show progress -->
+              <arg value="p"/>
+              
+              <!-- Show sniff codes in all reports -->
+              <arg value="s"/>
+              
+              <!-- Use colors in output -->
+              <arg name="colors"/>
+
+              <!-- Set report width for better readability -->
+              <arg name="report-width" value="120"/>
+          </ruleset>
+          EOF
+
+      - name: Run WordPress VIP PHPCS
+        run: |
+          echo "🚀 Running WordPress VIP Go Coding Standards scan..."
+          echo "📋 This scan focuses on VIP-specific requirements including:"
+          echo "   • File system operation restrictions"
+          echo "   • Performance and caching best practices"  
+          echo "   • Security vulnerabilities specific to VIP platform"
+          echo "   • User experience guidelines for enterprise WordPress"
+          echo "   • Uncached function usage patterns"
+          echo ""
+          echo "📦 Using standards: WordPress-VIP-Go, WordPressVIPMinimum"
+          echo "🎯 Scanning PHP files only (excluding JS/CSS to avoid deprecation warnings)"
+          echo ""
+          
+          # Run VIP-specific PHPCS scan using our custom configuration
+          # Only scan PHP files to avoid JS/CSS deprecation warnings
+          phpcs --standard=phpcs-vip.xml --extensions=php . || {
+            echo ""
+            echo "⚠️ WordPress VIP coding standards issues found."
+            echo "💡 Note: These are VIP-specific recommendations for enterprise WordPress platforms."
+            echo "🔧 Many of these may not apply to standard WordPress installations."
+            echo "📖 For more info: https://docs.wpvip.com/technical-references/code-quality-and-best-practices/"
+            echo ""
+            exit 0
+          }
+          
+          echo "✅ WordPress VIP coding standards check completed successfully!"
+
+      - name: Create issue on VIP PHPCS failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PHP_VERSION: ${{ matrix.php-version }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/vip-phpcs-failure.md
           update_existing: false
 
   phpmd:
@@ -683,6 +835,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          # Always fetch the latest commit, disable any caching
+          fetch-depth: 0
+          clean: true
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2

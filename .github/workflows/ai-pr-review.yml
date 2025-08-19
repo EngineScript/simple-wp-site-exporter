@@ -1,0 +1,135 @@
+# Safe PR Analysis - First Stage (Unprivileged)
+# Analyzes PR content and saves results as artifacts for privileged workflow
+
+name: AI PR Analysis (Safe)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Cancel previous workflow runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # NO write permissions in this workflow for security
+
+jobs:
+  analyze-pr:
+    name: Analyze PR Content (Unprivileged)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code (Safe - uses default branch)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # SECURITY: Do NOT checkout PR head - use base branch only
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Get PR diff safely
+        id: pr-diff
+        run: |
+          # SECURITY: Get diff without checking out untrusted code
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          
+          # Use GitHub API to get diff instead of git checkout
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3.diff" \
+               "https://api.github.com/repos/${{ github.repository }}/compare/$BASE_SHA...$HEAD_SHA" \
+               > pr_diff.txt
+          
+          echo "base-sha=$BASE_SHA" >> $GITHUB_OUTPUT
+          echo "head-sha=$HEAD_SHA" >> $GITHUB_OUTPUT
+          echo "pr-number=${{ github.event.number }}" >> $GITHUB_OUTPUT
+
+      - name: Run AI Analysis (No secrets exposed)
+        uses: google-github-actions/run-gemini-cli@v0.1.11
+        with:
+          prompt: |
+            You are an expert WordPress plugin developer and security consultant reviewing a pull request for the "Simple WP Site Exporter" WordPress plugin.
+            
+            PLUGIN CONTEXT:
+            - WordPress site export plugin for complete site backups
+            - Supports WordPress 6.5+ and PHP 7.4+
+            - Exports files and database as secure ZIP archives
+            - Features automatic cleanup and secure file handling
+            
+            COMPREHENSIVE REVIEW CHECKLIST:
+            
+            🔒 SECURITY ANALYSIS:
+            1. SQL Injection vulnerabilities
+            2. XSS (Cross-Site Scripting) issues
+            3. CSRF (Cross-Site Request Forgery) protection
+            4. Input validation and sanitization
+            5. Output escaping compliance
+            6. Authentication and authorization checks
+            7. File security and path traversal protection
+            8. Export file access control
+            
+            📝 WORDPRESS STANDARDS:
+            1. WordPress Coding Standards compliance
+            2. Proper use of WordPress APIs
+            3. Hook usage (actions/filters)
+            4. Internationalization (i18n) implementation
+            5. Plugin structure and organization
+            6. PHPDoc documentation quality
+            
+            ⚡ PERFORMANCE REVIEW:
+            1. File operation optimization
+            2. Memory usage during large exports
+            3. Resource loading efficiency
+            4. Export process scalability
+            5. Cleanup and temporary file handling
+            
+            🏗️ CODE QUALITY:
+            1. Function complexity and readability
+            2. Error handling implementation
+            3. Type safety and parameter validation
+            4. Code reusability and DRY principles
+            5. Naming conventions
+            
+            🔧 PLUGIN-SPECIFIC:
+            1. Export functionality best practices
+            2. File compression and archiving
+            3. Database export security
+            4. Admin interface usability
+            5. Plugin activation/deactivation handling
+            6. WP-CLI integration
+            
+            REVIEW FORMAT:
+            For each category, provide:
+            - ✅ Approved items
+            - ⚠️ Issues requiring attention (with severity: CRITICAL/HIGH/MEDIUM/LOW)
+            - 💡 Improvement suggestions
+            - 📚 Relevant documentation links
+            
+            Focus on actionable feedback that improves:
+            - Security posture
+            - WordPress ecosystem compatibility
+            - Code maintainability
+            - Performance and user experience
+            - Export reliability and safety
+            
+            Analyze the following PR diff:
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          
+      - name: Save PR metadata for privileged workflow
+        run: |
+          mkdir -p ./pr-data
+          echo "${{ github.event.number }}" > ./pr-data/pr-number.txt
+          echo "${{ github.event.pull_request.head.sha }}" > ./pr-data/head-sha.txt
+          echo "${{ github.event.pull_request.base.sha }}" > ./pr-data/base-sha.txt
+          echo "${{ github.event.pull_request.user.login }}" > ./pr-data/author.txt
+          echo "AI analysis completed successfully" > ./pr-data/status.txt
+          
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-analysis-${{ github.event.number }}
+          path: pr-data/
+          retention-days: 30

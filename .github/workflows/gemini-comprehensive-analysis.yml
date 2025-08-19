@@ -1,0 +1,275 @@
+# AI-Powered Comprehensive Code Analysis
+# Combines security scanning and WordPress standards checking using Gemini AI
+
+name: Gemini Comprehensive Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# Cancel previous workflow runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  comprehensive-analysis:
+    name: AI Security & Standards Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            **/*.php
+            **/*.js
+            **/*.sql
+          separator: "\n"
+
+      - name: Run Gemini Comprehensive Analysis
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          npx @google/gemini-cli@latest --prompt "
+          You are a WordPress security expert and development consultant with deep knowledge of plugin vulnerabilities, WordPress coding standards, and best practices.
+          
+          COMPREHENSIVE ANALYSIS INSTRUCTIONS:
+          Perform both security vulnerability analysis AND WordPress coding standards review for the following code changes. Provide a comprehensive report covering both areas.
+          
+          ## 🔴 SECURITY VULNERABILITY ANALYSIS:
+          
+          ### CRITICAL SECURITY ISSUES:
+          - SQL Injection: Check for unsanitized database queries, missing prepared statements
+          - Cross-Site Scripting (XSS): Look for unescaped output, missing esc_html/esc_attr
+          - Cross-Site Request Forgery (CSRF): Verify nonce usage in forms and AJAX
+          - Authentication Bypass: Check user capability validation
+          - File Upload Vulnerabilities: Verify file type and size validation
+          - Directory Traversal: Look for path manipulation vulnerabilities
+          - Code Injection: Check for eval(), exec(), system() usage
+          - File Security: Check export file access controls and cleanup
+          
+          ### WORDPRESS-SPECIFIC SECURITY:
+          - Proper use of WordPress sanitization functions
+          - Correct capability checks (current_user_can)
+          - WordPress nonce verification
+          - Proper use of wpdb prepared statements
+          - Validation of user input and file uploads
+          - Secure handling of options and meta data
+          - Export file security and automatic cleanup
+          
+          ### SECURITY BEST PRACTICES:
+          - Input validation and sanitization
+          - Output escaping and encoding
+          - Secure API endpoint implementation
+          - Proper error handling without information disclosure
+          - Secure file operations and path handling
+          
+          ## 📋 WORDPRESS CODING STANDARDS ANALYSIS:
+          
+          ### CODING STANDARDS (WordPress Coding Standards):
+          - PSR-4 autoloading compliance
+          - Proper function and variable naming (snake_case)
+          - Class naming conventions (PascalCase with underscores)
+          - File naming conventions (lowercase with hyphens)
+          - Proper indentation (tabs vs spaces - WordPress uses tabs)
+          - Line length limits (150 characters max)
+          - Proper commenting and PHPDoc blocks
+          
+          ### ARCHITECTURE & STRUCTURE:
+          - Single responsibility principle
+          - Proper use of WordPress hooks (actions/filters)
+          - Singleton pattern implementation
+          - Plugin structure and organization
+          - Proper use of WordPress APIs
+          
+          ### WORDPRESS-SPECIFIC BEST PRACTICES:
+          - Proper plugin header format
+          - Text domain usage and internationalization
+          - Capability checks and user permissions
+          - Database interaction using WordPress functions
+          - Proper enqueueing of scripts and styles
+          - Use of WordPress constants and globals
+          - Plugin activation/deactivation hooks
+          
+          ### PERFORMANCE CONSIDERATIONS:
+          - Efficient file operations
+          - Proper memory management during exports
+          - Lazy loading where appropriate
+          - Avoiding resource-heavy operations
+          - Proper use of transients
+          - Export process optimization
+          
+          ### PLUGIN-SPECIFIC CHECKS:
+          - Site export functionality best practices
+          - File compression and archiving efficiency
+          - Database export security and performance
+          - Admin interface conventions
+          - REST API implementation
+          - WP-CLI integration
+          - Cleanup and maintenance routines
+          
+          ### COMPATIBILITY:
+          - PHP version compatibility (7.4+)
+          - WordPress version compatibility (6.5+)
+          - Plugin conflicts avoidance
+          - Theme compatibility
+          
+          ## REPORT FORMAT:
+          Please structure your response as follows:
+          
+          # COMPREHENSIVE CODE ANALYSIS REPORT
+          
+          ## 🛡️ SECURITY ANALYSIS RESULTS
+          [Detailed security findings here]
+          
+          ## 📋 WORDPRESS STANDARDS RESULTS  
+          [Detailed standards findings here]
+          
+          ## 📊 SUMMARY
+          - Total Issues Found: [number]
+          - Critical Security Issues: [number]
+          - High Priority Standards Issues: [number]
+          - Medium/Low Priority Issues: [number]
+          
+          ## 🎯 PRIORITY RECOMMENDATIONS
+          [Top 3-5 most important items to address]
+          
+          For each finding in both sections:
+          1. Specify the exact file and line number
+          2. Explain the issue/vulnerability type and severity level (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+          3. Provide specific code recommendations
+          4. Reference relevant WordPress Codex/security guidelines
+          
+          If no issues are found in either category, confirm the code follows WordPress security standards and coding best practices.
+          
+          FILES TO ANALYZE:
+          $CHANGED_FILES
+          " > comprehensive-analysis.txt
+
+      - name: Display Comprehensive Analysis Summary
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "========================================"
+          echo "🔍 COMPREHENSIVE CODE ANALYSIS REPORT"
+          echo "========================================"
+          echo "Repository: ${{ github.repository }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Files Analyzed: ${{ steps.changed-files.outputs.all_changed_files_count }}"
+          echo "Analysis Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo ""
+          echo "📁 Files Reviewed:"
+          echo "${{ steps.changed-files.outputs.all_changed_files }}"
+          echo ""
+          echo "🤖 AI Expert Analysis Results:"
+          echo "========================================"
+          
+          if [ -f "comprehensive-analysis.txt" ]; then
+            cat comprehensive-analysis.txt
+          else
+            echo "⚠️ No analysis output found."
+          fi
+          
+          echo ""
+          echo "========================================"
+          echo "📋 Next Steps:"
+          echo "- Review all CRITICAL and HIGH priority findings immediately"
+          echo "- Address security vulnerabilities before standards issues"
+          echo "- Test all changes thoroughly after implementing fixes"
+          echo "- Validate compatibility with WordPress 6.5+ and PHP 7.4+"
+          echo "- Consider performance optimizations where recommended"
+          echo "========================================"
+
+      - name: Create Workflow Summary
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          FILES_COUNT: ${{ steps.changed-files.outputs.all_changed_files_count }}
+        with:
+          script: |
+            const fs = require('fs');
+            const changedFiles = process.env.CHANGED_FILES;
+            const filesCount = process.env.FILES_COUNT;
+            
+            let analysisContent = 'No analysis output found.';
+            try {
+              if (fs.existsSync('comprehensive-analysis.txt')) {
+                analysisContent = fs.readFileSync('comprehensive-analysis.txt', 'utf8');
+              }
+            } catch (error) {
+              console.log('Error reading analysis file:', error);
+              analysisContent = 'Error reading comprehensive analysis results.';
+            }
+            
+            const summaryContent = `
+            ## 🔍 Comprehensive WordPress Code Analysis
+            
+            **Repository:** ${context.repo.owner}/${context.repo.repo}
+            **Commit:** ${context.sha}
+            **Branch:** ${context.ref}
+            **Files Analyzed:** ${filesCount}
+            **Analysis Date:** ${new Date().toISOString()}
+            
+            ### 📁 Files Reviewed
+            \`\`\`
+            ${changedFiles}
+            \`\`\`
+            
+            ---
+            
+            ### 🤖 AI Expert Analysis Results
+            
+            ${analysisContent}
+            
+            ---
+            
+            ### 📋 Recommended Actions
+            - **Priority 1:** Address all CRITICAL security vulnerabilities immediately
+            - **Priority 2:** Fix HIGH priority coding standards issues
+            - **Priority 3:** Implement suggested WordPress best practices
+            - **Priority 4:** Consider performance and compatibility optimizations
+            - **Testing:** Validate all changes with WordPress 6.5+ and PHP 7.4+
+            
+            **Workflow Run:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            `;
+            
+            await core.summary
+              .addHeading('🔍 Comprehensive Code Analysis Report')
+              .addRaw(summaryContent)
+              .write();
+            
+            console.log('✅ Comprehensive analysis summary created in workflow logs');
+
+      - name: Analysis Status Check
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "========================================"
+          echo "📊 ANALYSIS COMPLETION STATUS"
+          echo "========================================"
+          echo "✅ Security vulnerability scan: COMPLETED"
+          echo "✅ WordPress coding standards check: COMPLETED"
+          echo "✅ Best practices review: COMPLETED"
+          echo "✅ Performance analysis: COMPLETED"
+          echo "✅ Compatibility check: COMPLETED"
+          echo ""
+          echo "🎯 This comprehensive analysis replaces separate security and standards workflows"
+          echo "💡 Review the detailed findings above and implement recommended changes"
+          echo "⚡ Reduced AI token usage by combining both analyses into a single request"
+          echo "========================================"
