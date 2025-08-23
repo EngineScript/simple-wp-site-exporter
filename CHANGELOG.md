@@ -1,6 +1,8 @@
 # Changelog for Simple WP Site Exporter
 
 ## Unreleased
+
+## 1.9.0 - August 23, 2025
 ### Performance Enhancements
 - **Export Locking**: Implemented a lock using transients (`sse_export_lock`) to prevent concurrent export processes and reduce server load.
 - **User-Configurable File Size Limits**: Added a user-friendly dropdown in the export form to exclude files larger than selected sizes (100MB, 500MB, 1GB, or no limit).
