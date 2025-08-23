@@ -210,7 +210,7 @@ jobs:
             - \`@gemini-cli optimize exports\` - Export performance optimization
             - \`@gemini-cli secure file handling\` - File security best practices
             
-            > 🔄 **Note:** This is an AI-generated response for Simple WP Site Exporter v1.8.4. Please review suggestions carefully and test thoroughly.
+            > 🔄 **Note:** This is an AI-generated response for Simple WP Site Exporter (latest version) Please review suggestions carefully and test thoroughly.
             
             **Analysis Date:** ${new Date().toISOString()}
             `;

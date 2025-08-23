@@ -26,30 +26,35 @@
         <exclude name="WordPress.DB.DirectDatabaseQuery"/>
     </rule>
 
-    <!-- ENFORCE SPACES INSTEAD OF TABS - NO TABS ALLOWED -->
+    <!-- COMMENTED OUT: These rules enforce spaces instead of tabs, which conflicts with WordPress standards -->
+    <!-- WordPress standards actually require TABS for indentation, not spaces -->
+    <!-- 
     <rule ref="Generic.WhiteSpace.DisallowTabIndent">
     </rule>
     <rule ref="Generic.WhiteSpace.ScopeIndent">
         <properties>
-            <!-- Use 4 spaces for indentation (WordPress standard) -->
             <property name="indent" value="4"/>
             <property name="tabIndent" value="false"/>
         </properties>
     </rule>
+    -->
 
-    <!-- Disallow Rule Flagging Space Indents -->
+    <!-- COMMENTED OUT: Disallow Rule Flagging Space Indents - not needed with tab indentation -->
+    <!--
     <rule ref="Generic.WhiteSpace.DisallowSpaceIndent">
         <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
     </rule>
 
-        <!-- Disallow Rule Flagging Space Indents -->
     <rule ref="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed">
         <exclude name="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed"/>
     </rule>
+    -->
 
-    <!-- Disallow inline tabs -->
+    <!-- COMMENTED OUT: Disallow inline tabs - WordPress allows tabs for indentation -->
+    <!--
     <rule ref="Universal.WhiteSpace.DisallowInlineTabs">
     </rule>
+    -->
 
     <!-- Additional WordPress-specific spacing rules -->
     <rule ref="WordPress.WhiteSpace.ControlStructureSpacing"/>
