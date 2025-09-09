@@ -1,139 +1,106 @@
 ---
 applyTo: '**'
 ---
-Coding standards, domain knowledge, and preferences that AI should follow.
 
-# Work Environment
+# WordPress Plugin Development Standards
 
-This project is coded entirely in a remote development environment using GitHub Codespaces. The AI will never ask me to run Terminal commands or use a local development environment. All code changes, tests, and debugging will be done within remote repositories on GitHub. 
+## 🎯 Core Principles
 
-Change summaries should be concise and clear, focusing on the specific changes made. The AI should not ask for confirmation before making changes, as all code modifications will be done directly in the remote environment. 
+**Work Environment:** Remote GitHub Codespaces only. Never suggest local Terminal commands.
 
-# Responses
+**WordPress First:** Use WordPress APIs, hooks, and standards exclusively. Avoid non-WP frameworks.
 
-When delivering responses, the AI should provide clear, concise, and actionable information. Responses should be formatted in a way that is easy to read and understand, with a focus on clarity and precision. The AI should avoid unnecessary verbosity or complexity in its explanations.
+**Security Critical:** Sanitize all input, escape all output, use WordPress security functions.
 
-Responses should be delivered only in the chat interface. Formatting and styling should be utilized to enhance readability.
+**Thorough Analysis:** Read complete files (minimum 1500 lines) for accurate code review.
 
-Change summaries should never be created in the form of new .md files.
+## 📋 Essential Requirements
 
-# Code Analysis and Reading Standards
+### WordPress Compatibility
+- **WordPress:** 6.5+ minimum
+- **PHP:** 7.4+ minimum  
+- **WooCommerce:** 5.0+ (when applicable)
+- Follow [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/) for PHP, JS, CSS, HTML, and accessibility
 
-You must read files completely and thoroughly, with a minimum of 1500 lines per read operation when analyzing code. Never truncate files or stop reading at arbitrary limits like 50 or 100 lines. Your analysis must be based on the complete file content, not partial snapshots. Take the time to read everything properly because thoroughness and accuracy based on complete file knowledge is infinitely more valuable than quick, incomplete reviews that miss critical context and lead to incorrect suggestions.
+### Code Quality Standards
+1. **Security First:** Always sanitize input (`sanitize_*()`) and escape output (`esc_*()`)
+2. **WordPress APIs:** Use WP functions instead of raw PHP/SQL
+3. **Hook System:** Proper use of `add_action()` and `add_filter()`
+4. **Internationalization:** Use `__()`, `_e()`, `esc_html__()` for all strings
+5. **Performance:** Avoid N+1 queries, use WP caching, optimize database calls
 
-# Coding Standards and Preferences
+## 🔒 Security Requirements (Critical)
 
-## WordPress Focused Design
+**Input Handling:**
+- Use `sanitize_text_field()`, `sanitize_email()`, `wp_kses()` for user input
+- Validate with `is_email()`, `absint()`, `wp_verify_nonce()` for security
+- Use prepared statements for database queries (`$wpdb->prepare()`)
 
-- Leverage WordPress APIs, hooks (actions and filters), and functions where applicable.
-- Ensure compatibility with modern WordPress versions and PHP standards.
-- Ensure all code is compatible with the WordPress ecosystem, including themes and plugins.
-- Avoid using frameworks, libraries, or non-standard features that are not compatible or commonly used with WordPress.
+**Output Security:**
+- Escape all output: `esc_html()`, `esc_attr()`, `esc_url()`, `esc_js()`
+- Use `wp_nonce_field()` and `wp_verify_nonce()` for forms
+- Check permissions with `current_user_can()` before sensitive operations
 
-## WordPress Coding Standards
+**Vulnerability Prevention:**
+- Prevent SQL injection, XSS, CSRF, and path traversal
+- Follow principle of least privilege
+- Auto-identify and fix security issues when found
 
-- Use WordPress coding standards for PHP, JavaScript, and CSS:
-  - [PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/)
-  - [JavaScript Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/)
-  - [CSS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/css/)
-- Use WordPress coding standards for HTML and template files:
-  - [HTML Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/html/)
-- Use WordPress coding standards for accessibility:
-  - [Accessibility Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/accessibility/)
-- Use WordPress Gutenberg Project Coding Guidelines:
-  - [Gutenberg Project Coding Guidelines](https://developer.wordpress.org/block-editor/contributors/code/coding-guidelines/)
-- Use WordPress JavaScript Documentation Standards:
-  - [JavaScript Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/javascript/)
-- Use WordPress PHP Documentation Standards:
-  - [PHP Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/)
+## 📝 Documentation & Versioning
 
-## Supported Versions
+**Changelog Management:**
+- Always update CHANGELOG.md and readme.txt when making code changes
+- **Sync both changelogs:** CHANGELOG.md and readme.txt changelog section
+- Use "Unreleased" section for ongoing changes
 
-- This project supports modern software versions:
-  - WordPress 6.5+ (minimum)
-  - PHP 7.4+ (minimum)
-  - WooCommerce 5.0+ (if applicable)
-- Do not use features or functions that are deprecated or not available in these versions.
+**Version Release Process (only when instructed):**
+- Follow semantic versioning (MAJOR.MINOR.PATCH)
+- Update version in: plugin header, README.md, readme.txt, CHANGELOG.md
+- Update version in: constants section, .pot files, package.json, composer.json
+- Move "Unreleased" changes to new version section in both changelogs
+- **Never auto-update versions** - wait for explicit instruction
 
-## Version Control and Documentation
+**Code Documentation:**
+- Use PHPDoc with `@param`, `@return`, `@since` tags
+- Write clear function/class descriptions
+- Document security considerations and hooks used
 
-- Release versions, software tested versions, and minimum software supported versions for this project are listed in numerous places, when updating the release version for this project, ensure that all of these locations are updated accordingly.
-- Version Locations:
-  - README.md
-  - readme.txt (for WordPress.org)
-  - CHANGELOG.md
-  - plugin header (in the main plugin file)
-  - plugin section: "// Define plugin constants"
-  - plugin *.pot files (e.g., languages/plugin-name.pot)
-  - package.json (if applicable)
-  - composer.json (if applicable)
-  - documentation files (e.g., docs/README.md)
-- Use semantic versioning (MAJOR.MINOR.PATCH) for all releases.
-- Always add new information to the changelog when we make changes to the codebase, even if a new version is not released.
-- When adding new information to the changelogs, changes will first be added to an "Unreleased" section at the top of the changelog file, and then later moved to a new version section when a new version is released. Be sure to follow this pattern and do not skip any of the changelog files.
-- Do not automatically update the version number in the plugin header or other files. Instead, provide a clear and concise change summary that includes the version number and a brief description of the changes made.
-- When making changes to the codebase, always update the relevant documentation files, including README.md, readme.txt, and CHANGELOG.md, even when a new version is not released.
-- I will instruct you when to update the version number, and you should not do this automatically. Always ask for confirmation before updating the version number.
-- When the version number is updated, ensure that the new version number is reflected in all relevant files, as outlined in Version Locations above.
-- When the version number is updated, make special note to update the "Unreleased" section in the changelog files to reflect the new version number and a brief description of the changes made. This ensures that all changes are documented and easily accessible for future reference.
+## ⚡ Performance & Quality
 
-# General Coding Standards
+**Performance Optimization:**
+- Use WordPress caching (`wp_cache_*()`, transients)
+- Optimize database queries, avoid N+1 problems
+- Proper asset enqueueing with `wp_enqueue_*()` functions
+- Focus on correctness first, then optimize
 
-- The above standards are prioritized over general coding standards.
-- The standards below are general coding standards that apply to all code, including WordPress code. Do not apply them if they conflict with WordPress standards.
+**Code Architecture:**
+- Group by feature, not by type
+- Use descriptive function/variable names
+- Remove unused code automatically
+- Follow feature-sliced design when applicable
 
-## Accessibility & UX
+**Error Handling:**
+- Use `WP_Error` for WordPress-specific errors
+- Log errors without exposing sensitive data
+- Handle edge cases gracefully
+- Validate all function parameters
 
-- Follow accessibility best practices for UI components
-- Ensure forms are keyboard-navigable and screen reader friendly
-- Validate user-facing labels, tooltips, and messages for clarity
+## 🚀 Workflow & Automation
 
-## Performance & Optimization
+**Task Execution:**
+- Make changes directly to existing files (don't create duplicates)
+- Proceed automatically unless action is destructive
+- Auto-identify and fix bugs when possible
+- Only ask confirmation for data loss/deletion scenarios
 
-- Optimize for performance and scalability where applicable
-- Avoid premature optimization—focus on correctness first
-- Detect and flag performance issues (e.g., unnecessary re-renders, N+1 queries)
-- Use lazy loading, memoization, or caching where needed
+**File Management:**
+- Edit files in place (e.g., modify `admin.php` directly)
+- Create new files only when truly necessary
+- Avoid file duplication and unnecessary rewrites
+- Maintain clean project structure
 
-## Type Safety & Standards
-
-- Use strict typing wherever possible (TypeScript, C#, etc.)
-- Avoid using `any` or untyped variables
-- Use inferred and narrow types when possible
-- Define shared types centrally (e.g., `types/` or `shared/` folders)
-
-## Security & Error Handling
-
-- Sanitize all input and output, especially in forms, APIs, and database interactions
-- Escape, validate, and normalize all user-supplied data
-- Automatically handle edge cases and error conditions
-- Fail securely and log actionable errors
-- Avoid leaking sensitive information in error messages or logs
-- Use secure coding practices to prevent common vulnerabilities (e.g., XSS, CSRF, SQL injection)
-- Use prepared statements for database queries
-- Use secure authentication and authorization mechanisms
-- When using third-party libraries or APIs, ensure they are well-maintained and secure
-- Regularly update dependencies to their latest stable versions
-- Use HTTPS for all API requests and data transmission
-- When handling sensitive data, ensure it is encrypted both in transit and at rest
-- If you suspect a security vulnerability, attempt to identify and fix it automatically. Alert me to the issue and provide a detailed explanation of the vulnerability, how it can be exploited, and the steps taken to mitigate it.
-- Always follow the principle of least privilege when implementing security features, ensuring that users and processes have only the permissions they need to perform their tasks.
-- If I ask you to make changes that could potentially introduce security vulnerabilities, you should always ask for confirmation before proceeding. This ensures that the project maintainers are aware of the potential risk and can provide guidance on how to address it safely.
-
-## Code Quality & Architecture
-
-- Organize code using **feature-sliced architecture** when applicable
-- Group code by **feature**, not by type (e.g., keep controller, actions, and helpers together by feature)
-- Write clean, readable, and self-explanatory code
-- Use meaningful and descriptive names for files, functions, and variables
-- Remove unused imports, variables, and dead code automatically
-
-## Task Execution & Automation
-
-- Always proceed to the next task automatically unless confirmation is required
-- Only ask for confirmation when an action is destructive (e.g., data loss, deletion)
-- Always attempt to identify and fix bugs automatically
-- Only ask for manual intervention if domain-specific knowledge is required
-- Auto-lint and format code using standard tools (e.g., Prettier, ESLint, dotnet format)
-- Changes should be made directly to the file in question. Example: admin.php should be modified directly, not by creating a new file like admin-changes.php.
-- New files may be created when appropriate, but they should be relevant to the task at hand, so long as they are not a rewrite of an existing file. We want to avoid unnecessary duplication of files.
+**Communication:**
+- Provide concise, actionable responses
+- Use clear formatting for readability
+- Never create change summaries as separate .md files
+- Focus on specific changes made, not verbose explanations
