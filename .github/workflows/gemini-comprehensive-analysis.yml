@@ -198,7 +198,7 @@ jobs:
 
       - name: Create Workflow Summary
         if: steps.changed-files.outputs.any_changed == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
           FILES_COUNT: ${{ steps.changed-files.outputs.all_changed_files_count }}

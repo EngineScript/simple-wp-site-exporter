@@ -24,7 +24,7 @@ jobs:
     
     steps:
       - name: Download analysis artifacts
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
         with:
@@ -82,7 +82,7 @@ jobs:
           [ -f "pr-data/status.txt" ] && echo "status=$(cat pr-data/status.txt)" >> $GITHUB_OUTPUT
 
       - name: Post AI review comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PR_NUMBER: ${{ steps.extract-data.outputs.pr-number }}
           HEAD_SHA: ${{ steps.extract-data.outputs.head-sha }}
@@ -161,7 +161,7 @@ jobs:
     
     steps:
       - name: Download failure artifacts (if any)
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         continue-on-error: true
         env:
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -208,7 +208,7 @@ jobs:
           fi
 
       - name: Create failure issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PR_NUMBER: ${{ steps.extract-pr.outputs.pr-number }}
           WORKFLOW_HTML_URL: ${{ github.event.workflow_run.html_url }}

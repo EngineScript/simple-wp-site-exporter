@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '16'
           # Use conditional caching based on package-lock.json existence
@@ -113,7 +113,7 @@ jobs:
           fi
         
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '16'
           # Use conditional caching based on package-lock.json existence
