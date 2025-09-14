@@ -205,6 +205,9 @@ function sse_init_plugin() {
 	// Hook scheduled deletion handler.
 	add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
 	
+	// Hook bulk cleanup handler.
+	add_action( 'sse_bulk_cleanup_exports', 'sse_bulk_cleanup_exports_handler' );
+	
 	// Hook secure download handler.
 	add_action( 'admin_init', 'sse_handle_secure_download' );
 	
@@ -336,7 +339,15 @@ function sse_handle_export() {
 		}
 
 		sse_cleanup_files( array( $database_file['filepath'] ) );
+		
+		// Test cron scheduling capability before attempting real scheduling
+		sse_test_cron_scheduling();
+		
 		sse_schedule_export_cleanup( $zip_result['filepath'] );
+		
+		// Schedule a bulk cleanup sweep in case individual files were missed
+		sse_schedule_bulk_cleanup();
+		
 		sse_show_success_notice( $zip_result );
 	} finally {
 		// Always release the lock and clean up user preferences.
@@ -850,10 +861,184 @@ function sse_cleanup_files( $files ) {
  * @param string $zip_filepath The zip file path to schedule for deletion.
  */
 function sse_schedule_export_cleanup( $zip_filepath ) {
-	if ( ! wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) ) ) {
-		wp_schedule_single_event( time() + ( 5 * 60 ), 'sse_delete_export_file', array( $zip_filepath ) );
+	sse_log( 'Attempting to schedule deletion for: ' . $zip_filepath, 'info' );
+	
+	// Check if already scheduled
+	$already_scheduled = wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) );
+	if ( $already_scheduled ) {
+		sse_log( 'Export file deletion already scheduled for ' . gmdate( 'Y-m-d H:i:s', $already_scheduled ) . ' GMT: ' . $zip_filepath, 'info' );
+		return;
+	}
+	
+	// Schedule the deletion
+	$scheduled_time = time() + ( 5 * 60 );
+	sse_log( 'Attempting to schedule for: ' . gmdate( 'Y-m-d H:i:s', $scheduled_time ) . ' GMT', 'info' );
+	
+	$result = wp_schedule_single_event( $scheduled_time, 'sse_delete_export_file', array( $zip_filepath ) );
+	
+	if ( $result === false ) {
+		sse_log( 'wp_schedule_single_event returned false - scheduling failed: ' . $zip_filepath, 'error' );
+		
+		// Additional debugging
+		$cron_disabled = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
+		sse_log( 'DISABLE_WP_CRON status: ' . ( $cron_disabled ? 'true' : 'false' ), 'info' );
+		
+		// Check if we can get cron array
+		$cron_array = _get_cron_array();
+		if ( empty( $cron_array ) ) {
+			sse_log( 'WordPress cron array is empty', 'warning' );
+		} else {
+			sse_log( 'WordPress cron array exists with ' . count( $cron_array ) . ' entries', 'info' );
+		}
+	} else {
+		sse_log( 'Export file deletion scheduled successfully for ' . gmdate( 'Y-m-d H:i:s', $scheduled_time ) . ' GMT: ' . $zip_filepath, 'info' );
+		
+		// Verify it was actually scheduled
+		$verify_scheduled = wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) );
+		if ( $verify_scheduled ) {
+			sse_log( 'Verification: Event confirmed scheduled for ' . gmdate( 'Y-m-d H:i:s', $verify_scheduled ) . ' GMT', 'info' );
+		} else {
+			sse_log( 'Verification: Event NOT found in cron schedule despite success return!', 'error' );
+		}
 	}
 }
+
+/**
+ * Test function to verify WordPress cron scheduling is working.
+ * Can be called manually to test the scheduling system.
+ */
+function sse_test_cron_scheduling() {
+	sse_log( 'Testing WordPress cron scheduling capability...', 'info' );
+	
+	// Test with a simple event
+	$test_time = time() + 60; // 1 minute from now
+	$test_result = wp_schedule_single_event( $test_time, 'sse_test_cron_event' );
+	
+	if ( $test_result === false ) {
+		sse_log( 'Test cron scheduling FAILED - wp_schedule_single_event returned false', 'error' );
+		return false;
+	}
+	
+	// Verify it was scheduled
+	$verify_test = wp_next_scheduled( 'sse_test_cron_event' );
+	if ( $verify_test ) {
+		sse_log( 'Test cron scheduling SUCCESS - event scheduled for ' . gmdate( 'Y-m-d H:i:s', $verify_test ) . ' GMT', 'info' );
+		
+		// Clean up the test event
+		wp_unschedule_event( $verify_test, 'sse_test_cron_event' );
+		sse_log( 'Test event cleaned up', 'info' );
+		return true;
+	} else {
+		sse_log( 'Test cron scheduling FAILED - event not found after scheduling', 'error' );
+		return false;
+	}
+}
+
+/**
+ * Schedules a bulk cleanup of all export files in the upload directory.
+ * This runs as a safety net to catch any files that individual cleanup missed.
+ */
+function sse_schedule_bulk_cleanup() {
+	// Only schedule if not already scheduled
+	if ( ! wp_next_scheduled( 'sse_bulk_cleanup_exports' ) ) {
+		// Schedule bulk cleanup for 10 minutes from now (after individual files should be cleaned up)
+		$scheduled_time = time() + ( 10 * 60 );
+		$result = wp_schedule_single_event( $scheduled_time, 'sse_bulk_cleanup_exports' );
+		
+		if ( $result ) {
+			error_log( 'SSE DEBUG: Bulk cleanup scheduled for ' . gmdate( 'Y-m-d H:i:s', $scheduled_time ) . ' GMT' );
+			sse_log( 'Bulk export cleanup scheduled for ' . gmdate( 'Y-m-d H:i:s', $scheduled_time ) . ' GMT', 'info' );
+		} else {
+			error_log( 'SSE DEBUG: Failed to schedule bulk cleanup' );
+			sse_log( 'Failed to schedule bulk export cleanup', 'error' );
+		}
+	} else {
+		error_log( 'SSE DEBUG: Bulk cleanup already scheduled' );
+		sse_log( 'Bulk export cleanup already scheduled', 'info' );
+	}
+}
+
+/**
+ * Handles bulk cleanup of all export files older than 5 minutes.
+ * This is a safety net to catch any files missed by individual cleanup.
+ */
+function sse_bulk_cleanup_exports_handler() {
+	error_log( 'SSE DEBUG: Bulk cleanup handler triggered' );
+	sse_log( 'Bulk export cleanup handler triggered', 'info' );
+	
+	$upload_dir = wp_upload_dir();
+	$export_dir = $upload_dir['basedir'] . '/simple-wp-site-exports';
+	
+	if ( ! is_dir( $export_dir ) ) {
+		sse_log( 'Export directory does not exist, nothing to clean up', 'info' );
+		return;
+	}
+	
+	$files = glob( $export_dir . '/*.zip' );
+	if ( empty( $files ) ) {
+		sse_log( 'No export files found in bulk cleanup', 'info' );
+		return;
+	}
+	
+	$cleaned_count = 0;
+	$cutoff_time = time() - ( 5 * 60 ); // Files older than 5 minutes
+	
+	foreach ( $files as $file_path ) {
+		$file_time = filemtime( $file_path );
+		
+		if ( $file_time && $file_time < $cutoff_time ) {
+			// File is older than 5 minutes, validate it's an export file
+			$filename = basename( $file_path );
+			$validation = sse_validate_export_file_for_deletion( $filename );
+			
+			if ( ! is_wp_error( $validation ) ) {
+				if ( sse_safely_delete_file( $file_path ) ) {
+					error_log( 'SSE DEBUG: Bulk cleanup deleted: ' . $file_path );
+					sse_log( 'Bulk cleanup deleted export file: ' . $file_path, 'info' );
+					$cleaned_count++;
+				} else {
+					sse_log( 'Bulk cleanup failed to delete: ' . $file_path, 'error' );
+				}
+			} else {
+				sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
+			}
+		}
+	}
+	
+	sse_log( "Bulk cleanup completed. Deleted {$cleaned_count} export files.", 'info' );
+}
+
+/**
+ * Gets information about scheduled export file deletions (for debugging).
+ *
+ * @return array Array of scheduled deletion events.
+ */
+function sse_get_scheduled_deletions() {
+	$scheduled_events = array();
+	$cron_jobs = _get_cron_array();
+	
+	if ( ! is_array( $cron_jobs ) ) {
+		return $scheduled_events;
+	}
+	
+	foreach ( $cron_jobs as $timestamp => $cron_job ) {
+		if ( isset( $cron_job['sse_delete_export_file'] ) ) {
+			foreach ( $cron_job['sse_delete_export_file'] as $job ) {
+				$scheduled_events[] = array(
+					'timestamp' => $timestamp,
+					'scheduled_time' => gmdate( 'Y-m-d H:i:s', $timestamp ) . ' GMT',
+					'file_path' => isset( $job['args'][0] ) ? $job['args'][0] : 'Unknown',
+				);
+			}
+		}
+	}
+	
+	return $scheduled_events;
+}
+
+
+
+
 
 // --- Scheduled Deletion Handler ---
 
@@ -864,6 +1049,8 @@ function sse_schedule_export_cleanup( $zip_filepath ) {
  * @return void
  */
 function sse_delete_export_file_handler( $file ) {
+	sse_log( 'Scheduled deletion handler triggered for file: ' . $file, 'info' );
+	
 	// Validate that this is actually an export file before deletion.
 	$filename = basename( $file );
 
