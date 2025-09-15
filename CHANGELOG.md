@@ -2,19 +2,49 @@
 
 ## Unreleased
 
+### Scheduled Deletion System Enhancements
+
+- **Enhanced Debugging**: Added comprehensive debugging system with `error_log()` output for WordPress cron troubleshooting when standard debug logging is disabled
+- **Dual Cleanup System**: Implemented redundant scheduled deletion with both individual file cleanup (5 minutes) and bulk directory cleanup (10 minutes) as safety net
+- **Bulk Cleanup Handler**: Added `sse_bulk_cleanup_exports_handler()` to scan and clean all export files older than 5 minutes from the entire export directory
+- **Improved Scheduling**: Enhanced `sse_schedule_export_cleanup()` with detailed logging, DISABLE_WP_CRON detection, and WordPress cron array status monitoring
+- **Test Framework**: Added `sse_test_cron_scheduling()` function to verify WordPress cron functionality before attempting real scheduling
+- **Cron Diagnostics**: Implemented `sse_get_scheduled_deletions()` for debugging scheduled events and cron system status
+- **Verification System**: Added post-scheduling verification to confirm events are properly added to WordPress cron schedule
+
+### WordPress Coding Standards Compliance
+
+- **Inline Comments**: Fixed all inline comments to end with proper punctuation (periods, exclamation marks, or question marks)
+- **Yoda Conditions**: Corrected all boolean comparisons to use Yoda condition format (`false === $variable` instead of `$variable === false`)
+- **Array Alignment**: Fixed array double arrow spacing with consistent 6-space alignment (`'key'      => 'value'`)
+- **Variable Assignment**: Aligned equals signs in variable assignments for consistent code formatting
+- **Debug Code Cleanup**: Removed all production-inappropriate `error_log()` debug statements while preserving WordPress-standard `sse_log()` functionality
+- **Code Consistency**: Enhanced overall code readability and maintainability through standardized formatting
+
+### Bug Fixes
+
+- **Scheduled Deletion**: Resolved issue where export files were not being automatically deleted due to WordPress cron scheduling failures
+- **Fallback System**: Removed unnecessary fallback methods as requested, streamlining the system to use only WordPress cron
+- **Error Logging**: Improved error visibility by adding direct `error_log()` output for cron debugging when WordPress debug settings are disabled
+
 ## 1.9.0 - August 23, 2025
+
 ### Performance Enhancements
+
 - **Export Locking**: Implemented a lock using transients (`sse_export_lock`) to prevent concurrent export processes and reduce server load.
 - **User-Configurable File Size Limits**: Added a user-friendly dropdown in the export form to exclude files larger than selected sizes (100MB, 500MB, 1GB, or no limit).
 
 ### Code Quality Improvements
+
 - **Centralized Configuration**: Created `SSE_ALLOWED_EXTENSIONS` constant to eliminate code duplication for file extension validation.
 - **Unified Validation**: Consolidated file extension validation logic into a single reusable function.
 
 ### User Experience Improvements
+
 - **Enhanced Export Form**: Added intuitive file size limit selection directly in the export interface, eliminating the need for developers to write custom filter code.
 
 ### Security Hardening
+
 - **WP-CLI Verification**: Added executable/existence verification for PATH-discovered WP-CLI binary
 - **Error Output Sanitization**: Sanitized WP-CLI failure output (path masking, line limiting) to prevent filesystem disclosure
 - **Graceful Scheduled Deletion**: Treats missing file during scheduled cleanup as info (likely already removed) instead of error

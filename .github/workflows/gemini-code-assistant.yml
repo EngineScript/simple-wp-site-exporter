@@ -1,0 +1,469 @@
+# Gemini AI-Powered Code Analysis
+# Analyzes code changes in PRs, pushes, and branches - FOCUSES ON CODE CHANGES
+
+name: AI Code Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop, 'feature/*', 'bugfix/*']
+  workflow_dispatch:
+  # Weekly comprehensive analysis
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly analysis on Mondays at 2 AM UTC
+
+# Cancel previous workflow runs for the same context
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-analysis:
+    name: AI Analysis & Assistant
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'push') ||
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # For PRs, checkout base branch; for push/issues, checkout the current ref
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref }}
+
+      - name: Get changed files (for push/schedule events)
+        id: changed-files
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            **/*.php
+            **/*.js
+            **/*.sql
+          separator: "\n"
+
+      - name: Determine analysis type
+        id: analysis-type
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILES_CHANGED: ${{ steps.changed-files.outputs.any_changed || 'true' }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "type=pr-review" >> $GITHUB_OUTPUT
+            echo "Analysis type: Pull Request Code Review - FOCUS ON CODE CHANGES"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            # Only analyze if files actually changed
+            if [ "$FILES_CHANGED" = "true" ]; then
+              echo "type=push-analysis" >> $GITHUB_OUTPUT
+              echo "Analysis type: Push Code Analysis - FOCUS ON CODE CHANGES"
+            else
+              echo "type=skip" >> $GITHUB_OUTPUT
+              echo "Analysis type: Skipped - No relevant files changed"
+            fi
+          elif [ "$EVENT_NAME" = "schedule" ]; then
+            echo "type=comprehensive-analysis" >> $GITHUB_OUTPUT
+            echo "Analysis type: Scheduled Comprehensive Analysis - FOCUS ON ALL CODE"
+          else
+            echo "type=comprehensive-analysis" >> $GITHUB_OUTPUT
+            echo "Analysis type: Manual Comprehensive Analysis - FOCUS ON ALL CODE"
+          fi
+
+      - name: Get context information
+        id: context-info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.number || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha || '' }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
+          PR_TITLE: ${{ github.event.pull_request.title || 'Code Analysis' }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          # Get context details from environment variables (secure)
+          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "base-sha=$BASE_SHA" >> $GITHUB_OUTPUT  
+          echo "head-sha=$HEAD_SHA" >> $GITHUB_OUTPUT
+          echo "pr-author=$PR_AUTHOR" >> $GITHUB_OUTPUT
+          echo "pr-title=$PR_TITLE" >> $GITHUB_OUTPUT
+          
+          # Get diff based on event type
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # PR diff via API
+            curl -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github.v3.diff" \
+                 "https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA" \
+                 > pr_diff.txt
+          elif [ "$EVENT_NAME" = "push" ]; then
+            # Push diff via API
+            if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+              curl -H "Authorization: token $GITHUB_TOKEN" \
+                   -H "Accept: application/vnd.github.v3.diff" \
+                   "https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA" \
+                   > pr_diff.txt
+            else
+              echo "Initial commit or no previous commit available" > pr_diff.txt
+            fi
+          else
+            echo "No diff available for this event type" > pr_diff.txt
+          fi
+          
+          # Check if diff file was created successfully
+          if [ -s pr_diff.txt ]; then
+            echo "diff-available=true" >> $GITHUB_OUTPUT
+            # Limit diff size to prevent API limits (max 100KB)
+            if [ $(wc -c < pr_diff.txt) -gt 102400 ]; then
+              head -c 102400 pr_diff.txt > pr_diff_limited.txt
+              mv pr_diff_limited.txt pr_diff.txt
+              echo "diff-truncated=true" >> $GITHUB_OUTPUT
+            else
+              echo "diff-truncated=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "diff-available=false" >> $GITHUB_OUTPUT
+            echo "No diff content available" > pr_diff.txt
+          fi
+
+      - name: Setup Node.js for Gemini CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Gemini CLI
+        run: |
+          npm install -g @google/gemini-cli
+          gemini --version
+
+      - name: Run AI Analysis
+        id: ai-analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_TITLE: ${{ steps.context-info.outputs.pr-title }}
+          PR_AUTHOR: ${{ steps.context-info.outputs.pr-author }}
+        run: |
+          # Create appropriate prompt based on analysis type
+          ANALYSIS_TYPE="${{ steps.analysis-type.outputs.type }}"
+          
+          # Skip analysis if no files changed
+          if [ "$ANALYSIS_TYPE" = "skip" ]; then
+            echo "No relevant files changed. Skipping analysis." > analysis_prompt.txt
+            echo "analysis-skipped=true" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ "$ANALYSIS_TYPE" = "pr-review" ]; then
+            # Create PR-focused prompt - FOCUS ON CODE CHANGES
+            echo "You are an expert WordPress plugin developer and security consultant reviewing a pull request." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS FIRST AND PRIMARILY ON THE CODE CHANGES IN THIS PULL REQUEST." >> analysis_prompt.txt
+            echo "Analyze what was changed, added, or removed and review those specific modifications." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "PR Context: $PR_TITLE by @$PR_AUTHOR" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS PRIORITY:" >> analysis_prompt.txt
+            echo "1. Review the specific code changes in this PR" >> analysis_prompt.txt
+            echo "2. Check security implications of the changes" >> analysis_prompt.txt
+            echo "3. Verify WordPress coding standards compliance" >> analysis_prompt.txt
+            echo "4. Assess performance impact of changes" >> analysis_prompt.txt
+            echo "5. Provide specific recommendations for improvements" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+          elif [ "$ANALYSIS_TYPE" = "push-analysis" ]; then
+            # Create push-focused prompt - FOCUS ON CODE CHANGES
+            echo "You are an expert WordPress plugin developer analyzing recent code changes." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS ON THE SPECIFIC CODE CHANGES MADE IN THIS PUSH." >> analysis_prompt.txt
+            echo "Analyze what files were modified and what changes were introduced." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS PRIORITY:" >> analysis_prompt.txt
+            echo "1. Identify and review the specific changes made" >> analysis_prompt.txt
+            echo "2. Check for security vulnerabilities in new/modified code" >> analysis_prompt.txt
+            echo "3. Verify WordPress standards compliance" >> analysis_prompt.txt
+            echo "4. Assess performance implications" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+          elif [ "$ANALYSIS_TYPE" = "comprehensive-analysis" ]; then
+            # Create comprehensive code analysis prompt - FOCUS ON CODE CHANGES
+            echo "You are an expert WordPress plugin developer and security consultant performing comprehensive code analysis." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: ANALYZE THE CURRENT CODEBASE WITH FOCUS ON RECENT CHANGES." >> analysis_prompt.txt
+            echo "This is a scheduled comprehensive review to identify issues and improvements." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS PRIORITY:" >> analysis_prompt.txt
+            echo "1. Review recent changes and their impact on the codebase" >> analysis_prompt.txt
+            echo "2. Security audit: vulnerabilities, input sanitization, output escaping" >> analysis_prompt.txt
+            echo "3. Code quality assessment: WordPress standards, best practices" >> analysis_prompt.txt
+            echo "4. Performance analysis: database queries, caching, optimization" >> analysis_prompt.txt
+            echo "5. Architecture review: plugin structure, hook usage, extensibility" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "Provide a thorough analysis with specific, actionable recommendations focused on code improvements." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "FILES TO ANALYZE:" >> analysis_prompt.txt
+            echo "${{ steps.changed-files.outputs.all_changed_files || 'Current codebase' }}" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+          else
+            # Create comprehensive analysis prompt
+            cat > analysis_prompt.txt << 'EOF'
+          You are an expert WordPress plugin developer and security consultant reviewing code for a WordPress plugin.
+          
+          PLUGIN CONTEXT:
+          - WordPress plugin project
+          - Supports WordPress 6.5+ and PHP 7.4+
+          - Modern WordPress development practices expected
+          
+          COMPREHENSIVE REVIEW CHECKLIST:
+          
+          🔒 SECURITY ANALYSIS:
+          1. SQL Injection vulnerabilities - Check for unescaped database queries
+          2. XSS (Cross-Site Scripting) issues - Verify output escaping with esc_html(), esc_attr(), etc.
+          3. CSRF (Cross-Site Request Forgery) protection - Check for wp_nonce_field() usage
+          4. Input validation and sanitization - Look for sanitize_*() functions
+          5. Output escaping compliance - Ensure all dynamic output is escaped
+          6. Authentication and authorization checks - Verify current_user_can() usage
+          7. File upload security - Check file type validation and path traversal protection
+          
+          📝 WORDPRESS STANDARDS:
+          1. WordPress Coding Standards compliance - PSR-4, naming conventions
+          2. Proper use of WordPress APIs - Use WP functions instead of raw PHP
+          3. Hook usage (actions/filters) - add_action(), add_filter() best practices
+          4. Internationalization (i18n) implementation - __(), _e(), esc_html__() usage
+          5. Plugin structure and organization - Proper file organization
+          6. PHPDoc documentation quality - @param, @return, @since tags
+          
+          ⚡ PERFORMANCE REVIEW:
+          1. Database query optimization - Check for N+1 queries, use WP_Query properly
+          2. Caching strategies - wp_cache_set(), transients usage
+          3. Resource loading efficiency - wp_enqueue_script(), wp_enqueue_style()
+          4. Memory usage considerations - Avoid memory leaks
+          5. Scalability implications - Code that works well with large datasets
+          
+          🏗️ CODE QUALITY:
+          1. Function complexity and readability - Keep functions focused and simple
+          2. Error handling implementation - Proper try/catch and WP_Error usage
+          3. Type safety and parameter validation - Validate function parameters
+          4. Code reusability and DRY principles - Avoid code duplication
+          5. Naming conventions - Clear, descriptive function and variable names
+          
+          🔧 PLUGIN-SPECIFIC:
+          1. Third-party integration best practices - Use appropriate hooks and functions
+          2. Plugin compatibility - Ensure no conflicts with common plugins
+          3. Admin interface usability - Clear, intuitive admin pages
+          4. Plugin activation/deactivation handling - Proper cleanup and database management
+          
+          REVIEW FORMAT:
+          Provide a comprehensive review in the following format:
+          
+          ## 🛡️ Security Analysis
+          [List any security issues found with severity level: CRITICAL/HIGH/MEDIUM/LOW]
+          
+          ## 📝 WordPress Standards
+          [Review compliance with WordPress coding standards]
+          
+          ## ⚡ Performance Review
+          [Identify performance optimizations and concerns]
+          
+          ## 🏗️ Code Quality
+          [Assess code structure, readability, and maintainability]
+          
+          ## 🔧 Plugin-Specific Review
+          [Third-party integrations and plugin compatibility review]
+          
+          ## ✅ Recommendations
+          [Provide specific, actionable recommendations]
+          
+          Focus on actionable feedback that improves security, WordPress compatibility, and code quality.
+          
+          PR Title: $PR_TITLE
+          PR Author: @$PR_AUTHOR
+          
+          Here is the code to analyze:
+          EOF
+            # Append the diff content for PR/push analysis
+            cat pr_diff.txt >> analysis_prompt.txt
+          fi
+          
+          # Run Gemini analysis and capture output
+          gemini generate --prompt-file analysis_prompt.txt > ai_analysis_result.txt 2>&1 || {
+            echo "Gemini analysis failed. Creating fallback response..."
+            cat > ai_analysis_result.txt << 'EOF'
+          ## 🤖 AI Analysis Status
+          
+          The automated AI analysis encountered an issue during execution. This may be due to:
+          - Temporary API limitations
+          - Large diff size
+          - Network connectivity issues
+          
+          ### Manual Review Recommended
+          Please conduct a manual code review focusing on:
+          - WordPress security best practices
+          - Coding standards compliance
+          - Performance considerations
+          - Plugin-specific requirements
+          
+          The PR can still be reviewed and merged based on manual inspection.
+          EOF
+            echo "analysis-failed=true" >> $GITHUB_OUTPUT
+          }
+          
+          # Verify the analysis result file exists and has content
+          if [ -s ai_analysis_result.txt ]; then
+            echo "analysis-success=true" >> $GITHUB_OUTPUT
+          else
+            echo "analysis-success=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post AI Review Comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.context-info.outputs.pr-number }}
+          HEAD_SHA: ${{ steps.context-info.outputs.head-sha }}
+          PR_AUTHOR: ${{ steps.context-info.outputs.pr-author }}
+          DIFF_AVAILABLE: ${{ steps.context-info.outputs.diff-available }}
+          DIFF_TRUNCATED: ${{ steps.context-info.outputs.diff-truncated }}
+          ANALYSIS_SUCCESS: ${{ steps.ai-analysis.outputs.analysis-success }}
+        with:
+          script: |
+            const fs = require('fs');
+            const prNumber = process.env.PR_NUMBER;
+            const headSha = process.env.HEAD_SHA;
+            const prAuthor = process.env.PR_AUTHOR;
+            const diffAvailable = process.env.DIFF_AVAILABLE === 'true';
+            const diffTruncated = process.env.DIFF_TRUNCATED === 'true';
+            const analysisSuccess = process.env.ANALYSIS_SUCCESS === 'true';
+            
+            // Read AI analysis results
+            let aiAnalysis = '';
+            try {
+              aiAnalysis = fs.readFileSync('ai_analysis_result.txt', 'utf8');
+            } catch (error) {
+              aiAnalysis = '## ❌ Analysis Error\n\nFailed to read analysis results. Manual review required.';
+            }
+            
+            // Create status indicators
+            let statusIndicators = '';
+            if (!diffAvailable) {
+              statusIndicators += '⚠️ **Warning:** No diff content available for analysis\n';
+            }
+            if (diffTruncated) {
+              statusIndicators += '⚠️ **Note:** Large diff was truncated for analysis\n';
+            }
+            if (!analysisSuccess) {
+              statusIndicators += '❌ **Alert:** AI analysis encountered issues\n';
+            }
+            
+            // Determine response type and format appropriately
+            const analysisType = '${{ steps.analysis-type.outputs.type }}';
+            
+            let reviewContent;
+            if (analysisType === 'assistant') {
+              reviewContent = `
+              ## 🤖 AI WordPress Assistant Response
+              
+              Hi @${prAuthor}! I've analyzed your request.
+              
+              ### 📝 Expert Analysis & Recommendations
+              
+              ${aiAnalysis}
+              
+              ### 💡 Available Commands
+              Try these commands with @gemini-cli:
+              - \`@gemini-cli review this code\` - Code review and analysis
+              - \`@gemini-cli suggest improvements\` - Performance and structure suggestions  
+              - \`@gemini-cli check security\` - Security vulnerability analysis
+              - \`@gemini-cli explain this function\` - Code explanation and documentation
+              
+              **Analysis Date:** ${new Date().toISOString()}
+              `;
+            } else {
+              reviewContent = `
+              ## 🤖 AI-Powered Security & Code Review
+              
+              Hi @${prAuthor}! I've completed an analysis of this ${analysisType === 'pr-review' ? 'pull request' : 'code'}.
+              
+              ### 📊 Review Summary
+              - **Project:** WordPress Plugin
+              - **Commit:** \`${headSha.substring(0, 7)}\`
+              - **WordPress Compatibility:** 6.5+
+              - **PHP Compatibility:** 7.4+
+              - **Analysis Status:** ${analysisSuccess ? '✅ Completed' : '⚠️ Partial/Failed'}
+              
+              ${statusIndicators}
+            
+            ---
+            
+            ${aiAnalysis}
+            
+            ---
+            
+            ### 📋 Review Checklist for Maintainers
+            - [ ] Security vulnerabilities addressed
+            - [ ] WordPress coding standards followed
+            - [ ] Performance impact considered
+            - [ ] Documentation updated if needed
+            - [ ] Tests pass (if applicable)
+            
+            > 🔄 **Note:** This analysis was performed securely without executing untrusted code.
+            > 
+            > 🎯 **Focus Areas:** Security, WordPress Standards, Performance, Code Quality
+            `;
+            }
+            
+            const targetNumber = prNumber;
+            
+            await github.rest.issues.createComment({
+              issue_number: targetNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: reviewContent
+            });
+
+      - name: Handle Analysis Failure
+        if: steps.ai-analysis.outputs.analysis-success != 'true'
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.context-info.outputs.pr-number }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            const workflowUrl = process.env.WORKFLOW_URL;
+            
+            // Create an issue for failed analysis
+            const title = `🚨 AI Analysis Failed for PR #${prNumber}`;
+            const body = `
+            ## AI Code Analysis Failure
+            
+            The automated AI code analysis workflow failed for PR #${prNumber}.
+            
+            **Pull Request:** #${prNumber}
+            **Failure Time:** ${new Date().toISOString()}
+            **Workflow Run:** ${workflowUrl}
+            
+            ### Possible Causes
+            - API rate limits or temporary service issues
+            - Large diff size exceeding analysis limits  
+            - Invalid file formats or encoding issues
+            - GEMINI_API_KEY configuration problems
+            
+            ### Manual Actions Required
+            1. 🔍 Review the failed workflow logs for specific error details
+            2. 🔄 Re-run the analysis workflow if it was a temporary issue
+            3. 🛠️ Check GEMINI_API_KEY secret configuration
+            4. 👥 Proceed with manual code review for the PR
+            
+            **Note:** This does not necessarily indicate issues with the PR code itself.
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['ai-analysis', 'workflow-failure', 'needs-attention']
+            });

@@ -1,0 +1,192 @@
+name: Gemini Issue Assistant
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Gemini CLI
+        run: |
+          npm install -g @google/generative-ai
+          npm install -g @google/generative-ai-cli || echo "CLI install failed, using direct API"
+
+      - name: Determine analysis type
+        id: analysis-type
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          if [ "$EVENT_NAME" = "issues" ]; then
+            echo "type=issue-analysis" >> $GITHUB_OUTPUT
+            echo "Issue: $ISSUE_TITLE"
+            echo "Author: $ISSUE_AUTHOR"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            echo "type=comment-analysis" >> $GITHUB_OUTPUT
+            echo "Comment on issue: $ISSUE_TITLE"
+            echo "Comment author: $COMMENT_AUTHOR"
+          else
+            echo "type=skip" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create analysis prompt
+        env:
+          ANALYSIS_TYPE: ${{ steps.analysis-type.outputs.type }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          # Skip analysis if not relevant
+          if [ "$ANALYSIS_TYPE" = "skip" ]; then
+            echo "No relevant issue activity. Skipping analysis." > analysis_prompt.txt
+            echo "analysis-skipped=true" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ "$ANALYSIS_TYPE" = "issue-analysis" ]; then
+            # Create issue-focused prompt - FOCUS ON USER'S PROBLEM FIRST
+            echo "You are an expert WordPress plugin developer helping users solve problems." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS FIRST ON UNDERSTANDING THE USER'S ISSUE." >> analysis_prompt.txt
+            echo "Then scan the codebase to find potential solutions or identify code-related causes." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ISSUE DETAILS:" >> analysis_prompt.txt
+            echo "Title: $ISSUE_TITLE" >> analysis_prompt.txt
+            echo "Author: @$ISSUE_AUTHOR" >> analysis_prompt.txt
+            echo "Description:" >> analysis_prompt.txt
+            echo "$ISSUE_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS APPROACH:" >> analysis_prompt.txt
+            echo "1. Understand the user's problem/request thoroughly" >> analysis_prompt.txt
+            echo "2. Scan the codebase for related functionality" >> analysis_prompt.txt
+            echo "3. Identify potential code-based solutions or fixes" >> analysis_prompt.txt
+            echo "4. Check for existing similar functionality" >> analysis_prompt.txt
+            echo "5. Provide actionable recommendations" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "REPOSITORY CONTEXT: WordPress plugin project (WordPress 6.5+, PHP 7.4+)" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+          elif [ "$ANALYSIS_TYPE" = "comment-analysis" ]; then
+            # Create comment-focused prompt - FOCUS ON CONVERSATION CONTEXT
+            echo "You are an expert WordPress plugin developer analyzing an issue conversation." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS ON THE CONVERSATION CONTEXT AND NEW INFORMATION." >> analysis_prompt.txt
+            echo "Analyze the new comment in relation to the original issue and provide relevant insights." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ORIGINAL ISSUE:" >> analysis_prompt.txt
+            echo "Title: $ISSUE_TITLE" >> analysis_prompt.txt
+            echo "Description: $ISSUE_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "NEW COMMENT:" >> analysis_prompt.txt
+            echo "Author: @$COMMENT_AUTHOR" >> analysis_prompt.txt
+            echo "Content: $COMMENT_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS FOCUS:" >> analysis_prompt.txt
+            echo "1. How does this comment relate to the original issue?" >> analysis_prompt.txt
+            echo "2. What new information or clarification is provided?" >> analysis_prompt.txt
+            echo "3. Are there code implications from this comment?" >> analysis_prompt.txt
+            echo "4. What follow-up actions are suggested?" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "REPOSITORY CONTEXT: WordPress plugin project (WordPress 6.5+, PHP 7.4+)" >> analysis_prompt.txt
+          fi
+
+      - name: Run Gemini Analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANALYSIS_SKIPPED: ${{ steps.analysis-type.outputs.analysis-skipped }}
+        run: |
+          if [ "$ANALYSIS_SKIPPED" = "true" ]; then
+            echo "Analysis skipped"
+            exit 0
+          fi
+
+          echo "Starting Gemini analysis..."
+          
+          # Try different methods to run Gemini analysis
+          if command -v gemini &> /dev/null; then
+            echo "Using Gemini CLI..."
+            gemini analyze --file analysis_prompt.txt --model gemini-pro > gemini_response.txt 2>&1 || {
+              echo "Gemini CLI failed, trying direct API..."
+              node -e "
+                const { GoogleGenerativeAI } = require('@google/generative-ai');
+                const fs = require('fs');
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+                const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
+                model.generateContent(prompt).then(result => {
+                  const response = result.response;
+                  console.log(response.text());
+                }).catch(console.error);
+              " > gemini_response.txt 2>&1
+            }
+          else
+            echo "Using Node.js direct API..."
+            node -e "
+              const { GoogleGenerativeAI } = require('@google/generative-ai');
+              const fs = require('fs');
+              const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+              const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+              const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
+              model.generateContent(prompt).then(result => {
+                const response = result.response;
+                console.log(response.text());
+              }).catch(console.error);
+            " > gemini_response.txt 2>&1
+          fi
+
+          # Output analysis results
+          echo "## 🤖 Gemini Issue Analysis" > formatted_response.txt
+          echo "" >> formatted_response.txt
+          if [ -s gemini_response.txt ]; then
+            cat gemini_response.txt >> formatted_response.txt
+          else
+            echo "Analysis completed but no specific recommendations at this time." >> formatted_response.txt
+          fi
+          
+          echo "" >> formatted_response.txt
+          echo "---" >> formatted_response.txt
+          echo "*Analysis performed by Gemini AI on $(date)*" >> formatted_response.txt
+
+      - name: Comment on Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let response = '';
+            if (fs.existsSync('formatted_response.txt')) {
+              response = fs.readFileSync('formatted_response.txt', 'utf8');
+            } else {
+              response = '## 🤖 Gemini Issue Analysis\n\nAnalysis completed. Please review the codebase for potential solutions to this issue.';
+            }
+
+            // Get the issue number
+            const issueNumber = context.issue.number;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: response
+            });
