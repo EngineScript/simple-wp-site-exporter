@@ -910,8 +910,8 @@ function sse_schedule_export_cleanup( $zip_filepath ) {
 function sse_test_cron_scheduling() {
 	sse_log( 'Testing WordPress cron scheduling capability...', 'info' );
 	
-	// Test with a simple event
-	$test_time = time() + 60; // 1 minute from now
+		// Test with a simple event.
+		$test_time   = time() + 60; // 1 minute from now.
 	$test_result = wp_schedule_single_event( $test_time, 'sse_test_cron_event' );
 	
 	if ( false === $test_result ) {
