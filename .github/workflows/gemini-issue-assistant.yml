@@ -26,10 +26,73 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Gemini CLI
+      - name: Install Google AI SDK and Create Analysis Script
         run: |
-          npm install -g @google/generative-ai
-          npm install -g @google/generative-ai-cli || echo "CLI install failed, using direct API"
+          echo "🔧 Installing Google AI SDK..."
+          npm install @google/generative-ai
+          
+          echo "📦 Creating Gemini analysis script..."
+          cat > gemini-analyze.js << 'SCRIPT_EOF'
+          const { GoogleGenerativeAI } = require('@google/generative-ai');
+          const fs = require('fs');
+          
+          async function analyzeIssue() {
+            try {
+              const apiKey = process.env.GEMINI_API_KEY;
+              if (!apiKey) {
+                throw new Error('GEMINI_API_KEY environment variable not found');
+              }
+              
+              console.log('🔑 API key configured, length:', apiKey.length);
+              console.log('🤖 Initializing Gemini AI...');
+              
+              const genAI = new GoogleGenerativeAI(apiKey);
+              const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              
+              const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
+              console.log('📝 Prompt loaded, size:', prompt.length, 'characters');
+              
+              console.log('🚀 Generating analysis...');
+              const result = await model.generateContent(prompt);
+              const response = await result.response;
+              const text = response.text();
+              
+              fs.writeFileSync('gemini_response.txt', text);
+              console.log('✅ Analysis completed successfully');
+              console.log('📄 Result size:', text.length, 'characters');
+              
+            } catch (error) {
+              console.error('❌ Gemini analysis failed:', error.message);
+              console.error('🔍 Full error details:', error);
+              
+              const fallbackContent = [
+                '## 🤖 AI Analysis Status',
+                '',
+                'The automated AI analysis encountered an issue: ' + error.message,
+                '',
+                'This may be due to:',
+                '- API key configuration issues',
+                '- Network connectivity problems',
+                '- Gemini API rate limits or service issues',
+                '- Invalid prompt format or size',
+                '',
+                '### Manual Review Recommended',
+                'Please review this issue manually and check the repository for related code.',
+                ''
+              ].join('\n');
+              
+              fs.writeFileSync('gemini_response.txt', fallbackContent);
+              process.exit(1);
+            }
+          }
+          
+          analyzeIssue().catch(error => {
+            console.error('Fatal error:', error);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+          
+          echo "✅ Analysis script created successfully"
 
       - name: Determine analysis type
         id: analysis-type
@@ -51,6 +114,35 @@ jobs:
             echo "type=skip" >> $GITHUB_OUTPUT
           fi
 
+      - name: Scan Codebase for Context
+        id: scan-code
+        run: |
+          echo "📋 Scanning codebase for relevant context..."
+          
+          # Get recent commits for context
+          echo "📜 Recent commits:" > codebase_context.txt
+          git log --oneline -5 >> codebase_context.txt
+          echo "" >> codebase_context.txt
+          
+          # Get main plugin files for context
+          echo "📁 Main plugin files:" >> codebase_context.txt
+          find . -name "*.php" -path "./.*" -prune -o -name "*.php" -print | head -10 | while read file; do
+            if [ -f "$file" ]; then
+              echo "=== $file ===" >> codebase_context.txt
+              head -30 "$file" >> codebase_context.txt
+              echo "" >> codebase_context.txt
+            fi
+          done
+          
+          # Check if we collected context
+          if [ -s codebase_context.txt ]; then
+            echo "✅ Codebase context collected: $(wc -l < codebase_context.txt) lines"
+            echo "context-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ No codebase context found"
+            echo "context-available=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create analysis prompt
         env:
           ANALYSIS_TYPE: ${{ steps.analysis-type.outputs.type }}
@@ -59,6 +151,7 @@ jobs:
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          CONTEXT_AVAILABLE: ${{ steps.scan-code.outputs.context-available }}
         run: |
           # Skip analysis if not relevant
           if [ "$ANALYSIS_TYPE" = "skip" ]; then
@@ -110,8 +203,16 @@ jobs:
             echo "" >> analysis_prompt.txt
             echo "REPOSITORY CONTEXT: WordPress plugin project (WordPress 6.5+, PHP 7.4+)" >> analysis_prompt.txt
           fi
+          
+          # Add codebase context if available
+          if [ "$CONTEXT_AVAILABLE" = "true" ]; then
+            echo "" >> analysis_prompt.txt
+            echo "CODEBASE CONTEXT FOR REFERENCE:" >> analysis_prompt.txt
+            cat codebase_context.txt >> analysis_prompt.txt
+          fi
 
-      - name: Run Gemini Analysis
+      - name: Run AI Analysis
+        id: ai-analysis
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANALYSIS_SKIPPED: ${{ steps.analysis-type.outputs.analysis-skipped }}
@@ -121,41 +222,18 @@ jobs:
             exit 0
           fi
 
-          echo "Starting Gemini analysis..."
+          echo "🤖 Starting AI issue analysis with official Google SDK..."
+          echo "📝 Prompt file size: $(wc -c < analysis_prompt.txt) bytes"
           
-          # Try different methods to run Gemini analysis
-          if command -v gemini &> /dev/null; then
-            echo "Using Gemini CLI..."
-            gemini analyze --file analysis_prompt.txt --model gemini-pro > gemini_response.txt 2>&1 || {
-              echo "Gemini CLI failed, trying direct API..."
-              node -e "
-                const { GoogleGenerativeAI } = require('@google/generative-ai');
-                const fs = require('fs');
-                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-                const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
-                model.generateContent(prompt).then(result => {
-                  const response = result.response;
-                  console.log(response.text());
-                }).catch(console.error);
-              " > gemini_response.txt 2>&1
-            }
+          if node gemini-analyze.js; then
+            echo "analysis-success=true" >> $GITHUB_OUTPUT
+            echo "✅ AI analysis completed successfully"
           else
-            echo "Using Node.js direct API..."
-            node -e "
-              const { GoogleGenerativeAI } = require('@google/generative-ai');
-              const fs = require('fs');
-              const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-              const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-              const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
-              model.generateContent(prompt).then(result => {
-                const response = result.response;
-                console.log(response.text());
-              }).catch(console.error);
-            " > gemini_response.txt 2>&1
+            echo "analysis-success=false" >> $GITHUB_OUTPUT
+            echo "❌ AI analysis failed - check logs for details"
           fi
 
-          # Output analysis results
+          # Format the response
           echo "## 🤖 Gemini Issue Analysis" > formatted_response.txt
           echo "" >> formatted_response.txt
           if [ -s gemini_response.txt ]; then
