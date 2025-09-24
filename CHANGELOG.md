@@ -26,6 +26,8 @@
 - **Scheduled Deletion**: Resolved issue where export files were not being automatically deleted due to WordPress cron scheduling failures
 - **Fallback System**: Removed unnecessary fallback methods as requested, streamlining the system to use only WordPress cron
 - **Error Logging**: Improved error visibility by adding direct `error_log()` output for cron debugging when WordPress debug settings are disabled
+- **Export Directory Consistency**: Centralized export directory naming via `SSE_EXPORT_DIR_NAME` constant to eliminate mismatched cleanup paths and ensure all subsystems reference the same location
+- **Filesystem Validation**: Added explicit directory creation and writability checks with helpful error messaging when the exports folder can't be prepared
 
 ## 1.9.0 - August 23, 2025
 

@@ -25,6 +25,11 @@ if ( ! defined( 'SSE_ALLOWED_EXTENSIONS' ) ) {
 	define( 'SSE_ALLOWED_EXTENSIONS', array( 'zip', 'sql' ) );
 }
 
+// Define export directory name used across the plugin.
+if ( ! defined( 'SSE_EXPORT_DIR_NAME' ) ) {
+	define( 'SSE_EXPORT_DIR_NAME', 'simple-wp-site-exporter-exports' );
+}
+
 /**
  * WordPress Core Classes Documentation
  *
@@ -233,8 +238,8 @@ function sse_exporter_page_html() {
 	if ( empty( $upload_dir['basedir'] ) ) {
 		 wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'simple-wp-site-exporter' ) );
 	}
-	$export_dir_name = 'simple-wp-site-exporter-exports';
-	$export_dir_path = trailingslashit( $upload_dir['basedir'] ) . $export_dir_name;
+	$export_dir_name = SSE_EXPORT_DIR_NAME;
+	$export_dir_path = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$display_path    = str_replace( ABSPATH, '', $export_dir_path );
 	?>
 	<div class="wrap">
@@ -413,11 +418,21 @@ function sse_setup_export_directories() {
 		return new WP_Error( 'upload_dir_error', __( 'Could not determine the WordPress upload directory or URL.', 'simple-wp-site-exporter' ) );
 	}
 
-	$export_dir_name = 'simple-wp-site-exporter-exports';
-	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . $export_dir_name;
+	$export_dir_name = SSE_EXPORT_DIR_NAME;
+	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$export_url      = trailingslashit( $upload_dir['baseurl'] ) . $export_dir_name;
 
-	wp_mkdir_p( $export_dir );
+	if ( ! wp_mkdir_p( $export_dir ) && ! is_dir( $export_dir ) ) {
+		sse_log( 'Failed to create export directory at path: ' . $export_dir, 'error' );
+		return new WP_Error( 'export_dir_creation_failed', __( 'Could not create the export directory. Please verify filesystem permissions.', 'simple-wp-site-exporter' ) );
+	}
+
+	$is_writable = function_exists( 'wp_is_writable' ) ? wp_is_writable( $export_dir ) : is_writable( $export_dir ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_is_writable
+	if ( ! $is_writable ) {
+		sse_log( 'Export directory is not writable: ' . $export_dir, 'error' );
+		return new WP_Error( 'export_dir_not_writable', __( 'The export directory is not writable. Please adjust filesystem permissions.', 'simple-wp-site-exporter' ) );
+	}
+
 	sse_create_index_file( $export_dir );
 
 	return array(
@@ -963,7 +978,7 @@ function sse_bulk_cleanup_exports_handler() {
 	sse_log( 'Bulk export cleanup handler triggered', 'info' );
 	
 	$upload_dir = wp_upload_dir();
-	$export_dir = $upload_dir['basedir'] . '/simple-wp-site-exports';
+	$export_dir = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	
 	if ( ! is_dir( $export_dir ) ) {
 		sse_log( 'Export directory does not exist, nothing to clean up', 'info' );
@@ -1477,7 +1492,7 @@ function sse_validate_filename_format( $filename ) {
 function sse_validate_export_file_path( $filename ) {
 	// Get the full path to the file.
 	$upload_dir = wp_upload_dir();
-	$export_dir = trailingslashit( $upload_dir['basedir'] ) . 'simple-wp-site-exporter-exports';
+	$export_dir = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$file_path  = trailingslashit( $export_dir ) . $filename;
 
 	// Validate the file path is within our export directory.
@@ -1735,7 +1750,7 @@ function sse_validate_download_file_data( $file_data ) {
 function sse_validate_download_file_access( $filepath ) {
 	// Security: Whitelist approach - only allow files in our controlled export directory.
 	$upload_dir = wp_upload_dir();
-	$export_dir = trailingslashit( $upload_dir['basedir'] ) . 'simple-wp-site-exporter-exports';
+	$export_dir = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 
 	// Security: Additional validation to prevent SSRF attacks.
 	// Ensure file extension is in our allowed list.
@@ -1818,7 +1833,7 @@ function sse_validate_file_output_security( $filepath ) {
 	
 	// Security: Ensure file is within our controlled directory before serving.
 	$upload_dir      = wp_upload_dir();
-	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . 'simple-wp-site-exporter-exports';
+	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$real_export_dir = realpath( $export_dir );
 	$real_file_path  = realpath( $filepath );
 	

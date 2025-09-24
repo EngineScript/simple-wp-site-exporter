@@ -99,6 +99,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Verification System**: Added post-scheduling verification to confirm events are properly added to WordPress cron schedule
 * **WordPress Coding Standards**: Fixed all inline comments punctuation, corrected Yoda conditions, aligned array formatting, standardized variable assignments, and removed debug code
 * **Bug Fixes**: Resolved issue where export files were not being automatically deleted due to WordPress cron scheduling failures
+* **Export Directory Consistency**: Centralized export directory naming with a shared constant so every cleanup routine targets the correct path
+* **Filesystem Validation**: Added explicit directory creation and writability checks that surface actionable errors when the exports folder cannot be prepared
 * **Code Quality**: Enhanced overall code readability and maintainability through standardized formatting and compliance improvements
 
 = 1.8.5 =
