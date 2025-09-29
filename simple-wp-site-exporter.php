@@ -427,8 +427,16 @@ function sse_setup_export_directories() {
 		return new WP_Error( 'export_dir_creation_failed', __( 'Could not create the export directory. Please verify filesystem permissions.', 'simple-wp-site-exporter' ) );
 	}
 
-	$is_writable = function_exists( 'wp_is_writable' ) ? wp_is_writable( $export_dir ) : is_writable( $export_dir ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_is_writable
-	if ( ! $is_writable ) {
+	global $wp_filesystem;
+	if ( ! $wp_filesystem ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		if ( ! WP_Filesystem() ) {
+			sse_log( 'Failed to initialize WordPress filesystem API', 'error' );
+			return new WP_Error( 'filesystem_init_failed', __( 'Failed to initialize WordPress filesystem API.', 'simple-wp-site-exporter' ) );
+		}
+	}
+
+	if ( ! $wp_filesystem->is_writable( $export_dir ) ) {
 		sse_log( 'Export directory is not writable: ' . $export_dir, 'error' );
 		return new WP_Error( 'export_dir_not_writable', __( 'The export directory is not writable. Please adjust filesystem permissions.', 'simple-wp-site-exporter' ) );
 	}
