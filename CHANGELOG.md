@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.9.1 - September 29, 2025
+
 ### Scheduled Deletion System Enhancements
 
 - **Enhanced Debugging**: Added comprehensive debugging system with `error_log()` output for WordPress cron troubleshooting when standard debug logging is disabled
@@ -12,6 +14,12 @@
 - **Cron Diagnostics**: Implemented `sse_get_scheduled_deletions()` for debugging scheduled events and cron system status
 - **Verification System**: Added post-scheduling verification to confirm events are properly added to WordPress cron schedule
 
+### Code Quality Improvements
+
+- **WordPress VIP Compliance**: Replaced direct PHP filesystem function `is_writable()` with WordPress Filesystem API (`WP_Filesystem`) for VIP coding standards compliance
+- **Filesystem API Integration**: Added proper WordPress filesystem initialization with error handling in export preparation function
+- **Code Style**: Fixed variable alignment inconsistencies in `sse_test_cron_scheduling()` function to maintain consistent spacing standards
+
 ### Bug Fixes
 
 - **Scheduled Deletion**: Resolved issue where export files were not being automatically deleted due to WordPress cron scheduling failures
@@ -19,6 +27,7 @@
 - **Error Logging**: Improved error visibility by adding direct `error_log()` output for cron debugging when WordPress debug settings are disabled
 - **Export Directory Consistency**: Centralized export directory naming via `SSE_EXPORT_DIR_NAME` constant to eliminate mismatched cleanup paths and ensure all subsystems reference the same location
 - **Filesystem Validation**: Added explicit directory creation and writability checks with helpful error messaging when the exports folder can't be prepared
+- **CI Database Service**: Replaced the GitHub Actions MySQL 5.7 test container with MariaDB 10.6 to avoid Docker Hub authentication failures while maintaining WordPress compatibility coverage
 
 ## 1.9.0 - August 23, 2025
 

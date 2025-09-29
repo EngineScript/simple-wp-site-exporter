@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.5
 Tested up to: 6.8
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -90,6 +90,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 == Changelog ==
 
 = Unreleased =
+
+= 1.9.1 =
 * **Scheduled Deletion System Enhancements**: Implemented comprehensive dual cleanup system with both individual file cleanup (5 minutes) and bulk directory cleanup (10 minutes) as safety net
 * **Enhanced Debugging**: Added comprehensive debugging system with error_log() output for WordPress cron troubleshooting when standard debug logging is disabled
 * **Bulk Cleanup Handler**: Added sse_bulk_cleanup_exports_handler() to scan and clean all export files older than 5 minutes from the entire export directory
@@ -97,11 +99,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Test Framework**: Added sse_test_cron_scheduling() function to verify WordPress cron functionality before attempting real scheduling
 * **Cron Diagnostics**: Implemented sse_get_scheduled_deletions() for debugging scheduled events and cron system status
 * **Verification System**: Added post-scheduling verification to confirm events are properly added to WordPress cron schedule
+* **WordPress VIP Compliance**: Replaced direct PHP filesystem function is_writable() with WordPress Filesystem API (WP_Filesystem) for VIP coding standards compliance
+* **Filesystem API Integration**: Added proper WordPress filesystem initialization with error handling in export preparation function
 * **WordPress Coding Standards**: Fixed all inline comments punctuation, corrected Yoda conditions, aligned array formatting, standardized variable assignments, and removed debug code
 * **Bug Fixes**: Resolved issue where export files were not being automatically deleted due to WordPress cron scheduling failures
 * **Export Directory Consistency**: Centralized export directory naming with a shared constant so every cleanup routine targets the correct path
 * **Filesystem Validation**: Added explicit directory creation and writability checks that surface actionable errors when the exports folder cannot be prepared
-* **Code Quality**: Enhanced overall code readability and maintainability through standardized formatting and compliance improvements
+* **Code Quality**: Enhanced overall code readability and maintainability through standardized formatting and compliance improvements, including variable alignment fixes
+* **CI Database Service**: Updated WordPress compatibility workflow database container from MariaDB 10.6 to MySQL 8.4 for production-accurate testing environment
 
 = 1.8.5 =
 * **Performance**: Added an export lock using transients to prevent concurrent export processes.
