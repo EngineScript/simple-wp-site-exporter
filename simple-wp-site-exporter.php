@@ -934,8 +934,8 @@ function sse_test_cron_scheduling() {
 	sse_log( 'Testing WordPress cron scheduling capability...', 'info' );
 	
 	// Test with a simple event.
-	$test_time = time() + 60; // 1 minute from now.
-	$test_result   = wp_schedule_single_event( $test_time, 'sse_test_cron_event' );
+	$test_time   = time() + 60; // 1 minute from now.
+	$test_result = wp_schedule_single_event( $test_time, 'sse_test_cron_event' );
 	
 	if ( false === $test_result ) {
 		sse_log( 'Test cron scheduling FAILED - wp_schedule_single_event returned false', 'error' );
