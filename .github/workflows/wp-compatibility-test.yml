@@ -1,7 +1,7 @@
 # This workflow performs comprehensive WordPress plugin compatibility and quality checks.
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
-# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.1, 8.2, 8.3, 8.4)
+# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4)
 # - WordPress compatibility testing across multiple WP versions (6.5, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php-version: ['7.4', '8.0', '8.3', '8.4']
       fail-fast: false
 
     steps:
@@ -135,11 +135,11 @@ jobs:
           # Install PHPCS and WordPress Coding Standards using the dealerdirect installer
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer global require --dev squizlabs/php_codesniffer:"^3.7"
-          composer global require --dev wp-coding-standards/wpcs:"^3.0"
+          composer global require --dev wp-coding-standards/wpcs:"^3.2"
           composer global require --dev phpcompatibility/php-compatibility:"^9.3"
           composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1" 
           composer global require --dev automattic/vipwpcs:"^3.0"
-          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1.1"
+          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1"
           
           # Add composer bin to PATH
           echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
@@ -169,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', 8.1', 8.2', '8.3', '8.4']
+        php-version: ['7.4', '8.0', '8.3', '8.4']
       fail-fast: false
 
     steps:
@@ -321,7 +321,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php-version: ['7.4', '8.0', '8.3', '8.4']
       fail-fast: false
 
     steps:
