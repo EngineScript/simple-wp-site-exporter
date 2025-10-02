@@ -42,7 +42,7 @@ applyTo: '**'
 - Check permissions with `current_user_can()` before sensitive operations
 
 **Vulnerability Prevention:**
-- Prevent SQL injection, XSS, CSRF, and path traversal
+- Prevent SQL injection, XSS, CSRF, Local File Inclusion (LFI), and path traversal
 - Follow principle of least privilege
 - Auto-identify and fix security issues when found
 
