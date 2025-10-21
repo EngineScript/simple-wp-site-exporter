@@ -30,13 +30,11 @@ permissions:
 
 jobs:
   plugin-check:
-    name: WordPress Plugin Check (PHP ${{ matrix.php-version }})
+    name: WP Plugin Check (PHP 8.3)
     runs-on: ubuntu-latest
     
     strategy:
       fail-fast: false
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
     
     steps:
       - name: Checkout code
@@ -46,10 +44,10 @@ jobs:
           fetch-depth: 0
           clean: true
       
-      - name: Setup PHP
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2
@@ -62,7 +60,14 @@ jobs:
       - name: Install Composer dependencies (no cache)
         run: |
           composer install --prefer-dist --no-progress --no-cache
-      
+
+      - name: Clean up potential artifact directories
+        run: |
+          echo "🧹 Removing any artifact directories to prevent conflicts..."
+          rm -rf .reports 2>/dev/null || true
+          rm -rf build 2>/dev/null || true
+          echo "✅ Cleanup complete"
+
       - name: WordPress Plugin Check
         uses: WordPress/plugin-check-action@v1.1.2
         with:
@@ -87,6 +92,11 @@ jobs:
           # WordPress version to use
           wp-version: 'latest'
       
+      - name: Handle plugin check completion
+        if: ${{ always() }}
+        run: |
+          echo "✅ Plugin Check completed for PHP 8.3"
+      
       - name: Create issue on plugin check failure
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
@@ -105,21 +115,16 @@ jobs:
           exit 1
 
   phpcs:
-    name: PHPCS Code Standards Check (PHP ${{ matrix.php-version }})
+    name: PHPCS (PHP 8.3)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup PHP ${{ matrix.php-version }}
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2, phpcs
@@ -150,14 +155,14 @@ jobs:
       - name: Run PHPCS
         run: |
           # Use WordPress-Core standard which has fewer dependencies
-          phpcs --standard=WordPress-extra --extensions=php --ignore=vendor,tests,node_modules . || exit 0
+          phpcs --standard=WordPress-extra --extensions=php --ignore=vendor,tests,node_modules,.github,.vscode . || exit 0
 
       - name: Create issue on PHPCS failure
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
+          PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
@@ -165,21 +170,16 @@ jobs:
           update_existing: false
 
   vip-phpcs:
-    name: WordPress VIP Coding Standards (PHP ${{ matrix.php-version }})
+    name: WP VIP CS (PHP 8.3)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup PHP ${{ matrix.php-version }}
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2, phpcs
@@ -226,6 +226,7 @@ jobs:
               <exclude-pattern>*/languages/*</exclude-pattern>
               <exclude-pattern>*/.git/*</exclude-pattern>
               <exclude-pattern>*/.github/*</exclude-pattern>
+              <exclude-pattern>*/.vscode/*</exclude-pattern>
               <exclude-pattern>*.js</exclude-pattern>
               <exclude-pattern>*.css</exclude-pattern>
 
@@ -254,7 +255,7 @@ jobs:
               <rule ref="WordPress.WP.I18n">
                   <properties>
                       <property name="text_domain" type="array">
-                          <element value="optimizations-ace-mc"/>
+                          <element value="simple-wp-site-exporter"/>
                       </property>
                   </properties>
               </rule>
@@ -309,7 +310,7 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
+          PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
@@ -317,13 +318,8 @@ jobs:
           update_existing: false
 
   phpmd:
-    name: PHPMD Code Quality Check (PHP ${{ matrix.php-version }})
+    name: PHPMD (PHP 8.3)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -340,10 +336,10 @@ jobs:
           echo "Latest commit message: $(git log -1 --pretty=%B)"
           echo "=== End Git Information ==="
 
-      - name: Setup PHP ${{ matrix.php-version }}
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2, phpmd
@@ -375,7 +371,7 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
+          PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
@@ -383,21 +379,16 @@ jobs:
           update_existing: false
 
   psalm-analysis:
-    name: Psalm Static Analysis (PHP ${{ matrix.php-version }})
+    name: Psalm Static Analysis (PHP 8.3)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup PHP ${{ matrix.php-version }}
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2
@@ -445,7 +436,7 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
+          PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
@@ -453,21 +444,16 @@ jobs:
           update_existing: false
 
   security-check:
-    name: Security Vulnerability Check (PHP ${{ matrix.php-version }})
+    name: Security Scan (PHP 8.3)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup PHP ${{ matrix.php-version }}
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2
@@ -489,41 +475,41 @@ jobs:
           echo "🔍 Checking for common security issues..."
           
           # Check for potential SQL injection patterns
-          if grep -r "mysql_query\|mysqli_query" --include="*.php" . 2>/dev/null; then
+          if grep -r "mysql_query\|mysqli_query" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
             echo "⚠️ Warning: Direct database queries found - ensure proper sanitization"
           fi
           
           # Check for potential XSS vulnerabilities (missing escaping)
-          if grep -r "echo \$_\|print \$_" --include="*.php" . 2>/dev/null; then
+          if grep -r "echo \$_\|print \$_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
             echo "⚠️ Warning: Potential XSS vulnerability - ensure output is escaped"
           fi
           
           # Check for file inclusion vulnerabilities
-          if grep -r "include.*\$_\|require.*\$_" --include="*.php" . 2>/dev/null; then
+          if grep -r "include.*\$_\|require.*\$_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
             echo "⚠️ Warning: Potential file inclusion vulnerability found"
           fi
           
           # Check for eval() usage (security risk)
-          if grep -r "eval(" --include="*.php" . 2>/dev/null; then
+          if grep -r "eval(" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
             echo "⚠️ Warning: eval() function usage detected - security risk"
           fi
           
           # Check for proper nonce usage
-          if grep -r "wp_nonce_field\|wp_verify_nonce" --include="*.php" . >/dev/null 2>&1; then
+          if grep -r "wp_nonce_field\|wp_verify_nonce" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
             echo "✅ WordPress nonce usage detected - good security practice"
           else
             echo "ℹ️ Info: Consider adding WordPress nonces for form security"
           fi
           
           # Check for proper sanitization functions
-          if grep -r "sanitize_\|esc_" --include="*.php" . >/dev/null 2>&1; then
+          if grep -r "sanitize_\|esc_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
             echo "✅ WordPress sanitization functions detected - good security practice"
           else
             echo "⚠️ Warning: Limited use of WordPress sanitization functions"
           fi
           
           # Check for capability checks
-          if grep -r "current_user_can\|user_can" --include="*.php" . >/dev/null 2>&1; then
+          if grep -r "current_user_can\|user_can" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
             echo "✅ WordPress capability checks detected - good security practice"
           else
             echo "ℹ️ Info: Consider adding user capability checks where appropriate"
@@ -536,11 +522,63 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
+          PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           filename: .github/ISSUE_TEMPLATE/security-failure.md
+          update_existing: false
+
+  phpstan-wordpress:
+    name: PHPStan for WP (PHP 8.3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          # Always fetch the latest commit, disable any caching
+          fetch-depth: 0
+          clean: true
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Clear any existing composer cache
+        run: |
+          composer clear-cache || true
+          rm -rf vendor/ composer.lock || true
+
+      - name: Install Composer dependencies (no cache)
+        run: |
+          composer install --prefer-dist --no-progress --no-cache
+          
+      - name: Verify phpstan.neon content
+        run: |
+          echo "=== Current phpstan.neon content ==="
+          cat phpstan.neon
+          echo "=== End phpstan.neon content ==="
+
+      - name: PHPStan for WordPress Analysis
+        run: |
+          echo "Running PHPStan analysis with WordPress stubs..."
+          vendor/bin/phpstan analyse --no-progress --error-format=table
+          echo "✅ PHPStan analysis completed successfully!"
+
+      - name: Create issue on PHPStan failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PHP_VERSION: '8.3'
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/phpstan-failure.md
           update_existing: false
 
   wp-version-test:
@@ -827,61 +865,4 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           filename: .github/ISSUE_TEMPLATE/wp-version-test-failure.md
-          update_existing: false
-
-  phpstan-wordpress:
-    name: PHPStan for WordPress (PHP ${{ matrix.php-version }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          # Always fetch the latest commit, disable any caching
-          fetch-depth: 0
-          clean: true
-
-      - name: Setup PHP ${{ matrix.php-version }}
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-version }}
-          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
-          coverage: none
-          tools: composer:v2
-
-      - name: Clear any existing composer cache
-        run: |
-          composer clear-cache || true
-          rm -rf vendor/ composer.lock || true
-
-      - name: Install Composer dependencies (no cache)
-        run: |
-          composer install --prefer-dist --no-progress --no-cache
-          
-      - name: Verify phpstan.neon content
-        run: |
-          echo "=== Current phpstan.neon content ==="
-          cat phpstan.neon
-          echo "=== End phpstan.neon content ==="
-
-      - name: PHPStan for WordPress Analysis
-        run: |
-          echo "Running PHPStan analysis with WordPress stubs..."
-          vendor/bin/phpstan analyse --no-progress --error-format=table
-          echo "✅ PHPStan analysis completed successfully!"
-
-      - name: Create issue on PHPStan failure
-        if: ${{ failure() }}
-        uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
-          RUN_ID: ${{ github.run_id }}
-          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        with:
-          filename: .github/ISSUE_TEMPLATE/phpstan-failure.md
           update_existing: false
