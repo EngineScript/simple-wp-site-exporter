@@ -17,12 +17,14 @@ applyTo: '**'
 ## 📋 Essential Requirements
 
 ### WordPress Compatibility
+
 - **WordPress:** 6.5+ minimum
 - **PHP:** 7.4+ minimum  
 - **WooCommerce:** 5.0+ (when applicable)
 - Follow [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/) for PHP, JS, CSS, HTML, and accessibility
 
 ### Code Quality Standards
+
 1. **Security First:** Always sanitize input (`sanitize_*()`) and escape output (`esc_*()`)
 2. **WordPress APIs:** Use WP functions instead of raw PHP/SQL
 3. **Hook System:** Proper use of `add_action()` and `add_filter()`
@@ -55,8 +57,7 @@ applyTo: '**'
 
 **Version Release Process (only when instructed):**
 - Follow semantic versioning (MAJOR.MINOR.PATCH)
-- Update version in: plugin header, README.md, readme.txt, CHANGELOG.md
-- Update version in: constants section, .pot files, package.json, composer.json
+- Update version in: plugin header, README.md, readme.txt, CHANGELOG.md, GEMINI.md, and `.pot` language files, constants section, package.json, and composer.json
 - Move "Unreleased" changes to new version section in both changelogs
 - **Never auto-update versions** - wait for explicit instruction
 
@@ -64,6 +65,11 @@ applyTo: '**'
 - Use PHPDoc with `@param`, `@return`, `@since` tags
 - Write clear function/class descriptions
 - Document security considerations and hooks used
+
+**Internationalization (i18n):**
+- Update `.pot` language files when adding or modifying translatable strings
+- Always use the correct text domain when dealing with translation functions
+- Mark all user-facing strings with `__()`, `_e()`, `esc_html__()`, `esc_attr__()`, etc.
 
 ## ⚡ Performance & Quality
 
