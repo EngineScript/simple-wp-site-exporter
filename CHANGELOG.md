@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### Critical Bug Fixes
+
+- **Scheduled Deletion Fix**: Fixed critical bug where automatic export file cleanup via WordPress cron was completely broken. The referer validation in `sse_validate_basic_export_file()` was blocking all cron-triggered deletions since scheduled tasks have no HTTP referer. Referer checks are now correctly applied only to user-facing download and deletion handlers.
+- **Deletion Notice Fix**: Fixed bug where success/failure notices after manually deleting an export file were lost due to `add_action('admin_notices')` being registered before `wp_safe_redirect()` + `exit`. Notices are now passed via query parameter and displayed on the redirected page.
+
+### Security & Escaping Fixes
+
+- **Double Escaping Prevention**: Fixed 9 instances of double-escaped WP_Error messages where `esc_html__()` was used in error construction but messages were escaped again with `esc_html()` at output time. Changed to `__()` in WP_Error constructors since escaping belongs at the output boundary.
+- **Admin Menu Escaping**: Removed redundant `esc_html__()` in `sse_admin_menu()` — WordPress core already escapes page and menu titles internally.
+- **Submit Button Escaping**: Removed redundant `esc_html__()` in `submit_button()` call — the function internally applies `esc_attr()` to button text.
+- **Database Export Error**: Removed pre-escaping of WP-CLI error output in `sse_export_database()` WP_Error to prevent double escaping when displayed via `sse_show_error_notice()`.
+- **Symlink Compatibility**: Removed overly strict `realpath()` equality check in `sse_validate_download_file_access()` that could block valid downloads on servers with symlinked upload directories. Directory containment validation already provides equivalent security.
+
+### Performance Improvements
+
+- **File Size Filter Caching**: Cached the `sse_max_file_size_for_export` filter result using a static variable in `sse_should_exclude_file()` to avoid redundant `get_transient()`, `get_current_user_id()`, and `apply_filters()` calls for every file during export.
+- **Error Log Autoload**: Added `false` autoload parameter to `update_option()` in `sse_store_log_in_database()` to prevent debug logs from being loaded into memory on every WordPress page request.
+
+### Code Quality
+
+- **Dead Code Removal**: Removed unused `sse_get_scheduled_deletions()` debugging function that was never called from any code path.
+- **Shell Safety**: Added `function_exists('shell_exec')` check in `sse_get_safe_wp_cli_path()` before attempting PATH lookup, preventing PHP warnings when `shell_exec` is disabled.
+- **POT File Cleanup**: Removed 6 stale translation entries referencing functions that no longer exist. Added missing translatable strings for file size options, error messages, and WP-CLI status messages.
+- **GEMINI.md**: Updated version reference from 1.8.4 to 1.9.1.
+
 ## 1.9.1 - September 29, 2025
 
 ### Scheduled Deletion System Enhancements

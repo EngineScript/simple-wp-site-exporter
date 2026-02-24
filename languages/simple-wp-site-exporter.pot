@@ -216,30 +216,74 @@ msgstr ""
 msgid "File not found."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1628
+#: simple-wp-site-exporter.php
 msgid "Unable to serve file download."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1671
-msgid "WP-CLI not found on this server."
+#: simple-wp-site-exporter.php
+msgid "WP-CLI executable not found. Please ensure it is installed and in your server's PATH."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1675
-msgid "WP-CLI path is not absolute."
+#: simple-wp-site-exporter.php
+msgid "shell_exec function is disabled on this server."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1687
-msgid "Suspicious characters detected in WP-CLI path."
+#: simple-wp-site-exporter.php
+msgid "An export process is already running. Please wait for it to complete before starting a new one."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1692
-msgid "WP-CLI executable not found at detected path."
+#: simple-wp-site-exporter.php
+msgid "Could not create the export directory. Please verify filesystem permissions."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1696
-msgid "WP-CLI file is not executable."
+#: simple-wp-site-exporter.php
+msgid "The export directory is not writable. Please adjust filesystem permissions."
 msgstr ""
 
-#: simple-wp-site-exporter.php:1710
-msgid "Detected file is not a valid WP-CLI executable."
+#: simple-wp-site-exporter.php
+msgid "Could not determine the WordPress upload directory or URL."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "ZipArchive class is not available on your server. Cannot create zip file."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Failed to add database file to zip archive."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Failed to finalize or save the zip archive after processing files."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Maximum File Size"
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "No limit (include all files)"
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "100 MB"
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "500 MB"
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "1 GB"
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Files larger than this size will be excluded from the export. Choose \"No limit\" to include all files regardless of size."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Invalid file size."
+msgstr ""
+
+#: simple-wp-site-exporter.php
+msgid "Invalid request source."
 msgstr ""

@@ -90,6 +90,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 == Changelog ==
 
 = Unreleased =
+* **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions
+* **Critical Fix**: Fixed deletion success/failure notices being lost after redirect
+* **Security**: Fixed 9 instances of double-escaped WP_Error messages that could display garbled text to users
+* **Security**: Removed redundant double escaping in admin menu titles and submit button
+* **Security**: Removed overly strict realpath equality check that blocked downloads on servers with symlinked uploads
+* **Performance**: Cached file size filter result to avoid redundant lookups per file during export
+* **Performance**: Prevented debug error logs from autoloading on every WordPress page request
+* **Code Quality**: Removed unused `sse_get_scheduled_deletions()` dead code
+* **Code Quality**: Added `shell_exec` availability check in WP-CLI PATH lookup
+* **i18n**: Cleaned up stale .pot entries and added missing translatable strings
 
 = 1.9.1 =
 * **Scheduled Deletion System Enhancements**: Implemented comprehensive dual cleanup system with both individual file cleanup (5 minutes) and bulk directory cleanup (10 minutes) as safety net
