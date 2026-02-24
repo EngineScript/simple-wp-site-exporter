@@ -4,8 +4,14 @@
  * Description: Exports the site files and database as a zip archive.
  * Version: 1.9.1
  * Author: EngineScript
- * License: GPL v3 or later
+ * Requires at least: 6.5
+ * Tested up to: 6.9
+ * Requires PHP: 7.4
+ * License: GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: simple-wp-site-exporter
+ * Domain Path: /languages
+ * 
  *
  * @package Simple_WP_Site_Exporter
  */
