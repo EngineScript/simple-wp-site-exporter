@@ -183,7 +183,7 @@ jobs:
           zip -r simple-wp-site-exporter.zip simple-wp-site-exporter
           
       - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: simple-wp-site-exporter
           path: build/simple-wp-site-exporter.zip
