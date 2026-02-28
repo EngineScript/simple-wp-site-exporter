@@ -7,7 +7,7 @@ This is a secure WordPress site export plugin that creates complete site backups
 ## Plugin Details
 
 - **Name:** Simple WP Site Exporter
-- **Version:** 1.9.1
+- **Version:** 1.9.2
 - **WordPress Compatibility:** 6.5+
 - **PHP Compatibility:** 7.4+
 - **License:** GPL-3.0-or-later

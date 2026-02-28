@@ -1,6 +1,6 @@
 # Changelog for Simple WP Site Exporter
 
-## Unreleased
+## 1.9.2 - February 28, 2026
 
 ### Critical Bug Fixes
 

@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -89,7 +89,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
-= Unreleased =
+= 1.9.2 =
 * **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions
 * **Critical Fix**: Fixed deletion success/failure notices being lost after redirect
 * **Security**: Fixed 9 instances of double-escaped WP_Error messages that could display garbled text to users
