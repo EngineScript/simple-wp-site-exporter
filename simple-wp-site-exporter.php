@@ -11,7 +11,6 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: simple-wp-site-exporter
  * Domain Path: /languages
- * 
  *
  * @package Simple_WP_Site_Exporter
  */
