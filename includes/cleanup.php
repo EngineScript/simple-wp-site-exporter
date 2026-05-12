@@ -29,7 +29,7 @@ function sse_cleanup_files( array $files ): void {
  * Schedules cleanup of export files.
  *
  * @since 1.0.0
- * @param string $zip_filepath The zip file path to schedule for deletion.
+ * @param string $zip_filepath The ZIP file path to schedule for deletion.
  * @return void
  */
 function sse_schedule_export_cleanup( string $zip_filepath ): void {
@@ -176,15 +176,16 @@ function sse_delete_export_file_handler( string $file ): void {
 		return;
 	}
 
-	if ( file_exists( $file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled scheduled deletion validation
-		if ( sse_safely_delete_file( $file ) ) {
-			sse_log( 'Scheduled deletion successful: ' . $file, 'info' );
+	$validated_file = $validation['filepath'];
+	if ( file_exists( $validated_file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled scheduled deletion validation
+		if ( sse_safely_delete_file( $validated_file ) ) {
+			sse_log( 'Scheduled deletion successful: ' . $validated_file, 'info' );
 			return;
 		}
-		sse_log( 'Scheduled deletion failed: ' . $file, 'error' );
+		sse_log( 'Scheduled deletion failed: ' . $validated_file, 'error' );
 	} else {
 		// Graceful handling: file already gone (likely manually deleted) - not an error.
-		sse_log( 'Scheduled deletion skipped - file already removed: ' . $file, 'info' );
+		sse_log( 'Scheduled deletion skipped - file already removed: ' . $validated_file, 'info' );
 	}
 }
 

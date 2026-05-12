@@ -40,13 +40,16 @@ function sse_handle_export(): void {
 			return;
 		}
 
-		$database_file = sse_export_database( $export_paths['export_dir'] );
+		$site_identifier = sse_get_export_site_identifier();
+		$timestamp       = sse_get_export_timestamp();
+
+		$database_file = sse_export_database( $export_paths['export_dir'], $site_identifier, $timestamp );
 		if ( is_wp_error( $database_file ) ) {
 			sse_show_error_notice( $database_file->get_error_message() );
 			return;
 		}
 
-		$zip_result = sse_create_site_archive( $export_paths, $database_file );
+		$zip_result = sse_create_site_archive( $export_paths, $database_file, $site_identifier, $timestamp );
 		if ( is_wp_error( $zip_result ) ) {
 			sse_cleanup_files( [ $database_file['filepath'] ] );
 			sse_show_error_notice( $zip_result->get_error_message() );
@@ -212,35 +215,20 @@ function sse_get_safe_wp_cli_path() {
 		}
 	}
 
-	// Check if 'wp' is in the system's PATH.
-	// Use 'where' for Windows and 'command -v' for Unix-like systems.
-	if ( function_exists( 'shell_exec' ) ) {
-		$command = ( strtoupper( substr( PHP_OS, 0, 3 ) ) === 'WIN' ) ? 'where wp' : 'command -v wp';
-		$path    = shell_exec( $command ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Safe command to find executable.
-
-		if ( ! empty( $path ) ) {
-			$trimmed = trim( $path );
-			// Additional verification: ensure resolved path exists and is executable (defense-in-depth).
-			if ( file_exists( $trimmed ) && is_executable( $trimmed ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled path verification
-				return $trimmed;
-			}
-		}
-	}
-
-	return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI executable not found. Please ensure it is installed and in your server\'s PATH.', 'enginescript-site-exporter' ) );
+	return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI executable not found in an allowed location. Please install it at /usr/local/bin/wp, /usr/bin/wp, or as wp-cli.phar in the WordPress root.', 'enginescript-site-exporter' ) );
 }
 
 /**
  * Exports the database and returns file information.
  *
  * @since 1.0.0
- * @param string $export_dir The directory to save the database dump.
+ * @param string $export_dir      The directory to save the database dump.
+ * @param string $site_identifier Sanitized site identifier.
+ * @param string $timestamp       Export timestamp.
  * @return array{filename: string, filepath: string}|WP_Error Array with file info on success, WP_Error on failure.
  */
-function sse_export_database( string $export_dir ) {
-	$site_name   = sanitize_file_name( get_bloginfo( 'name' ) );
-	$timestamp   = gmdate( 'Y-m-d_H-i-s' );
-	$db_filename = "db_dump_{$site_name}_{$timestamp}.sql";
+function sse_export_database( string $export_dir, string $site_identifier, string $timestamp ) {
+	$db_filename = "{$site_identifier}_db_{$timestamp}.sql";
 	$db_filepath = trailingslashit( $export_dir ) . $db_filename;
 
 	if ( ! function_exists( 'shell_exec' ) ) {

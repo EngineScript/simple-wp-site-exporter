@@ -115,7 +115,7 @@
     </rule>
 
     <!-- Set minimum WordPress version for deprecated function checks -->
-    <config name="minimum_wp_version" value="6.6"/>
+    <config name="minimum_wp_version" value="6.8"/>
     <config name="testVersion" value="7.4-"/>
 
     <!-- Show progress -->

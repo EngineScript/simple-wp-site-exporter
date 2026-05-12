@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a secure WordPress site export plugin that creates complete site backups including files and database as downloadable ZIP archives. Designed for WordPress administrators who need reliable, secure site exports for migrations, backups, or development purposes.
+This is a secure WordPress site export plugin that creates complete site backups including files and the database as downloadable ZIP archives. Designed for WordPress administrators who need reliable, secure site exports for migrations, backups, or development purposes.
 
 ## Plugin Details
 
@@ -59,7 +59,6 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 - `CHANGELOG.md` - Developer changelog
 - `README.md` - Developer documentation
 - `readme.txt` - WordPress.org plugin directory readme
-- `ROADMAP.md` - Prioritized improvement roadmap
 - `.github/workflows/` - CI/CD automation
 
 ## WordPress Coding Standards
@@ -95,8 +94,8 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 #### Site Export Process
 
 - **File Export:** Complete WordPress installation including themes, plugins, uploads
-- **Database Export:** Secure database dump using WP-CLI when available
-- **ZIP Creation:** All files compressed into downloadable archive
+- **Database Export:** Secure database dump using WP-CLI (required)
+- **ZIP Creation:** All files are compressed into a downloadable archive
 - **Automatic Cleanup:** Export files auto-deleted after 5 minutes for security
 
 #### Security Features
@@ -160,7 +159,7 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 ### Testing & Quality Assurance
 
-- **PHPStan Level 5:** Static analysis compliance
+- **PHPStan Level 6:** Static analysis compliance
 - **PHPCS WordPress Standards:** Full coding standards compliance
 - **PHPMD Compliance:** Code quality and complexity management
 - **Security Analysis:** Regular vulnerability assessments

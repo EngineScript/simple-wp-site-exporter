@@ -248,8 +248,9 @@ function sse_validate_filename_format( string $filename ) {
 		return new WP_Error( 'invalid_filename', __( 'Invalid filename.', 'enginescript-site-exporter' ) );
 	}
 
-	// Validate that it's our export file format.
-	if ( ! preg_match( '/^site_export_sse_[a-f0-9]{7}_[a-zA-Z0-9_-]+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip$/', $filename ) ) {
+
+	// Validate the canonical EngineScript combined site archive filename.
+	if ( ! preg_match( '/^[a-zA-Z0-9._-]+_enginescript_site_export_\d{8}_\d{6}\.zip$/', $filename ) ) {
 		return new WP_Error( 'invalid_format', __( 'Invalid export file format.', 'enginescript-site-exporter' ) );
 	}
 

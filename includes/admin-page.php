@@ -28,7 +28,7 @@ function sse_admin_menu(): void {
 /**
  * Enqueues admin CSS and JS on the Site Exporter page only.
  *
- * @since 2.1.0
+ * @since 2.0.0
  * @param string $hook_suffix The current admin page hook suffix.
  * @return void
  */
@@ -92,14 +92,14 @@ function sse_exporter_page_html(): void {
 			}
 		}
 		?>
-		<p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'enginescript-site-exporter' ); ?></p>
+		<p><?php esc_html_e( 'Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database.', 'enginescript-site-exporter' ); ?></p>
 		<p><strong><?php esc_html_e( 'Warning:', 'enginescript-site-exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'enginescript-site-exporter' ); ?></p>
 		<p class="sse-section-spacing">
 			<?php
 			// printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
 			printf(
 				// translators: %s: directory path.
-				esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'enginescript-site-exporter' ),
+				esc_html__( 'Exported ZIP files will be saved in the following directory on the server: %s', 'enginescript-site-exporter' ),
 				'<code>' . esc_html( $display_path ) . '</code>'
 			);
 			?>
@@ -140,11 +140,11 @@ function sse_exporter_page_html(): void {
 		</p>
 		<p class="sse-warning-text">
 			<?php esc_html_e( 'Important:', 'enginescript-site-exporter' ); ?>
-			<?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'enginescript-site-exporter' ); ?>
+			<?php esc_html_e( 'The exported ZIP file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'enginescript-site-exporter' ); ?>
 		</p>
 		<p class="sse-warning-text">
 			<?php esc_html_e( 'Security Notice:', 'enginescript-site-exporter' ); ?>
-			<?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created.', 'enginescript-site-exporter' ); ?>
+			<?php esc_html_e( 'For your protection, the exported ZIP file will be automatically deleted from the server 5 minutes after it is created.', 'enginescript-site-exporter' ); ?>
 		</p>
 	</div>
 	<?php
@@ -175,7 +175,7 @@ function sse_show_error_notice( string $message ): void {
  * Shows a success notice to the user.
  *
  * @since 1.0.0
- * @param array{filename: string, filepath: string} $zip_result The zip file information.
+ * @param array{filename: string, filepath: string} $zip_result The ZIP file information.
  * @return void
  */
 function sse_show_success_notice( array $zip_result ): void {
@@ -190,14 +190,6 @@ function sse_show_success_notice( array $zip_result ): void {
 				admin_url()
 			);
 
-			$delete_url = add_query_arg(
-				[
-					'sse_delete_export' => $zip_result['filename'],
-					'sse_delete_nonce'  => wp_create_nonce( 'sse_delete_export' ),
-				],
-				admin_url()
-			);
-
 			$display_zip_path = str_replace( ABSPATH, '[wp-root]/', $zip_result['filepath'] );
 			$display_zip_path = preg_replace( '|/+|', '/', $display_zip_path );
 			?>
@@ -207,9 +199,13 @@ function sse_show_success_notice( array $zip_result ): void {
 					<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
 						<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
 					</a>
-					<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary sse-action-button sse-confirm-delete">
-						<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
-					</a>
+					<form method="post" action="<?php echo esc_url( admin_url() ); ?>" class="sse-inline-form">
+						<input type="hidden" name="sse_delete_export" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
+						<?php wp_nonce_field( 'sse_delete_export', 'sse_delete_nonce' ); ?>
+						<button type="submit" class="button button-secondary sse-action-button sse-confirm-delete">
+							<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
+						</button>
+					</form>
 				</p>
 				<p><small>
 					<?php

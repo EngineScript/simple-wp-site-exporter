@@ -3,7 +3,7 @@
 # - WordPress Plugin Check for WordPress.org compatibility
 # - PHPUnit tests across PHP versions (7.4/8.0: PHPUnit 9+polyfills2; 8.1: PHPUnit 9+polyfills4; 8.2: PHPUnit 11+polyfills4; 8.3: PHPUnit 12+polyfills4)
 # - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4, 8.5)
-# - WordPress compatibility testing across multiple WP versions (6.6, latest, nightly)
+# - WordPress compatibility testing across multiple WP versions (6.8, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
 # - PHPCS code standards validation for WordPress coding standards
@@ -588,7 +588,7 @@ jobs:
     strategy:
       matrix:
         php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
-        wp-version: ['6.6', 'latest', 'nightly']
+        wp-version: ['6.8', 'latest', 'nightly']
       fail-fast: false
 
     services:
@@ -806,7 +806,7 @@ jobs:
                   $this->assertNotEmpty($wp_version, 'WordPress version should be available');
                   
                   // Test that we're running on a supported WordPress version
-                  $min_wp_version = '6.6';
+                  $min_wp_version = '6.8';
                   $this->assertTrue(version_compare($wp_version, $min_wp_version, '>='), 
                       "WordPress version {$wp_version} should be >= {$min_wp_version}");
               }

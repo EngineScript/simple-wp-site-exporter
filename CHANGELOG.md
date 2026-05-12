@@ -10,6 +10,12 @@
 - **SSRF Hardening**: File download functions now use `realpath()`-resolved paths for all filesystem operations (`readfile()`, `is_readable()`, `is_file()`), preventing TOCTOU and SSRF attack vectors. `sse_validate_file_output_security()` now returns the resolved path for direct use.
 - **CSP Compliance**: Replaced inline `onclick` JavaScript handler with external `js/admin.js` file to comply with Content Security Policy headers and prevent inline script execution risks.
 - **Upload Directory Validation**: Added `wp_upload_dir()` error key check alongside the existing `basedir` empty check, preventing silent failures on misconfigured hosts.
+- **Scheduled Cleanup Hardening**: Scheduled export deletion now deletes only the validated export directory path rather than the raw cron argument.
+- **Symlink Export Hardening**: WordPress file archive creation now skips symbolic links and verifies resolved paths stay within the WordPress root before adding them.
+- **WP-CLI Path Hardening**: Removed PATH lookup for WP-CLI and now only executes WP-CLI from explicit allowed locations.
+- **Download Boundary Hardening**: Final download path validation now uses normalized trailing-slash directory containment checks.
+- **Destructive Action Hardening**: Manual export deletion now uses POST with nonce verification instead of a GET link.
+- **Extension Policy Tightening**: Export download validation now allows only `.zip` files.
 
 ### Bug Fixes
 
@@ -18,16 +24,16 @@
 - **phpcs Suppression**: Removed unnecessary `phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped` comment on a line already properly escaped with `esc_html()`.
 - **GEMINI.md Accuracy**: Updated WP-CLI Integration section to reflect that WP-CLI is a required dependency (returns `WP_Error` if unavailable), replacing outdated "graceful fallback" language.
 - **WP-CLI Language**: Updated README.md and readme.txt from "when available" to "Requires WP-CLI" to match v2.0.0 behavior.
-- **phpcs WP Version**: Corrected `minimum_supported_wp_version` in phpcs.xml from `6.8` to `6.5` to match the plugin header `Requires at least` value.
 
 ### Architecture
 
+- **EngineScript Archive Format**: Updated exports to match the canonical EngineScript combined site archive: outer ZIP named `<site>_enginescript_site_export_<timestamp>.zip`, root `manifest.txt`, `database/<site>_db_<timestamp>.sql.gz`, and `files/<site>_files_<timestamp>.tar.gz`.
 - **File Splitting**: Split monolithic `enginescript-site-exporter.php` (~1,400 lines) into a 112-line bootstrap file plus 7 focused include files under `includes/`: `helpers.php`, `security.php`, `admin-page.php`, `export.php`, `archive.php`, `cleanup.php`, `download.php`. Each file is guarded by `ABSPATH` check.
 - **Plugin File Constant**: Added `SSE_PLUGIN_FILE` constant defined as `__FILE__` in bootstrap, used by `includes/admin-page.php` for `plugin_dir_url()` calls since `__FILE__` resolves to the include path, not the plugin root.
 - **Filter Name Constant**: Replaced hardcoded `'sse_max_file_size_for_export'` filter name string with `SSE_FILTER_MAX_FILE_SIZE` constant for discoverability.
 - **Shell Output Sanitization**: Added `sanitize_text_field()` to WP-CLI error output in `sse_export_database()` for defense-in-depth.
-- **Explicit Null Return**: Added explicit `return null;` to `sse_process_file_for_zip()` to match PHPDoc return type `true|null`.
-- **RuntimeException Catch**: Changed `sse_add_wordpress_files_to_zip()` to catch `RuntimeException` specifically before generic `Exception` fallback.
+- **Explicit Null Return**: Added explicit `return null;` to `sse_process_file_for_tar()` to match PHPDoc return type `true|null`.
+- **RuntimeException Catch**: Changed `sse_add_wordpress_files_to_tar()` to catch `RuntimeException` specifically before generic `Exception` fallback.
 - **DirectoryIterator**: Replaced `scandir()` with `DirectoryIterator` in `sse_bulk_cleanup_exports_handler()` for more efficient file iteration.
 - **PHPStan Level Increase**: Increased PHPStan analysis level from 5 to 6, added `includes/` directory to scan paths.
 - **Inline CSS Removal**: Extracted 7 inline `style` attributes from admin page and success notice into dedicated `css/admin.css` file with semantic CSS classes (`sse-section-spacing`, `sse-form-table`, `sse-warning-text`, `sse-action-button`).
@@ -42,7 +48,6 @@
 - **Dead Code Removal**: Removed no-op `sse_prepare_execution_environment()` function and its call from the export flow.
 - **Debug Code Removal**: Removed `sse_test_cron_scheduling()` debug function that created/verified/removed a test cron event on every export — no longer needed after v2.0.0 cron fixes.
 - **Cron Logging Reduction**: Reduced cron scheduling functions from 5+ log entries each to 2 (success/failure), keeping `DISABLE_WP_CRON` diagnostic on failure only.
-- **ROADMAP**: Created `ROADMAP.md` documenting prioritized bug fixes, security hardening, and improvement opportunities from second-pass code review.
 
 ### PHP 7.4 Modernization
 

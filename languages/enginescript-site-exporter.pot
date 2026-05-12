@@ -45,7 +45,7 @@ msgid "Failed to delete export file."
 msgstr ""
 
 #: includes/admin-page.php:95
-msgid "Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file)."
+msgid "Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database."
 msgstr ""
 
 #: includes/admin-page.php:96
@@ -58,7 +58,7 @@ msgstr ""
 
 #. translators: %s: directory path
 #: includes/admin-page.php:102
-msgid "Exported .zip files will be saved in the following directory on the server: %s"
+msgid "Exported ZIP files will be saved in the following directory on the server: %s"
 msgstr ""
 
 #: includes/admin-page.php:115
@@ -102,7 +102,7 @@ msgid "Important:"
 msgstr ""
 
 #: includes/admin-page.php:143
-msgid "The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it."
+msgid "The exported ZIP file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it."
 msgstr ""
 
 #: includes/admin-page.php:146
@@ -110,7 +110,7 @@ msgid "Security Notice:"
 msgstr ""
 
 #: includes/admin-page.php:147
-msgid "For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created."
+msgid "For your protection, the exported ZIP file will be automatically deleted from the server 5 minutes after it is created."
 msgstr ""
 
 #: includes/export.php:25
@@ -141,8 +141,8 @@ msgstr ""
 msgid "The export directory is not writable. Please adjust filesystem permissions."
 msgstr ""
 
-#: includes/export.php:230
-msgid "WP-CLI executable not found. Please ensure it is installed and in your server's PATH."
+#: includes/export.php:218
+msgid "WP-CLI executable not found in an allowed location. Please install it at /usr/local/bin/wp, /usr/bin/wp, or as wp-cli.phar in the WordPress root."
 msgstr ""
 
 #: includes/export.php:247
@@ -150,20 +150,24 @@ msgid "shell_exec function is disabled on this server."
 msgstr ""
 
 #: includes/archive.php:22
-msgid "ZipArchive class is not available on your server. Cannot create zip file."
+msgid "ZipArchive class is not available on your server. Cannot create ZIP file."
 msgstr ""
 
 #. translators: %s: filename
 #: includes/archive.php:37
-msgid "Could not create zip file at %s"
+msgid "Could not create ZIP file at %s"
 msgstr ""
 
-#: includes/archive.php:46
-msgid "Failed to add database file to zip archive."
+#: includes/archive.php:326
+msgid "Failed to add EngineScript payload file to ZIP archive."
+msgstr ""
+
+#: includes/archive.php:332
+msgid "Failed to store EngineScript ZIP payload without recompression."
 msgstr ""
 
 #: includes/archive.php:58
-msgid "Failed to finalize or save the zip archive after processing files."
+msgid "Failed to finalize or save the ZIP archive after processing files."
 msgstr ""
 
 #. translators: %s: error message

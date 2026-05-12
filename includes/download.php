@@ -58,13 +58,13 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
  * @since 2.0.0
  * @return void
  */
-function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( ! isset( $_GET['sse_delete_export'] ) || ! isset( $_GET['sse_delete_nonce'] ) ) {
+function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+	if ( ! isset( $_POST['sse_delete_export'] ) || ! isset( $_POST['sse_delete_nonce'] ) ) {
 		return;
 	}
 
 	// Verify nonce.
-	$nonce = sanitize_text_field( wp_unslash( $_GET['sse_delete_nonce'] ) );
+	$nonce = sanitize_text_field( wp_unslash( $_POST['sse_delete_nonce'] ) );
 	if ( ! wp_verify_nonce( $nonce, 'sse_delete_export' ) ) {
 		wp_die( esc_html__( 'Security check failed. Please try again.', 'enginescript-site-exporter' ), 403 );
 	}
@@ -80,7 +80,7 @@ function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security
 		wp_die( esc_html( $referer_check->get_error_message() ), 403 );
 	}
 
-	$filename   = sanitize_file_name( wp_unslash( $_GET['sse_delete_export'] ) );
+	$filename   = sanitize_file_name( wp_unslash( $_POST['sse_delete_export'] ) );
 	$validation = sse_validate_basic_export_file( $filename );
 
 	if ( is_wp_error( $validation ) ) {
@@ -135,9 +135,6 @@ function sse_set_download_headers( string $filename, int $filesize ): void {
 		case 'zip':
 			$content_type = 'application/zip';
 			break;
-		case 'sql':
-			$content_type = 'application/sql';
-			break;
 		default:
 			// Security: Default to octet-stream for unknown types to prevent execution.
 			$content_type = 'application/octet-stream';
@@ -182,6 +179,12 @@ function sse_validate_file_output_security( string $filepath ): string {
 	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$real_export_dir = realpath( $export_dir );
 	$real_file_path  = realpath( $filepath );
+	if ( false !== $real_export_dir ) {
+		$real_export_dir = trailingslashit( wp_normalize_path( $real_export_dir ) );
+	}
+	if ( false !== $real_file_path ) {
+		$real_file_path = wp_normalize_path( $real_file_path );
+	}
 
 	if ( false === $real_export_dir || false === $real_file_path || 0 !== strpos( $real_file_path, $real_export_dir ) ) {
 		sse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );

@@ -1,22 +1,23 @@
 === EngineScript Site Exporter ===
 Contributors: enginescript
 Tags: backup, export, migration, site export, database export
-Requires at least: 6.6
+Requires at least: 6.8
 Tested up to: 6.9
 Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Export your entire WordPress site as a secure downloadable ZIP archive.
+Export your entire WordPress site as a secure downloadable EngineScript-compatible ZIP archive.
 
 == Description ==
 
-EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
+EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and the database, perfect for site migrations, backups, or local development environments.
 
 Key features:
 * One-Click Export: Create a complete site backup with just one click
-* Database Export: Includes a full database dump in your export
+* EngineScript Archive Format: Creates the combined ZIP format accepted by EngineScript's current vhost-import.sh
+* Database Export: Includes a gzip-compressed database dump in your export
 * Automatic Cleanup: Exports are automatically deleted after 5 minutes to enhance security
 * Secure Downloads: All exports use WordPress security tokens for protected access
 * WP-CLI Integration: Requires WP-CLI for efficient database exports
@@ -30,7 +31,13 @@ This plugin is designed to work seamlessly with the EngineScript LEMP server env
 * Streamlined Migrations: Export from any WordPress site and import directly to an EngineScript-powered server
 * Optimized Performance: When used on an EngineScript server, the plugin leverages server-optimized settings
 
-The export format is specifically designed to work with EngineScript's site import functionality, allowing for seamless site migrations between WordPress installations.
+The export format matches EngineScript's canonical combined site archive:
+
+`manifest.txt`
+`database/<site>_db_<timestamp>.sql.gz`
+`files/<site>_files_<timestamp>.tar.gz`
+
+The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 
 == Installation ==
 
@@ -96,12 +103,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Security**: File download functions now use `realpath()`-resolved paths for all filesystem operations to prevent SSRF
 * **Security**: Replaced inline `onclick` JS with external script file for Content Security Policy compliance
 * **Security**: Added `wp_upload_dir()` error key validation alongside basedir empty check
+* **Security**: Hardened scheduled cleanup, symlink handling, WP-CLI lookup, download path containment, manual deletion method, and export file extension validation
+* **EngineScript Compatibility**: Updated exports to the canonical combined site archive format with `manifest.txt`, `database/<site>_db_<timestamp>.sql.gz`, and `files/<site>_files_<timestamp>.tar.gz`
 * **Bug Fix**: Corrected README.md cleanup timer from "1 hour" to "5 minutes"
 * **Bug Fix**: Removed unused `$export_dir_name` variable in admin page
 * **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
 * **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
 * **Bug Fix**: Corrected WP-CLI description from "when available" to "requires" in README.md and readme.txt
-* **Bug Fix**: Fixed phpcs.xml `minimum_supported_wp_version` from 6.8 to 6.6 to match plugin header
 * **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
 * **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
 * **Architecture**: Removed 2 redundant intermediate download validation passes
@@ -113,13 +121,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Architecture**: Extracted inline JS confirmation dialog into `js/admin.js` with `wp_localize_script()` i18n
 * **Architecture**: Added `sse_enqueue_admin_assets()` for proper CSS/JS enqueueing on plugin page only
 * **Architecture**: Rewrote copilot-instructions.md for clarity, removed irrelevant references
-* **Architecture**: Created ROADMAP.md with prioritized improvement plan
 * **Architecture**: Split monolithic plugin file (~1,400 lines) into 112-line bootstrap + 7 include files under `includes/`
 * **Architecture**: Added `SSE_PLUGIN_FILE` constant for correct `plugin_dir_url()` resolution in include files
 * **Architecture**: Added `SSE_FILTER_MAX_FILE_SIZE` constant replacing hardcoded filter name string
 * **Architecture**: Added `sanitize_text_field()` to WP-CLI error output for defense-in-depth
-* **Architecture**: Added explicit `return null;` to `sse_process_file_for_zip()` matching documented return type
-* **Architecture**: Changed `sse_add_wordpress_files_to_zip()` to catch `RuntimeException` specifically
+* **Architecture**: Added explicit `return null;` to `sse_process_file_for_tar()` matching documented return type
+* **Architecture**: Changed `sse_add_wordpress_files_to_tar()` to catch `RuntimeException` specifically
 * **Architecture**: Replaced `scandir()` with `DirectoryIterator` in bulk cleanup handler
 * **Architecture**: Increased PHPStan analysis level from 5 to 6 with `includes/` scan path
 * **PHP 7.4**: Added type declarations (parameter and return types) to all functions
@@ -183,9 +190,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **WordPress Plugin Directory Compliance**: Updated text domain from 'EngineScript-Site-Exporter' to 'enginescript-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
 * **Load Textdomain Removal**: Removed discouraged `load_plugin_textdomain()` function call as WordPress automatically handles translations for plugins hosted on WordPress.org since version 4.6
 * **Plugin Header Update**: Fixed "Text Domain" header to use only lowercase letters, numbers, and hyphens as required by WordPress standards
-* **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
-
-= 1.8.2 =
 * **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
 
 = 1.7.0 =

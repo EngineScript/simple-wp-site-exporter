@@ -4,7 +4,7 @@
  * Enqueued only on the Site Exporter admin page (tools_page_enginescript-site-exporter).
  *
  * @package EngineScript_Site_Exporter
- * @since   2.1.0
+ * @since   2.0.0
  */
 
 /* Spacing between form sections and intro paragraphs. */
@@ -26,4 +26,9 @@
 /* Action buttons (download/delete) in success notices. */
 .sse-action-button {
 	margin-left: 10px;
+}
+
+/* Keep the POST-backed delete action visually grouped with the download action. */
+.sse-inline-form {
+	display: inline;
 }

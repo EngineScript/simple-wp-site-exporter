@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: EngineScript Site Exporter
- * Description: Exports the site files and database as a zip archive.
+ * Description: Exports the site files and the database as an EngineScript-compatible site archive.
  * Version: 2.0.0
  * Author: EngineScript
- * Requires at least: 6.6
+ * Requires at least: 6.8
  * Tested up to: 6.9
  * Requires PHP: 7.4
  * License: GPL-3.0-or-later
@@ -27,7 +27,7 @@ if ( ! defined( 'ES_SITE_EXPORTER_VERSION' ) ) {
 
 // Define allowed file extensions for export operations.
 if ( ! defined( 'SSE_ALLOWED_EXTENSIONS' ) ) {
-	define( 'SSE_ALLOWED_EXTENSIONS', [ 'zip', 'sql' ] );
+	define( 'SSE_ALLOWED_EXTENSIONS', [ 'zip' ] );
 }
 
 // Define export directory name used across the plugin.
@@ -56,6 +56,8 @@ if ( ! defined( 'SSE_PLUGIN_FILE' ) ) {
  *
  * @see WP_Error - WordPress error handling class
  * @see ZipArchive - PHP ZipArchive class
+ * @see Phar - PHP Phar class
+ * @see PharData - PHP PharData class
  * @see RecursiveIteratorIterator - PHP SPL iterator
  * @see RecursiveDirectoryIterator - PHP SPL directory iterator
  * @see DirectoryIterator - PHP SPL directory iterator for cleanup

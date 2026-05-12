@@ -2,21 +2,22 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/94ac1b08e70a48cc895d8522dffcf472)](https://app.codacy.com/gh/EngineScript/enginescript-site-exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?logo=gnu)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![WordPress Compatible](https://img.shields.io/badge/WordPress-6.6%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
+[![WordPress Compatible](https://img.shields.io/badge/WordPress-6.8%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
 [![PHP Compatible](https://img.shields.io/badge/PHP-7.4%2B-purple.svg?logo=php)](https://www.php.net/)
 
 ## Current Version
 [![Version](https://img.shields.io/badge/Version-2.0.0-orange.svg?logo=github)](https://github.com/EngineScript/enginescript-site-exporter/releases/latest/download/enginescript-site-exporter-2.0.0.zip)
 
 ## Description
-A WordPress plugin that exports your entire site, including files and database, as a secure, downloadable ZIP archive.
+A WordPress plugin that exports your entire site, including files and the database, as a secure, downloadable EngineScript-compatible ZIP archive.
 
-EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
+EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and the database, perfect for site migrations, backups, or local development environments.
 
 ### Key Features
 
 - **One-Click Export**: Create a complete site backup with just one click
-- **Database Export**: Includes a full database dump in your export
+- **EngineScript Archive Format**: Creates the combined ZIP format accepted by EngineScript's current `vhost-import.sh`
+- **Database Export**: Includes a gzip-compressed database dump in your export
 - **Automatic Cleanup**: Exports are automatically deleted after 5 minutes to save disk space
 - **Secure Downloads**: All exports use WordPress security tokens for protected access
 - **WP-CLI Integration**: Requires WP-CLI for efficient database exports
@@ -32,15 +33,23 @@ This plugin is designed to work seamlessly with the [EngineScript LEMP server](h
 - **Streamlined Migrations**: Export from any WordPress site and import directly to an EngineScript-powered server
 - **Optimized Performance**: When used on an EngineScript server, the plugin leverages server-optimized settings
 
-The export format is specifically designed to work with EngineScript's site import functionality, allowing for seamless site migrations between WordPress installations.
+The export format matches EngineScript's canonical combined site archive:
+
+```text
+manifest.txt
+database/<site>_db_<timestamp>.sql.gz
+files/<site>_files_<timestamp>.tar.gz
+```
+
+The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 
 ## Installation
 
-1. Download the plugin zip file
+1. Download the plugin ZIP file
 2. Log in to your WordPress admin panel
 3. Go to Plugins → Add New
 4. Click the "Upload Plugin" button at the top of the page
-5. Choose the downloaded zip file and click "Install Now"
+5. Choose the downloaded ZIP file and click "Install Now"
 6. After installation, click "Activate Plugin"
 
 ## Usage
@@ -60,10 +69,10 @@ The export format is specifically designed to work with EngineScript's site impo
 
 ## Requirements
 
-- WordPress 6.6 or higher
+- WordPress 6.8 or higher
 - PHP 7.4 or higher
 - Write access to the WordPress uploads directory
-- For database exports: MySQL access or WP-CLI installed
+- WP-CLI installed at `/usr/local/bin/wp`, `/usr/bin/wp`, or as `wp-cli.phar` in the WordPress root for database exports
 
 ## Security Features
 
