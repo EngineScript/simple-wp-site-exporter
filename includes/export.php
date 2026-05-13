@@ -17,58 +17,62 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function sse_handle_export(): void {
 	if ( ! sse_validate_export_request() ) {
-		return;
+		sse_redirect_to_exporter_page();
 	}
 
 	// Check for and set an export lock.
 	if ( get_transient( 'sse_export_lock' ) ) {
 		sse_show_error_notice( __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'enginescript-site-exporter' ) );
-		return;
+		sse_redirect_to_exporter_page();
 	}
 	// Set lock with a 1-hour expiration to prevent permanent locks on failure.
 	set_transient( 'sse_export_lock', time(), HOUR_IN_SECONDS );
 
 	try {
-		$max_exec_time = sse_get_execution_time_limit();
-		if ( $max_exec_time > 0 && $max_exec_time < 1800 ) {
-			sse_log( "Current execution time limit ({$max_exec_time}s) may be insufficient for large exports. Consider increasing server limits.", 'warning' );
-		}
+		do {
+			$max_exec_time = sse_get_execution_time_limit();
+			if ( $max_exec_time > 0 && $max_exec_time < 1800 ) {
+				sse_log( "Current execution time limit ({$max_exec_time}s) may be insufficient for large exports. Consider increasing server limits.", 'warning' );
+			}
 
-		$export_paths = sse_setup_export_directories();
-		if ( is_wp_error( $export_paths ) ) {
-			sse_show_error_notice( $export_paths->get_error_message() );
-			return;
-		}
+			$export_paths = sse_setup_export_directories();
+			if ( is_wp_error( $export_paths ) ) {
+				sse_show_error_notice( $export_paths->get_error_message() );
+				break;
+			}
 
-		$site_identifier = sse_get_export_site_identifier();
-		$timestamp       = sse_get_export_timestamp();
+			$site_identifier = sse_get_export_site_identifier();
+			$timestamp       = sse_get_export_timestamp();
 
-		$database_file = sse_export_database( $export_paths['export_dir'], $site_identifier, $timestamp );
-		if ( is_wp_error( $database_file ) ) {
-			sse_show_error_notice( $database_file->get_error_message() );
-			return;
-		}
+			$database_file = sse_export_database( $export_paths['export_dir'], $site_identifier, $timestamp );
+			if ( is_wp_error( $database_file ) ) {
+				sse_show_error_notice( $database_file->get_error_message() );
+				break;
+			}
 
-		$zip_result = sse_create_site_archive( $export_paths, $database_file, $site_identifier, $timestamp );
-		if ( is_wp_error( $zip_result ) ) {
+			$zip_result = sse_create_site_archive( $export_paths, $database_file, $site_identifier, $timestamp );
+			if ( is_wp_error( $zip_result ) ) {
+				sse_cleanup_files( [ $database_file['filepath'] ] );
+				sse_show_error_notice( $zip_result->get_error_message() );
+				break;
+			}
+
 			sse_cleanup_files( [ $database_file['filepath'] ] );
-			sse_show_error_notice( $zip_result->get_error_message() );
-			return;
-		}
 
-		sse_cleanup_files( [ $database_file['filepath'] ] );
+			sse_schedule_export_cleanup( $zip_result['filepath'] );
 
-		sse_schedule_export_cleanup( $zip_result['filepath'] );
+			// Schedule a bulk cleanup sweep in case individual files were missed.
+			sse_schedule_bulk_cleanup();
 
-		// Schedule a bulk cleanup sweep in case individual files were missed.
-		sse_schedule_bulk_cleanup();
-
-		sse_show_success_notice( $zip_result );
+			sse_show_success_notice( $zip_result );
+		} while ( false );
 	} finally {
 		// Always release the lock and clean up user preferences.
 		delete_transient( 'sse_export_lock' );
 		delete_transient( 'sse_export_max_file_size_' . get_current_user_id() );
 	}
+
+	sse_redirect_to_exporter_page();
 }
 
 /**
@@ -83,13 +87,10 @@ function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Securit
 		return false;
 	}
 
-	$post_nonce = isset( $_POST['sse_export_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- This line retrieves nonce for verification
-	if ( ! $post_nonce || ! wp_verify_nonce( $post_nonce, 'sse_export_action' ) ) {
-		wp_die( esc_html__( 'Nonce verification failed! Please try again.', 'enginescript-site-exporter' ), 403 );
-	}
+	check_admin_referer( 'sse_export_action', 'sse_export_nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to perform this action.', 'enginescript-site-exporter' ), 403 );
+		sse_wp_die( __( 'You do not have permission to perform this action.', 'enginescript-site-exporter' ), 403 );
 	}
 
 	// Store the user's max file size selection for use during export.
@@ -103,21 +104,29 @@ function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Securit
  * Sets up export directories and returns path information.
  *
  * @since 1.0.0
- * @return array{export_dir: string, export_url: string, export_dir_name: string}|WP_Error Array of paths on success, WP_Error on failure.
+ * @return array{export_dir: string, export_dir_name: string}|WP_Error Array of paths on success, WP_Error on failure.
  */
 function sse_setup_export_directories() {
-	$upload_dir = wp_upload_dir();
-	if ( empty( $upload_dir['basedir'] ) || empty( $upload_dir['baseurl'] ) ) {
-		return new WP_Error( 'upload_dir_error', __( 'Could not determine the WordPress upload directory or URL.', 'enginescript-site-exporter' ) );
+	$export_dir = sse_get_export_directory_path();
+	if ( is_wp_error( $export_dir ) ) {
+		return $export_dir;
 	}
 
 	$export_dir_name = SSE_EXPORT_DIR_NAME;
-	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
-	$export_url      = trailingslashit( $upload_dir['baseurl'] ) . $export_dir_name;
+
+	if ( sse_is_path_within_directory( dirname( $export_dir ), ABSPATH ) ) {
+		sse_log( 'Private export base directory resolved inside the WordPress web root: ' . $export_dir, 'security' );
+		return new WP_Error( 'export_dir_public', __( 'The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again.', 'enginescript-site-exporter' ) );
+	}
 
 	if ( ! wp_mkdir_p( $export_dir ) && ! is_dir( $export_dir ) ) {
 		sse_log( 'Failed to create export directory at path: ' . $export_dir, 'error' );
 		return new WP_Error( 'export_dir_creation_failed', __( 'Could not create the export directory. Please verify filesystem permissions.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( sse_is_path_within_directory( $export_dir, ABSPATH ) ) {
+		sse_log( 'Private export directory resolved inside the WordPress web root: ' . $export_dir, 'security' );
+		return new WP_Error( 'export_dir_public', __( 'The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again.', 'enginescript-site-exporter' ) );
 	}
 
 	$filesystem_init = sse_init_filesystem();
@@ -135,7 +144,6 @@ function sse_setup_export_directories() {
 
 	return [
 		'export_dir'      => $export_dir,
-		'export_url'      => $export_url,
 		'export_dir_name' => $export_dir_name,
 	];
 }

@@ -48,24 +48,14 @@ function sse_get_export_timestamp(): string {
  * @return bool True if the path resolves inside the directory.
  */
 function sse_is_path_within_export_source( string $path, string $directory ): bool {
-	$real_path      = realpath( $path );
-	$real_directory = realpath( $directory );
-
-	if ( false === $real_path || false === $real_directory ) {
-		return false;
-	}
-
-	$real_path      = wp_normalize_path( $real_path );
-	$real_directory = trailingslashit( wp_normalize_path( $real_directory ) );
-
-	return 0 === strpos( $real_path, $real_directory );
+	return sse_is_path_within_directory( $path, $directory );
 }
 
 /**
  * Creates a site archive with database and files.
  *
  * @since 1.0.0
- * @param array{export_dir: string, export_url: string, export_dir_name: string} $export_paths     Export directory paths.
+ * @param array{export_dir: string, export_dir_name: string} $export_paths     Export directory paths.
  * @param array{filename: string, filepath: string}                             $database_file    Database file information.
  * @param string                                                                $site_identifier Sanitized site identifier.
  * @param string                                                                $timestamp       Export timestamp.
@@ -125,7 +115,7 @@ function sse_validate_archive_requirements() {
  * Builds the staged EngineScript bundle payload.
  *
  * @since 2.0.0
- * @param array{export_dir: string, export_url: string, export_dir_name: string}                                                                                                                                       $export_paths     Export directory paths.
+ * @param array{export_dir: string, export_dir_name: string}                                                                                                                                                          $export_paths     Export directory paths.
  * @param array{filename: string, filepath: string}                                                                                                                                                                   $database_file    Database file information.
  * @param array{database_path: string, files_archive_path: string, manifest_path: string, database_gz_filename: string, files_archive_filename: string, combined_zip_path: string, combined_zip_filename: string} $bundle_paths    Bundle paths.
  * @param string                                                                                                                                                                                                      $site_identifier Sanitized site identifier.
@@ -159,7 +149,7 @@ function sse_build_engine_script_bundle( array $export_paths, array $database_fi
  * Prepares canonical EngineScript bundle paths and filenames.
  *
  * @since 2.0.0
- * @param array{export_dir: string, export_url: string, export_dir_name: string} $export_paths     Export directory paths.
+ * @param array{export_dir: string, export_dir_name: string} $export_paths     Export directory paths.
  * @param string                                                                $site_identifier Sanitized site identifier.
  * @param string                                                                $timestamp       Export timestamp.
  * @return array{staging_dir: string, bundle_root_dir: string, database_dir: string, files_dir: string, manifest_path: string, database_filename: string, database_gz_filename: string, database_path: string, files_archive_filename: string, files_archive_path: string, combined_zip_filename: string, combined_zip_path: string}
@@ -389,6 +379,11 @@ function sse_delete_directory_tree( string $directory ): bool {
 		return false;
 	}
 
+	$export_dir = sse_get_export_directory_path();
+	if ( is_wp_error( $export_dir ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
+		return false;
+	}
+
 	global $wp_filesystem;
 	if ( ! $wp_filesystem->exists( $directory ) ) {
 		return true;
@@ -411,6 +406,7 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
 		sse_log( 'Could not resolve real path for ABSPATH. Using ABSPATH directly.', 'warning' );
 		$source_path = ABSPATH;
 	}
+	$source_path = untrailingslashit( wp_normalize_path( $source_path ) );
 
 	try {
 		$files = new RecursiveIteratorIterator(
@@ -419,7 +415,10 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
 		);
 
 		foreach ( $files as $file_info ) {
-			sse_process_file_for_tar( $tar, $file_info, $source_path, $export_dir );
+			$file_result = sse_process_file_for_tar( $tar, $file_info, $source_path, $export_dir );
+			if ( is_wp_error( $file_result ) ) {
+				return $file_result;
+			}
 		}
 	} catch ( RuntimeException $e ) {
 		return new WP_Error(
@@ -452,7 +451,7 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
  * @param SplFileInfo $file_info   File information object.
  * @param string      $source_path Source directory path.
  * @param string      $export_dir  Export directory to exclude.
- * @return true|null True on success, null if skipped.
+ * @return true|null|WP_Error True on success, null if skipped, WP_Error on failure.
  */
 function sse_process_file_for_tar( PharData $tar, SplFileInfo $file_info, string $source_path, string $export_dir ) {
 	if ( ! $file_info->isReadable() ) {
@@ -466,7 +465,7 @@ function sse_process_file_for_tar( PharData $tar, SplFileInfo $file_info, string
 	}
 
 	$file          = $file_info->getRealPath();
-	$pathname      = $file_info->getPathname();
+	$pathname      = wp_normalize_path( $file_info->getPathname() );
 	$relative_path = ltrim( substr( $pathname, strlen( $source_path ) ), '/' );
 
 	if ( false === $file || ! sse_is_path_within_export_source( $file, $source_path ) ) {
@@ -482,7 +481,7 @@ function sse_process_file_for_tar( PharData $tar, SplFileInfo $file_info, string
 		return null;
 	}
 
-	return sse_add_file_to_tar( $tar, $file_info, $file, $pathname, $relative_path ) ? true : null;
+	return sse_add_file_to_tar( $tar, $file_info, $file, $pathname, $relative_path );
 }
 
 /**
@@ -494,9 +493,9 @@ function sse_process_file_for_tar( PharData $tar, SplFileInfo $file_info, string
  * @param string|false $file          Real file path or false if getRealPath() failed.
  * @param string       $pathname      Original pathname.
  * @param string       $relative_path Relative path in archive.
- * @return true
+ * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_add_file_to_tar( PharData $tar, SplFileInfo $file_info, $file, string $pathname, string $relative_path ): bool {
+function sse_add_file_to_tar( PharData $tar, SplFileInfo $file_info, $file, string $pathname, string $relative_path ) {
 	try {
 		if ( $file_info->isDir() ) {
 			$tar->addEmptyDir( $relative_path );
@@ -510,10 +509,18 @@ function sse_add_file_to_tar( PharData $tar, SplFileInfo $file_info, $file, stri
 				return true; // Skip this file but continue processing.
 			}
 
-			$tar->addFile( $file, $relative_path );
+			$tar->addFile( wp_normalize_path( $file ), $relative_path );
 		}
 	} catch ( Exception $e ) {
 		sse_log( 'Failed to add file to tar: ' . $relative_path . ' (Source: ' . $pathname . ') - ' . $e->getMessage(), 'error' );
+		return new WP_Error(
+			'file_add_failed',
+			sprintf(
+				/* translators: %s: file path */
+				__( 'Failed to add file to archive: %s', 'enginescript-site-exporter' ),
+				$relative_path
+			)
+		);
 	}
 
 	return true;

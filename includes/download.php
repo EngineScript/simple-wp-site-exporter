@@ -16,37 +16,27 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return void
  */
 function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( ! isset( $_GET['sse_secure_download'] ) || ! isset( $_GET['sse_download_nonce'] ) ) {
-		return;
+	$filename = isset( $_GET['file'] ) ? sanitize_file_name( wp_unslash( $_GET['file'] ) ) : '';
+	if ( '' === $filename ) {
+		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
 
-	// Verify nonce.
-	$nonce = sanitize_text_field( wp_unslash( $_GET['sse_download_nonce'] ) );
-	if ( ! wp_verify_nonce( $nonce, 'sse_secure_download' ) ) {
-		wp_die( esc_html__( 'Security check failed. Please try again.', 'enginescript-site-exporter' ), 403 );
-	}
+	check_admin_referer( 'sse_secure_download_' . $filename );
 
 	// Verify user capabilities.
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to download export files.', 'enginescript-site-exporter' ), 403 );
+		sse_wp_die( __( 'You do not have permission to download export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	// Verify request origin.
-	$referer_check = sse_validate_request_referer();
-	if ( is_wp_error( $referer_check ) ) {
-		wp_die( esc_html( $referer_check->get_error_message() ), 403 );
-	}
-
-	$filename   = sanitize_file_name( wp_unslash( $_GET['sse_secure_download'] ) );
 	$validation = sse_validate_export_file_for_download( $filename );
 
 	if ( is_wp_error( $validation ) ) {
-		wp_die( esc_html( $validation->get_error_message() ), 404 );
+		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
 	// Rate limiting check.
 	if ( ! sse_check_download_rate_limit() ) {
-		wp_die( esc_html__( 'Too many download requests. Please wait before trying again.', 'enginescript-site-exporter' ), 429 );
+		sse_wp_die( __( 'Too many download requests. Please wait before trying again.', 'enginescript-site-exporter' ), 429 );
 	}
 
 	sse_serve_file_download( $validation );
@@ -59,43 +49,43 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
  * @return void
  */
 function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-	if ( ! isset( $_POST['sse_delete_export'] ) || ! isset( $_POST['sse_delete_nonce'] ) ) {
-		return;
+	$filename = isset( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
+	if ( '' === $filename ) {
+		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
 
-	// Verify nonce.
-	$nonce = sanitize_text_field( wp_unslash( $_POST['sse_delete_nonce'] ) );
-	if ( ! wp_verify_nonce( $nonce, 'sse_delete_export' ) ) {
-		wp_die( esc_html__( 'Security check failed. Please try again.', 'enginescript-site-exporter' ), 403 );
-	}
+	check_admin_referer( 'sse_delete_export_' . $filename );
 
 	// Verify user capabilities.
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
+		sse_wp_die( __( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	// Verify request origin.
-	$referer_check = sse_validate_request_referer();
-	if ( is_wp_error( $referer_check ) ) {
-		wp_die( esc_html( $referer_check->get_error_message() ), 403 );
-	}
-
-	$filename   = sanitize_file_name( wp_unslash( $_POST['sse_delete_export'] ) );
 	$validation = sse_validate_basic_export_file( $filename );
 
 	if ( is_wp_error( $validation ) ) {
-		wp_die( esc_html( $validation->get_error_message() ), 404 );
+		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
 	if ( sse_safely_delete_file( $validation['filepath'] ) ) {
 		sse_log( 'Manual deletion of export file: ' . $validation['filepath'], 'info' );
-		wp_safe_redirect( admin_url( 'tools.php?page=enginescript-site-exporter&sse_notice=deleted' ) );
-		exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress standard: exit required after wp_safe_redirect.
+		sse_set_exporter_notice(
+			[
+				'type'    => 'success',
+				'message' => __( 'Export file successfully deleted.', 'enginescript-site-exporter' ),
+			]
+		);
+		sse_redirect_to_exporter_page();
 	}
 
 	sse_log( 'Failed manual deletion of export file: ' . $validation['filepath'], 'error' );
-	wp_safe_redirect( admin_url( 'tools.php?page=enginescript-site-exporter&sse_notice=delete_failed' ) );
-	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress standard: exit required after wp_safe_redirect.
+	sse_set_exporter_notice(
+		[
+			'type'    => 'error',
+			'message' => __( 'Failed to delete export file.', 'enginescript-site-exporter' ),
+		]
+	);
+	sse_redirect_to_exporter_page();
 }
 
 /**
@@ -143,7 +133,7 @@ function sse_set_download_headers( string $filename, int $filesize ): void {
 
 	// Security: Set headers to prevent XSS and ensure proper download behavior.
 	header( 'Content-Type: ' . $content_type );
-	header( 'Content-Disposition: attachment; filename="' . esc_attr( $filename ) . '"' );
+	header( 'Content-Disposition: attachment; filename="' . str_replace( '"', '', $filename ) . '"; filename*=UTF-8\'\'' . rawurlencode( $filename ) );
 	header( 'Content-Length: ' . absint( $filesize ) );
 	header( 'Cache-Control: no-cache, no-store, must-revalidate' );
 	header( 'Pragma: no-cache' );
@@ -171,37 +161,31 @@ function sse_validate_file_output_security( string $filepath ): string {
 	// Security: Final validation before file output to prevent SSRF.
 	if ( ! sse_validate_file_extension( $filepath ) ) {
 		sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
-		wp_die( esc_html__( 'Access denied - invalid file type.', 'enginescript-site-exporter' ) );
+		sse_wp_die( __( 'Access denied - invalid file type.', 'enginescript-site-exporter' ), 403 );
 	}
 
 	// Security: Ensure file is within our controlled directory before serving.
-	$upload_dir      = wp_upload_dir();
-	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
-	$real_export_dir = realpath( $export_dir );
-	$real_file_path  = realpath( $filepath );
-	if ( false !== $real_export_dir ) {
-		$real_export_dir = trailingslashit( wp_normalize_path( $real_export_dir ) );
-	}
-	if ( false !== $real_file_path ) {
-		$real_file_path = wp_normalize_path( $real_file_path );
+	$export_dir      = sse_get_export_directory_path();
+	if ( is_wp_error( $export_dir ) ) {
+		sse_wp_die( $export_dir->get_error_message() );
 	}
 
-	if ( false === $real_export_dir || false === $real_file_path || 0 !== strpos( $real_file_path, $real_export_dir ) ) {
+	$real_file_path = sse_normalize_realpath( $filepath );
+	if ( false === $real_file_path || ! sse_is_path_within_directory( $real_file_path, $export_dir ) ) {
 		sse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );
-		wp_die( esc_html__( 'Access denied.', 'enginescript-site-exporter' ) );
+		sse_wp_die( __( 'Access denied.', 'enginescript-site-exporter' ), 403 );
 	}
 
 	return $real_file_path;
 }
 
 /**
- * Outputs file content for download using WordPress filesystem.
+ * Outputs file content for download.
  *
  * @since 2.0.0
  * @param string $filepath The validated file path.
  * @param string $filename The filename for logging.
  * @return void
- * @throws Exception If file cannot be served.
  */
 function sse_output_file_content( string $filepath, string $filename ): void {
 	// Security: Validate and resolve to realpath before any filesystem access.
@@ -215,7 +199,7 @@ function sse_output_file_content( string $filepath, string $filename ): void {
 	}
 
 	sse_log( 'Failed to serve secure file download: ' . $filename, 'error' );
-	wp_die( esc_html__( 'Unable to serve file download.', 'enginescript-site-exporter' ) );
+	sse_wp_die( __( 'Unable to serve file download.', 'enginescript-site-exporter' ) );
 }
 
 /**

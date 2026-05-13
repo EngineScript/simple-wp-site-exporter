@@ -4,18 +4,20 @@
 
 ### Security
 
-- **Export Directory Protection**: Added `.htaccess` file to the export directory with `Deny from all` rules (Apache 2.2 and 2.4) to prevent direct HTTP access to export files during the cleanup window. Previously only an `index.php` prevented directory listing.
+- **Private Export Storage**: Moved generated export ZIPs out of public uploads and into WordPress' private temporary directory. Exports now fail with an actionable error if the resolved temp directory is inside the WordPress web root.
+- **Export Directory Protection**: Kept `.htaccess` and `index.php` defense-in-depth files in the export directory when the filesystem supports them.
 - **Private API Removal**: Removed usage of `_get_cron_array()` (WordPress private/internal function) from cron failure diagnostics. Uses only public APIs (`wp_next_scheduled()`, `wp_schedule_single_event()`) now.
 - **Filesystem Compatibility**: Replaced `glob()` with `scandir()` in `sse_bulk_cleanup_exports_handler()` for cross-platform compatibility and consistency with WordPress filesystem conventions.
 - **SSRF Hardening**: File download functions now use `realpath()`-resolved paths for all filesystem operations (`readfile()`, `is_readable()`, `is_file()`), preventing TOCTOU and SSRF attack vectors. `sse_validate_file_output_security()` now returns the resolved path for direct use.
 - **CSP Compliance**: Replaced inline `onclick` JavaScript handler with external `js/admin.js` file to comply with Content Security Policy headers and prevent inline script execution risks.
-- **Upload Directory Validation**: Added `wp_upload_dir()` error key check alongside the existing `basedir` empty check, preventing silent failures on misconfigured hosts.
+- **Native Admin Actions**: Switched export, download, and delete handlers to authenticated `admin-post.php` actions with `check_admin_referer()` validation.
 - **Scheduled Cleanup Hardening**: Scheduled export deletion now deletes only the validated export directory path rather than the raw cron argument.
 - **Symlink Export Hardening**: WordPress file archive creation now skips symbolic links and verifies resolved paths stay within the WordPress root before adding them.
 - **WP-CLI Path Hardening**: Removed PATH lookup for WP-CLI and now only executes WP-CLI from explicit allowed locations.
 - **Download Boundary Hardening**: Final download path validation now uses normalized trailing-slash directory containment checks.
 - **Destructive Action Hardening**: Manual export deletion now uses POST with nonce verification instead of a GET link.
 - **Extension Policy Tightening**: Export download validation now allows only `.zip` files.
+- **Delete Containment**: File deletion now uses WordPress' `wp_delete_file_from_directory()` containment helper for generated export files.
 
 ### Bug Fixes
 
@@ -27,6 +29,8 @@
 - **PHPUnit Discovery**: Renamed the generated WordPress compatibility test file/class pair to `EngineScriptSiteExporterTest` so PHPUnit can discover it reliably.
 - **WordPress Test Compatibility**: Pinned the generated WordPress compatibility test job to PHPUnit 9.6 with Yoast PHPUnit Polyfills 4.x because the WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+.
 - **WordPress Compatibility Coverage**: Added PHP syntax linting, PHPUnit dependency verification, hook registration checks, constant checks, security helper tests, and a PHP 8.2/latest WordPress lowest-dependency matrix run.
+- **Release Packaging**: Fixed release and CI package builds to include required `includes/`, `css/`, `js/`, `languages/`, and `readme.txt` files.
+- **Archive Failure Reporting**: File archive creation now returns a `WP_Error` when a file cannot be added instead of logging the failure and reporting success.
 
 ### Architecture
 
@@ -42,6 +46,7 @@
 - **Inline CSS Removal**: Extracted 7 inline `style` attributes from admin page and success notice into dedicated `css/admin.css` file with semantic CSS classes (`sse-section-spacing`, `sse-form-table`, `sse-warning-text`, `sse-action-button`).
 - **Inline JS Removal**: Extracted inline `onclick` confirmation dialog into dedicated `js/admin.js` file with `sse-confirm-delete` class-based event listener.
 - **Asset Enqueueing**: Added `sse_enqueue_admin_assets()` function hooked to `admin_enqueue_scripts` with page-slug check (`tools_page_enginescript-site-exporter`) to load CSS/JS only on the plugin's admin page. Uses `wp_localize_script()` for i18n of JavaScript confirmation string.
+- **EngineScript Documentation**: Clarified that the plugin does not detect EngineScript servers; it produces an EngineScript-compatible archive format usable from any supported WordPress server.
 - **Copilot Instructions Revision**: Rewrote `.github/copilot-instructions.md` to remove irrelevant references (WooCommerce, package.json, admin.php), consolidate redundant security subsections, add plugin-specific naming conventions (`sse_`, `SSE_`), and fix version file list.
 
 - **WP_Filesystem Helper**: Extracted duplicated `WP_Filesystem` initialization from 4 functions into a single `sse_init_filesystem()` helper that returns `true|WP_Error`, reducing ~40 lines of duplicated code to ~10.

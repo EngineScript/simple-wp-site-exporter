@@ -62,6 +62,114 @@ function sse_enqueue_admin_assets( string $hook_suffix ): void {
 }
 
 /**
+ * Gets the current user's exporter notice transient key.
+ *
+ * @since 2.0.0
+ * @return string Notice transient key.
+ */
+function sse_get_exporter_notice_key(): string {
+	return 'sse_exporter_notice_' . get_current_user_id();
+}
+
+/**
+ * Stores an exporter notice for display after admin-post redirects.
+ *
+ * @since 2.0.0
+ * @param array<string, mixed> $notice Notice data.
+ * @return void
+ */
+function sse_set_exporter_notice( array $notice ): void {
+	set_transient( sse_get_exporter_notice_key(), $notice, 10 * MINUTE_IN_SECONDS );
+}
+
+/**
+ * Renders any pending exporter notice.
+ *
+ * @since 2.0.0
+ * @return void
+ */
+function sse_render_exporter_notices(): void {
+	$notice = get_transient( sse_get_exporter_notice_key() );
+	if ( ! is_array( $notice ) ) {
+		return;
+	}
+
+	delete_transient( sse_get_exporter_notice_key() );
+
+	$type    = isset( $notice['type'] ) ? sanitize_key( (string) $notice['type'] ) : 'info';
+	$message = isset( $notice['message'] ) ? (string) $notice['message'] : '';
+
+	if ( 'export_success' === $type && isset( $notice['zip_result'] ) && is_array( $notice['zip_result'] ) ) {
+		$zip_result = $notice['zip_result'];
+		if ( isset( $zip_result['filename'], $zip_result['filepath'] ) && is_string( $zip_result['filename'] ) && is_string( $zip_result['filepath'] ) ) {
+			sse_render_export_success_notice(
+				[
+					'filename' => $zip_result['filename'],
+					'filepath' => $zip_result['filepath'],
+				]
+			);
+			return;
+		}
+	}
+
+	$notice_class = 'error' === $type ? 'notice-error' : 'notice-success';
+	?>
+	<div class="notice <?php echo esc_attr( $notice_class ); ?> is-dismissible">
+		<p><?php echo esc_html( $message ); ?></p>
+	</div>
+	<?php
+}
+
+/**
+ * Renders a successful export notice with download and delete actions.
+ *
+ * @since 2.0.0
+ * @param array{filename: string, filepath: string} $zip_result The ZIP file information.
+ * @return void
+ */
+function sse_render_export_success_notice( array $zip_result ): void {
+	$download_url = wp_nonce_url(
+		add_query_arg(
+			[
+				'action' => 'sse_secure_download',
+				'file'   => $zip_result['filename'],
+			],
+			admin_url( 'admin-post.php' )
+		),
+		'sse_secure_download_' . $zip_result['filename']
+	);
+
+	$display_zip_path = wp_normalize_path( $zip_result['filepath'] );
+	?>
+	<div class="notice notice-success is-dismissible">
+		<div class="sse-notice-actions">
+			<span><?php esc_html_e( 'Site export successfully created!', 'enginescript-site-exporter' ); ?></span>
+			<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
+				<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
+			</a>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sse-inline-form">
+				<input type="hidden" name="action" value="sse_delete_export">
+				<input type="hidden" name="file" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
+				<?php wp_nonce_field( 'sse_delete_export_' . $zip_result['filename'] ); ?>
+				<button type="submit" class="button button-secondary sse-action-button sse-confirm-delete">
+					<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
+				</button>
+			</form>
+		</div>
+		<p><small>
+			<?php
+			printf(
+				/* translators: %s: file path */
+				esc_html__( 'Private file location: %s', 'enginescript-site-exporter' ),
+				'<code>' . esc_html( $display_zip_path ) . '</code>'
+			);
+			?>
+		</small></p>
+	</div>
+	<?php
+}
+
+/**
  * Renders the exporter page HTML interface.
  *
  * @since 1.0.0
@@ -69,29 +177,18 @@ function sse_enqueue_admin_assets( string $hook_suffix ): void {
  */
 function sse_exporter_page_html(): void {
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to view this page.', 'enginescript-site-exporter' ), 403 );
+		sse_wp_die( __( 'You do not have permission to view this page.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$upload_dir = wp_upload_dir();
-	if ( ! empty( $upload_dir['error'] ) || empty( $upload_dir['basedir'] ) ) {
-		wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'enginescript-site-exporter' ) );
+	$export_dir_path = sse_get_export_directory_path();
+	if ( is_wp_error( $export_dir_path ) ) {
+		sse_wp_die( $export_dir_path->get_error_message() );
 	}
-	$export_dir_path = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
-	$display_path    = str_replace( ABSPATH, '', $export_dir_path );
+	$display_path = wp_normalize_path( $export_dir_path );
 	?>
 	<div class="wrap">
 		<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-		<?php
-		// Display deletion feedback notices from redirect. phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only parameter, no state change.
-		if ( isset( $_GET['sse_notice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$sse_notice_type = sanitize_key( $_GET['sse_notice'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			if ( 'deleted' === $sse_notice_type ) {
-				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Export file successfully deleted.', 'enginescript-site-exporter' ) . '</p></div>';
-			} elseif ( 'delete_failed' === $sse_notice_type ) {
-				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Failed to delete export file.', 'enginescript-site-exporter' ) . '</p></div>';
-			}
-		}
-		?>
+		<?php sse_render_exporter_notices(); ?>
 		<p><?php esc_html_e( 'Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database.', 'enginescript-site-exporter' ); ?></p>
 		<p><strong><?php esc_html_e( 'Warning:', 'enginescript-site-exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'enginescript-site-exporter' ); ?></p>
 		<p class="sse-section-spacing">
@@ -99,12 +196,12 @@ function sse_exporter_page_html(): void {
 			// printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
 			printf(
 				// translators: %s: directory path.
-				esc_html__( 'Exported ZIP files will be saved in the following directory on the server: %s', 'enginescript-site-exporter' ),
+				esc_html__( 'Exported ZIP files will be staged in the following private server directory: %s', 'enginescript-site-exporter' ),
 				'<code>' . esc_html( $display_path ) . '</code>'
 			);
 			?>
 		</p>
-		<form method="post" action="" class="sse-section-spacing">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sse-section-spacing">
 			<?php wp_nonce_field( 'sse_export_action', 'sse_export_nonce' ); ?>
 			<input type="hidden" name="action" value="sse_export_site">
 
@@ -139,12 +236,8 @@ function sse_exporter_page_html(): void {
 			</a>
 		</p>
 		<p class="sse-warning-text">
-			<?php esc_html_e( 'Important:', 'enginescript-site-exporter' ); ?>
-			<?php esc_html_e( 'The exported ZIP file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'enginescript-site-exporter' ); ?>
-		</p>
-		<p class="sse-warning-text">
 			<?php esc_html_e( 'Security Notice:', 'enginescript-site-exporter' ); ?>
-			<?php esc_html_e( 'For your protection, the exported ZIP file will be automatically deleted from the server 5 minutes after it is created.', 'enginescript-site-exporter' ); ?>
+			<?php esc_html_e( 'The exported ZIP file is served through WordPress admin and will be automatically deleted from the server 5 minutes after it is created.', 'enginescript-site-exporter' ); ?>
 		</p>
 	</div>
 	<?php
@@ -158,15 +251,11 @@ function sse_exporter_page_html(): void {
  * @return void
  */
 function sse_show_error_notice( string $message ): void {
-	add_action(
-		'admin_notices',
-		function () use ( $message ) {
-			?>
-			<div class="notice notice-error is-dismissible">
-				<p><?php echo esc_html( $message ); ?></p>
-			</div>
-			<?php
-		}
+	sse_set_exporter_notice(
+		[
+			'type'    => 'error',
+			'message' => $message,
+		]
 	);
 	sse_log( 'Export error: ' . $message, 'error' );
 }
@@ -179,47 +268,11 @@ function sse_show_error_notice( string $message ): void {
  * @return void
  */
 function sse_show_success_notice( array $zip_result ): void {
-	add_action(
-		'admin_notices',
-		function () use ( $zip_result ) {
-			$download_url = add_query_arg(
-				[
-					'sse_secure_download' => $zip_result['filename'],
-					'sse_download_nonce'  => wp_create_nonce( 'sse_secure_download' ),
-				],
-				admin_url()
-			);
-
-			$display_zip_path = str_replace( ABSPATH, '[wp-root]/', $zip_result['filepath'] );
-			$display_zip_path = preg_replace( '|/+|', '/', $display_zip_path );
-			?>
-			<div class="notice notice-success is-dismissible">
-				<p>
-					<?php esc_html_e( 'Site export successfully created!', 'enginescript-site-exporter' ); ?>
-					<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
-						<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
-					</a>
-					<form method="post" action="<?php echo esc_url( admin_url() ); ?>" class="sse-inline-form">
-						<input type="hidden" name="sse_delete_export" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
-						<?php wp_nonce_field( 'sse_delete_export', 'sse_delete_nonce' ); ?>
-						<button type="submit" class="button button-secondary sse-action-button sse-confirm-delete">
-							<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
-						</button>
-					</form>
-				</p>
-				<p><small>
-					<?php
-					printf(
-						/* translators: %s: file path */
-						esc_html__( 'File location: %s', 'enginescript-site-exporter' ),
-						'<code title="' . esc_attr__( 'Path is relative to WordPress root directory', 'enginescript-site-exporter' ) . '">' .
-						esc_html( $display_zip_path ) . '</code>'
-					);
-					?>
-				</small></p>
-			</div>
-			<?php
-		}
+	sse_set_exporter_notice(
+		[
+			'type'       => 'export_success',
+			'zip_result' => $zip_result,
+		]
 	);
 	sse_log( 'Export successful. File saved to ' . $zip_result['filepath'], 'info' );
 }

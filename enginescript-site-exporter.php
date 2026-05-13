@@ -95,7 +95,7 @@ function sse_init_plugin(): void {
 	add_action( 'admin_enqueue_scripts', 'sse_enqueue_admin_assets' );
 
 	// Hook export handler.
-	add_action( 'admin_init', 'sse_handle_export' );
+	add_action( 'admin_post_sse_export_site', 'sse_handle_export' );
 
 	// Hook scheduled deletion handler.
 	add_action( 'sse_delete_export_file', 'sse_delete_export_file_handler' );
@@ -104,10 +104,10 @@ function sse_init_plugin(): void {
 	add_action( 'sse_bulk_cleanup_exports', 'sse_bulk_cleanup_exports_handler' );
 
 	// Hook secure download handler.
-	add_action( 'admin_init', 'sse_handle_secure_download' );
+	add_action( 'admin_post_sse_secure_download', 'sse_handle_secure_download' );
 
 	// Hook export deletion handler.
-	add_action( 'admin_init', 'sse_handle_export_deletion' );
+	add_action( 'admin_post_sse_delete_export', 'sse_handle_export_deletion' );
 }
 
 // Initialize the plugin when all plugins are loaded.

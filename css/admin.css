@@ -28,6 +28,19 @@
 	margin-left: 10px;
 }
 
+/* Keep success notice actions on one line where space allows. */
+.sse-notice-actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.sse-notice-actions .sse-action-button {
+	margin-left: 0;
+}
+
 /* Keep the POST-backed delete action visually grouped with the download action. */
 .sse-inline-form {
 	display: inline;

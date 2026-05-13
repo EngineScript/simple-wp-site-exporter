@@ -175,8 +175,7 @@ jobs:
 
       - name: Run PHPCS
         run: |
-          # Use WordPress-Core standard which has fewer dependencies
-          phpcs --standard=WordPress-extra --extensions=php --ignore=vendor,tests,node_modules,.github,.vscode . || exit 0
+          vendor/bin/phpcs --standard=phpcs.xml
 
       - name: Create issue on PHPCS failure
         if: ${{ failure() }}
@@ -321,7 +320,7 @@ jobs:
             echo "🔧 Many of these may not apply to standard WordPress installations."
             echo "📖 For more info: https://docs.wpvip.com/technical-references/code-quality-and-best-practices/"
             echo ""
-            exit 0
+            exit 1
           }
           
           echo "✅ WordPress VIP coding standards check completed successfully!"
@@ -384,8 +383,7 @@ jobs:
         run: |
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
-          # Run PHPMD but don't fail the build on naming convention issues
-          vendor/bin/phpmd enginescript-site-exporter.php text phpmd.xml || echo "PHPMD completed with warnings (WordPress naming conventions may differ from PHPMD defaults)"
+          vendor/bin/phpmd . text phpmd.xml --exclude vendor
 
       - name: Create issue on PHPMD failure
         if: ${{ failure() }}
@@ -449,8 +447,7 @@ jobs:
             ./vendor/bin/psalm --init
           fi
           
-          # Run Psalm with error handling
-          ./vendor/bin/psalm --show-info=true || true
+          ./vendor/bin/psalm --show-info=true
 
       - name: Create issue on Psalm failure
         if: ${{ failure() }}
@@ -866,9 +863,9 @@ jobs:
               public function test_plugin_hooks_registered() {
                   $this->assertSame(10, has_action('admin_menu', 'sse_admin_menu'));
                   $this->assertSame(10, has_action('admin_enqueue_scripts', 'sse_enqueue_admin_assets'));
-                  $this->assertSame(10, has_action('admin_init', 'sse_handle_export'));
-                  $this->assertSame(10, has_action('admin_init', 'sse_handle_secure_download'));
-                  $this->assertSame(10, has_action('admin_init', 'sse_handle_export_deletion'));
+                  $this->assertSame(10, has_action('admin_post_sse_export_site', 'sse_handle_export'));
+                  $this->assertSame(10, has_action('admin_post_sse_secure_download', 'sse_handle_secure_download'));
+                  $this->assertSame(10, has_action('admin_post_sse_delete_export', 'sse_handle_export_deletion'));
                   $this->assertSame(10, has_action('sse_delete_export_file', 'sse_delete_export_file_handler'));
                   $this->assertSame(10, has_action('sse_bulk_cleanup_exports', 'sse_bulk_cleanup_exports_handler'));
               }
@@ -900,9 +897,10 @@ jobs:
               }
 
               public function test_filepath_validation_rejects_traversal() {
-                  $upload_dir = wp_upload_dir();
-                  $base_dir = $upload_dir['basedir'];
-                  $traversal_path = trailingslashit($base_dir) . '../wp-config.php';
+                  $base_dir = sse_get_export_directory_path();
+                  $this->assertIsString($base_dir);
+                  wp_mkdir_p($base_dir);
+                  $traversal_path = trailingslashit($base_dir) . '../site_enginescript_site_export_20260513_123456.zip';
 
                   $this->assertFalse(sse_validate_filepath($traversal_path, $base_dir));
               }

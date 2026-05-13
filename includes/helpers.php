@@ -1,6 +1,6 @@
 <?php
 /**
- * Helper utilities: logging, IP detection, execution time, filesystem init.
+ * Helper utilities: logging, IP detection, export paths, redirects, and filesystem init.
  *
  * @package EngineScript_Site_Exporter
  */
@@ -60,7 +60,7 @@ function sse_store_log_in_database( string $message, string $level ): void {
 }
 
 /**
- * Outputs log message to WordPress debug log or error_log.
+ * Outputs log message to the WordPress debug log.
  *
  * @since 1.0.0
  * @param string $formatted_message The formatted log message.
@@ -136,6 +136,60 @@ function sse_get_execution_time_limit(): int {
 	}
 
 	return (int) $max_exec_time;
+}
+
+/**
+ * Gets the private export directory path.
+ *
+ * Exports contain a full database dump and site files, so they should not live
+ * in the public uploads tree. WordPress' temp directory is the safest native
+ * default and can be moved with WP_TEMP_DIR when a host needs a custom path.
+ *
+ * @since 2.0.0
+ * @return string|WP_Error Export directory path on success, WP_Error on failure.
+ */
+function sse_get_export_directory_path() {
+	$temp_dir = get_temp_dir();
+	if ( '' === $temp_dir ) {
+		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
+	}
+
+	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME;
+}
+
+/**
+ * Redirects back to the exporter admin page.
+ *
+ * @since 2.0.0
+ * @param array<string, string> $args Optional query args.
+ * @return void
+ */
+function sse_redirect_to_exporter_page( array $args = [] ): void {
+	wp_safe_redirect(
+		add_query_arg(
+			$args,
+			admin_url( 'tools.php?page=enginescript-site-exporter' )
+		)
+	);
+	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required after wp_safe_redirect().
+}
+
+/**
+ * Stops execution with an escaped WordPress error response.
+ *
+ * @since 2.0.0
+ * @param string $message  Error message.
+ * @param int    $response HTTP response code.
+ * @return void
+ */
+function sse_wp_die( string $message, int $response = 500 ): void {
+	wp_die(
+		esc_html( $message ),
+		'',
+		[
+			'response' => $response,
+		]
+	);
 }
 
 /**

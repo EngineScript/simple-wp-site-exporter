@@ -21,7 +21,7 @@ The plugin uses a bootstrap + include files architecture:
 
 ```php
 // enginescript-site-exporter.php — Bootstrap (constants, require_once, init)
-// includes/helpers.php     — Logging, IP detection, execution time, filesystem init
+// includes/helpers.php     — Logging, IP detection, export paths, redirects, filesystem init
 // includes/security.php    — Path validation, traversal checks, extension validation
 // includes/admin-page.php  — Admin UI rendering, notices, asset enqueueing
 // includes/export.php      — Export workflow, validation, directory setup, DB export
@@ -46,7 +46,7 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 ### File Structure
 
 - `enginescript-site-exporter.php` - Bootstrap: constants, require_once, plugin init
-- `includes/helpers.php` - Logging, IP detection, execution time, filesystem init
+- `includes/helpers.php` - Logging, IP detection, export paths, redirects, filesystem init
 - `includes/security.php` - Path validation, traversal checks, extension validation
 - `includes/admin-page.php` - Admin UI rendering, notices, asset enqueueing
 - `includes/export.php` - Export workflow, validation, directory setup, DB export
@@ -122,8 +122,8 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 ### File Operation Security
 
-- **Directory Validation:** All paths validated within WordPress upload directory
-- **Extension Allowlist:** Only ZIP and SQL files allowed for download
+- **Directory Validation:** Export paths are validated within the private WordPress temporary export directory
+- **Extension Allowlist:** Only ZIP files are allowed for download
 - **Path Resolution:** Multiple validation layers prevent symlink attacks
 - **Real Path Validation:** Prevents path manipulation vulnerabilities
 

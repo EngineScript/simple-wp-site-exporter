@@ -22,16 +22,15 @@ EngineScript Site Exporter provides WordPress administrators with a straightforw
 - **Secure Downloads**: All exports use WordPress security tokens for protected access
 - **WP-CLI Integration**: Requires WP-CLI for efficient database exports
 - **Export Management**: Download or manually delete export files as needed
-- **EngineScript Integration**: Natively works with EngineScript's LEMP server environment and site import tools
+- **EngineScript Import Compatibility**: Produces the archive layout used by EngineScript's import tools
 
 ## EngineScript Integration
 
-This plugin is designed to work seamlessly with the [EngineScript LEMP server](https://github.com/EngineScript/EngineScript) environment:
+This plugin does not detect or require an EngineScript server. It can run on standard WordPress installations, while the generated archive format is designed for the [EngineScript LEMP server](https://github.com/EngineScript/EngineScript) import workflow:
 
-- **Native Integration**: Automatically detected and configured when running on an EngineScript server
-- **Compatible Exports**: All exports created with this plugin are directly compatible with EngineScript's site import tools
+- **Compatible Exports**: Exports use the ZIP container expected by EngineScript's site import tools
 - **Streamlined Migrations**: Export from any WordPress site and import directly to an EngineScript-powered server
-- **Optimized Performance**: When used on an EngineScript server, the plugin leverages server-optimized settings
+- **Format Optimization**: The bundle layout matches EngineScript's `manifest.txt` plus compressed database/files archive format
 
 The export format matches EngineScript's canonical combined site archive:
 
@@ -71,7 +70,7 @@ The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 
 - WordPress 6.8 or higher
 - PHP 8.2 or higher
-- Write access to the WordPress uploads directory
+- Write access to a private WordPress temporary directory. If your host's temp directory is inside the WordPress web root, configure `WP_TEMP_DIR` to a non-public writable path.
 - WP-CLI installed at `/usr/local/bin/wp`, `/usr/bin/wp`, or as `wp-cli.phar` in the WordPress root for database exports
 
 ## Security Features
@@ -80,7 +79,7 @@ EngineScript Site Exporter is built with security as a priority:
 
 - **Export Authentication**: Only authorized administrators can create and download exports
 - **Secure Downloads**: All downloads are validated with WordPress nonces
-- **Request Validation**: Referrer checking for all operations
+- **Request Validation**: WordPress nonce validation for all admin actions
 - **Path Traversal Protection**: Comprehensive file path validation
 - **Automatic Deletion**: Exports are automatically cleaned up after 5 minutes
 - **Security Headers**: Implements proper headers for download operations
@@ -94,8 +93,10 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 
 ### Where are the export files stored?
 
-Exports are stored in your WordPress uploads directory, specifically at:
-`[wp-root]/wp-content/uploads/enginescript-site-exporter-exports/`
+Exports are staged in WordPress' temporary directory under:
+`<temp-dir>/enginescript-site-exporter-exports/`
+
+For security, the plugin refuses to export if that directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
 
 ### Why do export files disappear after 5 minutes?
 
@@ -111,7 +112,7 @@ Yes, the export includes your entire WordPress installation: themes, plugins, up
 
 ### Can I use this plugin with non-EngineScript servers?
 
-Absolutely! While the plugin integrates seamlessly with EngineScript servers, it works perfectly on any WordPress installation regardless of the server environment.
+Absolutely. The plugin does not require an EngineScript server; it creates an archive format designed for EngineScript's importer.
 
 ## Changelog
 

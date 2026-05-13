@@ -76,12 +76,8 @@ jobs:
         
       - name: Lint PHP
         run: |
-          if [ -f composer.json ] && ([ -f .phpcs.xml ] || [ -f phpcs.xml.dist ]); then
-            if grep -q "\"lint:php\"" composer.json; then
-              composer run lint:php
-            else
-              echo "No lint:php script found in composer.json. Skipping."
-            fi
+          if [ -f composer.json ] && [ -f phpcs.xml ]; then
+            composer run phpcs
           else
             echo "No PHP linting configuration found. Skipping."
           fi
@@ -169,6 +165,8 @@ jobs:
           # Copy directories if they exist
           [ -d assets ] && cp -r assets build/enginescript-site-exporter/ || echo "No assets directory found"
           [ -d includes ] && cp -r includes build/enginescript-site-exporter/ || echo "No includes directory found"
+          [ -d css ] && cp -r css build/enginescript-site-exporter/ || echo "No css directory found"
+          [ -d js ] && cp -r js build/enginescript-site-exporter/ || echo "No js directory found"
           [ -d languages ] && cp -r languages build/enginescript-site-exporter/ || echo "No languages directory found"
           [ -d templates ] && cp -r templates build/enginescript-site-exporter/ || echo "No templates directory found"
           

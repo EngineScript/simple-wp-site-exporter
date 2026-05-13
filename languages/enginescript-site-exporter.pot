@@ -32,8 +32,8 @@ msgstr ""
 msgid "You do not have permission to view this page."
 msgstr ""
 
-#: includes/admin-page.php:77
-msgid "Could not determine the WordPress upload directory."
+#: includes/helpers.php:154
+msgid "Could not determine a private temporary directory for exports."
 msgstr ""
 
 #: includes/admin-page.php:89
@@ -58,7 +58,7 @@ msgstr ""
 
 #. translators: %s: directory path
 #: includes/admin-page.php:102
-msgid "Exported ZIP files will be saved in the following directory on the server: %s"
+msgid "Exported ZIP files will be staged in the following private server directory: %s"
 msgstr ""
 
 #: includes/admin-page.php:115
@@ -97,20 +97,12 @@ msgstr ""
 msgid "Visit the EngineScript GitHub page"
 msgstr ""
 
-#: includes/admin-page.php:142
-msgid "Important:"
-msgstr ""
-
-#: includes/admin-page.php:143
-msgid "The exported ZIP file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it."
-msgstr ""
-
 #: includes/admin-page.php:146
 msgid "Security Notice:"
 msgstr ""
 
 #: includes/admin-page.php:147
-msgid "For your protection, the exported ZIP file will be automatically deleted from the server 5 minutes after it is created."
+msgid "The exported ZIP file is served through WordPress admin and will be automatically deleted from the server 5 minutes after it is created."
 msgstr ""
 
 #: includes/export.php:25
@@ -129,8 +121,8 @@ msgstr ""
 msgid "Failed to initialize WordPress filesystem API."
 msgstr ""
 
-#: includes/export.php:108
-msgid "Could not determine the WordPress upload directory or URL."
+#: includes/export.php:123
+msgid "The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again."
 msgstr ""
 
 #: includes/export.php:117
@@ -162,6 +154,11 @@ msgstr ""
 msgid "Failed to add EngineScript payload file to ZIP archive."
 msgstr ""
 
+#. translators: %s: file path
+#: includes/archive.php:520
+msgid "Failed to add file to archive: %s"
+msgstr ""
+
 #: includes/archive.php:332
 msgid "Failed to store EngineScript ZIP payload without recompression."
 msgstr ""
@@ -190,11 +187,7 @@ msgstr ""
 
 #. translators: %s: file path
 #: includes/admin-page.php:218
-msgid "File location: %s"
-msgstr ""
-
-#: includes/admin-page.php:219
-msgid "Path is relative to WordPress root directory"
+msgid "Private file location: %s"
 msgstr ""
 
 #: includes/security.php:196
@@ -223,15 +216,6 @@ msgstr ""
 
 #: includes/security.php:300
 msgid "Export file not found."
-msgstr ""
-
-#: includes/security.php:316
-msgid "Invalid request source."
-msgstr ""
-
-#: includes/download.php:26
-#: includes/download.php:69
-msgid "Security check failed. Please try again."
 msgstr ""
 
 #: includes/download.php:31

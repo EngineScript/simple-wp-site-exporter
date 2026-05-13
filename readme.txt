@@ -22,14 +22,13 @@ Key features:
 * Secure Downloads: All exports use WordPress security tokens for protected access
 * WP-CLI Integration: Requires WP-CLI for efficient database exports
 * Export Management: Download or manually delete export files as needed
-* EngineScript Integration: Natively works with EngineScript's LEMP server environment and site import tools
+* EngineScript Import Compatibility: Produces the archive layout used by EngineScript's import tools
 
-This plugin is designed to work seamlessly with the EngineScript LEMP server environment:
+This plugin does not detect or require an EngineScript server. It can run on standard WordPress installations, while the generated archive format is designed for the EngineScript LEMP server import workflow:
 
-* Native Integration: Automatically detected and configured when running on an EngineScript server
-* Compatible Exports: All exports created with this plugin are directly compatible with EngineScript's site import tools
+* Compatible Exports: Exports use the ZIP container expected by EngineScript's site import tools
 * Streamlined Migrations: Export from any WordPress site and import directly to an EngineScript-powered server
-* Optimized Performance: When used on an EngineScript server, the plugin leverages server-optimized settings
+* Format Optimization: The bundle layout matches EngineScript's manifest.txt plus compressed database/files archive format
 
 The export format matches EngineScript's canonical combined site archive:
 
@@ -54,8 +53,10 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 
 = Where are the export files stored? =
 
-Exports are stored in your WordPress uploads directory, specifically at:
-`[wp-root]/wp-content/uploads/enginescript-site-exporter-exports/`
+Exports are staged in WordPress' temporary directory under:
+`<temp-dir>/enginescript-site-exporter-exports/`
+
+For security, the plugin refuses to export if that directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
 
 = Why do export files disappear after 5 minutes? =
 
@@ -71,7 +72,7 @@ Yes, the export includes your entire WordPress installation: themes, plugins, up
 
 = Can I use this plugin with non-EngineScript servers? =
 
-Absolutely! While the plugin integrates seamlessly with EngineScript servers, it works perfectly on any WordPress installation regardless of the server environment.
+Absolutely. The plugin does not require an EngineScript server; it creates an archive format designed for EngineScript's importer.
 
 = Will this work on shared hosting environments? =
 
@@ -102,7 +103,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Security**: Replaced `glob()` with `scandir()` in bulk cleanup handler for cross-platform compatibility
 * **Security**: File download functions now use `realpath()`-resolved paths for all filesystem operations to prevent SSRF
 * **Security**: Replaced inline `onclick` JS with external script file for Content Security Policy compliance
-* **Security**: Added `wp_upload_dir()` error key validation alongside basedir empty check
+* **Security**: Moved generated export ZIPs to WordPress' private temporary directory and fail safely if that directory resolves inside the WordPress web root
+* **Security**: Switched export, download, and delete handlers to authenticated `admin-post.php` actions with native nonce checks
 * **Security**: Hardened scheduled cleanup, symlink handling, WP-CLI lookup, download path containment, manual deletion method, and export file extension validation
 * **EngineScript Compatibility**: Updated exports to the canonical combined site archive format with `manifest.txt`, `database/<site>_db_<timestamp>.sql.gz`, and `files/<site>_files_<timestamp>.tar.gz`
 * **Bug Fix**: Corrected README.md cleanup timer from "1 hour" to "5 minutes"
