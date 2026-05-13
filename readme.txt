@@ -110,6 +110,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
 * **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
 * **Bug Fix**: Corrected WP-CLI description from "when available" to "requires" in README.md and readme.txt
+* **Bug Fix**: Renamed the generated WordPress compatibility test file/class pair so PHPUnit 11/12 can discover it reliably
 * **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
 * **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
 * **Architecture**: Removed 2 redundant intermediate download validation passes

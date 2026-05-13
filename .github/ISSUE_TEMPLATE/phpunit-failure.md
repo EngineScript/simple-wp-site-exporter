@@ -54,7 +54,7 @@ composer install
 composer test
 
 # Run specific test file
-vendor/bin/phpunit tests/test-plugin.php
+vendor/bin/phpunit tests/EngineScriptSiteExporterTest.php
 
 # Run with verbose output
 vendor/bin/phpunit --verbose

@@ -24,6 +24,7 @@
 - **phpcs Suppression**: Removed unnecessary `phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped` comment on a line already properly escaped with `esc_html()`.
 - **GEMINI.md Accuracy**: Updated WP-CLI Integration section to reflect that WP-CLI is a required dependency (returns `WP_Error` if unavailable), replacing outdated "graceful fallback" language.
 - **WP-CLI Language**: Updated README.md and readme.txt from "when available" to "Requires WP-CLI" to match v2.0.0 behavior.
+- **PHPUnit Discovery**: Renamed the generated WordPress compatibility test file/class pair to `EngineScriptSiteExporterTest` so PHPUnit 11/12 can discover it reliably.
 
 ### Architecture
 

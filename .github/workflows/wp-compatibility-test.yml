@@ -819,15 +819,15 @@ jobs:
 
       - name: Create Test File
         run: |
-          cat > tests/test-plugin.php << 'EOF'
+          cat > tests/EngineScriptSiteExporterTest.php << 'EOF'
           <?php
           /**
-           * Class Test_EngineScript_Site_Exporter
+           * Class EngineScriptSiteExporterTest
            *
            * @package EngineScript_Site_Exporter
            */
           
-          class Test_EngineScript_Site_Exporter extends WP_UnitTestCase {
+          class EngineScriptSiteExporterTest extends WP_UnitTestCase {
               public function test_plugin_loaded() {
                   $this->assertTrue(function_exists('sse_admin_menu'), 'Plugin was not loaded correctly');
               }
@@ -855,7 +855,7 @@ jobs:
           >
               <testsuites>
                   <testsuite name="EngineScript Site Exporter">
-                      <directory prefix="test-" suffix=".php">./tests/</directory>
+                      <directory suffix="Test.php">./tests/</directory>
                   </testsuite>
               </testsuites>
           </phpunit>
