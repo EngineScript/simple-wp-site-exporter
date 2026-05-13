@@ -19,10 +19,10 @@ The automated PHPUnit test suite has failed in the EngineScript Site Exporter pl
 ### Matrix Configuration
 
 This test suite runs on multiple PHP versions:
-- **PHP 8.2** - PHPUnit 11.*
-- **PHP 8.3** - PHPUnit 12.*
-- **PHP 8.4** - PHPUnit 12.*
-- **PHP 8.5** - PHPUnit 12.*
+- **PHP 8.2** - PHPUnit 9.6 for WordPress test library compatibility
+- **PHP 8.3** - PHPUnit 9.6 for WordPress test library compatibility
+- **PHP 8.4** - PHPUnit 9.6 for WordPress test library compatibility
+- **PHP 8.5** - PHPUnit 9.6 for WordPress test library compatibility
 
 ### Next Steps
 
@@ -62,7 +62,7 @@ vendor/bin/phpunit --verbose
 
 #### PHPUnit Version Notes:
 
-Composer resolves PHPUnit 11 on PHP 8.2 and PHPUnit 12 on PHP 8.3+.
+The WordPress compatibility workflow pins PHPUnit 9.6 because the WordPress test library still calls APIs removed in PHPUnit 10+.
 
 ```bash
 composer test

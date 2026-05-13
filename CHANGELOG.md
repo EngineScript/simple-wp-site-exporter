@@ -24,7 +24,9 @@
 - **phpcs Suppression**: Removed unnecessary `phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped` comment on a line already properly escaped with `esc_html()`.
 - **GEMINI.md Accuracy**: Updated WP-CLI Integration section to reflect that WP-CLI is a required dependency (returns `WP_Error` if unavailable), replacing outdated "graceful fallback" language.
 - **WP-CLI Language**: Updated README.md and readme.txt from "when available" to "Requires WP-CLI" to match v2.0.0 behavior.
-- **PHPUnit Discovery**: Renamed the generated WordPress compatibility test file/class pair to `EngineScriptSiteExporterTest` so PHPUnit 11/12 can discover it reliably.
+- **PHPUnit Discovery**: Renamed the generated WordPress compatibility test file/class pair to `EngineScriptSiteExporterTest` so PHPUnit can discover it reliably.
+- **WordPress Test Compatibility**: Pinned the generated WordPress compatibility test job to PHPUnit 9.6 with Yoast PHPUnit Polyfills 4.x because the WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+.
+- **WordPress Compatibility Coverage**: Added PHP syntax linting, PHPUnit dependency verification, hook registration checks, constant checks, security helper tests, and a PHP 8.2/latest WordPress lowest-dependency matrix run.
 
 ### Architecture
 

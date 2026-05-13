@@ -13,11 +13,12 @@ The WordPress version compatibility test has failed.
 **Failure Details:**
 - **PHP Version:** {{ env.PHP_VERSION }}
 - **WordPress Version:** {{ env.WP_VERSION }}
+- **Dependency Versions:** {{ env.DEPENDENCY_VERSIONS }}
 - **Workflow Run:** [View Details]({{ env.WORKFLOW_URL }})
 - **Run ID:** {{ env.RUN_ID }}
 
 **What happened:**
-The plugin failed to work correctly with WordPress {{ env.WP_VERSION }} on PHP {{ env.PHP_VERSION }}.
+The plugin failed to work correctly with WordPress {{ env.WP_VERSION }} on PHP {{ env.PHP_VERSION }} using {{ env.DEPENDENCY_VERSIONS }} Composer dependencies.
 
 **What needs to be done:**
 1. Review the test output in the failed workflow run

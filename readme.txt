@@ -110,7 +110,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
 * **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
 * **Bug Fix**: Corrected WP-CLI description from "when available" to "requires" in README.md and readme.txt
-* **Bug Fix**: Renamed the generated WordPress compatibility test file/class pair so PHPUnit 11/12 can discover it reliably
+* **Bug Fix**: Renamed the generated WordPress compatibility test file/class pair so PHPUnit can discover it reliably
+* **Bug Fix**: Pinned the generated WordPress compatibility test job to PHPUnit 9.6 with Yoast PHPUnit Polyfills 4.x because the WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+
+* **CI Coverage**: Added PHP syntax linting, PHPUnit dependency verification, hook registration checks, constant checks, security helper tests, and a PHP 8.2/latest WordPress lowest-dependency matrix run
 * **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
 * **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
 * **Architecture**: Removed 2 redundant intermediate download validation passes

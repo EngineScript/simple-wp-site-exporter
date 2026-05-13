@@ -603,12 +603,17 @@ jobs:
           update_existing: false
 
   wp-version-test:
-    name: Test WordPress ${{ matrix.wp-version }} with PHP ${{ matrix.php-version }}
+    name: Test WordPress ${{ matrix.wp-version }} with PHP ${{ matrix.php-version }} (${{ matrix.dependency-versions }} deps)
     runs-on: ubuntu-latest
     strategy:
       matrix:
         php-version: ['8.2', '8.3', '8.4', '8.5']
         wp-version: ['6.8', 'latest', 'nightly']
+        dependency-versions: ['highest']
+        include:
+          - php-version: '8.2'
+            wp-version: 'latest'
+            dependency-versions: 'lowest'
       fail-fast: false
 
     services:
@@ -647,14 +652,39 @@ jobs:
             echo 'COMPOSER_AUTH={"github-oauth":{"github.com":"${{ github.token }}"}}'
           } >> "$GITHUB_ENV"
 
+      - name: PHP syntax lint
+        run: |
+          find . \
+            -path './vendor' -prune -o \
+            -path './tests' -prune -o \
+            -path './build' -prune -o \
+            -path './plugin-check-build' -prune -o \
+            -name '*.php' -print0 | xargs -0 -n1 php -l
+
       - name: Install Subversion
         run: sudo apt-get update && sudo apt-get install -y subversion
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v4
         with:
-          dependency-versions: highest
+          dependency-versions: ${{ matrix.dependency-versions }}
           composer-options: "--prefer-dist --no-progress"
+
+      - name: Pin PHPUnit for WordPress test suite
+        run: |
+          # The WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+.
+          # Keep this generated integration-test job on PHPUnit 9.6 while the rest
+          # of the project can continue using newer Composer-resolved QA tooling.
+          if [ "${{ matrix.dependency-versions }}" = "lowest" ]; then
+            composer require --dev phpunit/phpunit:"^9.6" yoast/phpunit-polyfills:"^4.0" --with-all-dependencies --prefer-lowest --no-progress
+          else
+            composer require --dev phpunit/phpunit:"^9.6" yoast/phpunit-polyfills:"^4.0" --with-all-dependencies --no-progress
+          fi
+
+      - name: Verify PHPUnit dependency versions
+        run: |
+          composer show phpunit/phpunit yoast/phpunit-polyfills
+          vendor/bin/phpunit --version | grep -E '^PHPUnit 9\.6\.'
 
       - name: Prepare Database
         run: |
@@ -831,6 +861,50 @@ jobs:
               public function test_plugin_loaded() {
                   $this->assertTrue(function_exists('sse_admin_menu'), 'Plugin was not loaded correctly');
               }
+
+              public function test_plugin_hooks_registered() {
+                  $this->assertSame(10, has_action('admin_menu', 'sse_admin_menu'));
+                  $this->assertSame(10, has_action('admin_enqueue_scripts', 'sse_enqueue_admin_assets'));
+                  $this->assertSame(10, has_action('admin_init', 'sse_handle_export'));
+                  $this->assertSame(10, has_action('admin_init', 'sse_handle_secure_download'));
+                  $this->assertSame(10, has_action('admin_init', 'sse_handle_export_deletion'));
+                  $this->assertSame(10, has_action('sse_delete_export_file', 'sse_delete_export_file_handler'));
+                  $this->assertSame(10, has_action('sse_bulk_cleanup_exports', 'sse_bulk_cleanup_exports_handler'));
+              }
+
+              public function test_plugin_constants_defined() {
+                  $this->assertTrue(defined('ES_SITE_EXPORTER_VERSION'));
+                  $this->assertTrue(defined('SSE_ALLOWED_EXTENSIONS'));
+                  $this->assertTrue(defined('SSE_EXPORT_DIR_NAME'));
+                  $this->assertTrue(defined('SSE_FILTER_MAX_FILE_SIZE'));
+
+                  $this->assertNotEmpty(ES_SITE_EXPORTER_VERSION);
+                  $this->assertSame(['zip'], SSE_ALLOWED_EXTENSIONS);
+                  $this->assertSame('enginescript-site-exporter-exports', SSE_EXPORT_DIR_NAME);
+                  $this->assertSame('sse_max_file_size_for_export', SSE_FILTER_MAX_FILE_SIZE);
+              }
+
+              public function test_security_helper_allows_only_zip_extension() {
+                  $this->assertTrue(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.php'));
+                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.sql'));
+                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.tar.gz'));
+              }
+
+              public function test_export_filename_format_validation() {
+                  $this->assertTrue(sse_validate_filename_format('site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('../site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('site_enginescript_site_export_20260513_123456.php'));
+                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('site_export.zip'));
+              }
+
+              public function test_filepath_validation_rejects_traversal() {
+                  $upload_dir = wp_upload_dir();
+                  $base_dir = $upload_dir['basedir'];
+                  $traversal_path = trailingslashit($base_dir) . '../wp-config.php';
+
+                  $this->assertFalse(sse_validate_filepath($traversal_path, $base_dir));
+              }
               
               public function test_wordpress_version_compatibility() {
                   global $wp_version;
@@ -890,6 +964,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PHP_VERSION: ${{ matrix.php-version }}
           WP_VERSION: ${{ matrix.wp-version }}
+          DEPENDENCY_VERSIONS: ${{ matrix.dependency-versions }}
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
