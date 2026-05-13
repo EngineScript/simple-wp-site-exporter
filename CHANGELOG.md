@@ -49,11 +49,15 @@
 - **Debug Code Removal**: Removed `sse_test_cron_scheduling()` debug function that created/verified/removed a test cron event on every export — no longer needed after v2.0.0 cron fixes.
 - **Cron Logging Reduction**: Reduced cron scheduling functions from 5+ log entries each to 2 (success/failure), keeping `DISABLE_WP_CRON` diagnostic on failure only.
 
-### PHP 7.4 Modernization
+### PHP 8.2 Baseline
 
-- **Type Declarations**: Added PHP 7.4 parameter types and return types to all functions where deterministic. Functions returning union types (`array|WP_Error`, `string|false`, `true|WP_Error`) retain PHPDoc-only annotations since PHP 7.4 does not support union return types.
+- **Minimum PHP Version**: Raised the supported PHP baseline to 8.2 across plugin metadata, Composer, PHPCS, documentation, and GitHub guidance.
+- **CI Compatibility Matrix**: Updated WordPress compatibility testing to cover PHP 8.2, 8.3, 8.4, and 8.5.
+- **PHPUnit Tooling**: Updated PHPUnit and Yoast PHPUnit Polyfills constraints for the PHP 8.2+ baseline.
+- **QA Tooling Constraints**: Updated PHPCS installs to use `phpcsstandards/php_codesniffer` 4.0.1+, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints.
+- **Type Declarations**: Added parameter types and return types to all functions where deterministic.
 - **Short Array Syntax**: Standardized all `array()` constructor calls to short `[]` syntax throughout the plugin.
-- **Null Coalescing Assignment**: Replaced explicit null check + assignment pattern with PHP 7.4 `??=` operator in `sse_should_exclude_file()` file size cache, and `?:` Elvis operator for the ternary fallback.
+- **Null Coalescing Assignment**: Replaced explicit null check + assignment pattern with `??=` in `sse_should_exclude_file()` file size cache, and `?:` Elvis operator for the ternary fallback.
 - **PHPStan Array Shapes**: Added PHPStan `array{}` shape annotations to all functions accepting or returning associative arrays, resolving 10 level-6 "no value type specified in iterable type array" errors.
 - **Trailing Whitespace**: Removed trailing whitespace (tabs on blank lines) across `export.php`, `download.php`, `cleanup.php`, `admin-page.php`, and `security.php`.
 - **JS File Header**: Converted `admin.js` file header from JSDoc (`/** @package`, `@since`) to plain block comment to avoid TSDoc linter false positives.

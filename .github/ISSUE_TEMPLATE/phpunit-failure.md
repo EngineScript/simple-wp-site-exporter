@@ -19,11 +19,10 @@ The automated PHPUnit test suite has failed in the EngineScript Site Exporter pl
 ### Matrix Configuration
 
 This test suite runs on multiple PHP versions:
-- **PHP 7.4** - PHPUnit 11.* (default)
-- **PHP 8.0** - PHPUnit 11.*
-- **PHP 8.1** - PHPUnit 11.*
 - **PHP 8.2** - PHPUnit 11.*
-- **PHP 8.3** - PHPUnit 12.* (upgraded for compatibility)
+- **PHP 8.3** - PHPUnit 12.*
+- **PHP 8.4** - PHPUnit 12.*
+- **PHP 8.5** - PHPUnit 12.*
 
 ### Next Steps
 
@@ -48,7 +47,7 @@ This issue has been automatically created because one or more PHPUnit test cases
 #### Local Testing Commands:
 
 ```bash
-# Install dependencies (uses PHPUnit 11 by default for PHP 7.4 baseline)
+# Install dependencies for the PHP 8.2+ baseline
 composer install
 
 # Run all tests
@@ -61,19 +60,11 @@ vendor/bin/phpunit tests/test-plugin.php
 vendor/bin/phpunit --verbose
 ```
 
-#### For PHP 8.3+ Testing:
+#### PHPUnit Version Notes:
 
-If you need to test with PHPUnit 12 locally (requires PHP 8.3+):
+Composer resolves PHPUnit 11 on PHP 8.2 and PHPUnit 12 on PHP 8.3+.
 
 ```bash
-# Upgrade dependencies for PHP 8.3
-composer require-dev phpunit/phpunit:^12 --dev
-composer require-dev yoast/phpunit-polyfills:^4 --dev
-
-# Install upgraded dependencies
-composer install
-
-# Run tests with PHPUnit 12
 composer test
 ```
 

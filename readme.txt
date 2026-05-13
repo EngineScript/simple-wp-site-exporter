@@ -4,7 +4,7 @@ Tags: backup, export, migration, site export, database export
 Requires at least: 6.8
 Tested up to: 6.9
 Stable tag: 2.0.0
-Requires PHP: 7.4
+Requires PHP: 8.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -129,10 +129,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Architecture**: Changed `sse_add_wordpress_files_to_tar()` to catch `RuntimeException` specifically
 * **Architecture**: Replaced `scandir()` with `DirectoryIterator` in bulk cleanup handler
 * **Architecture**: Increased PHPStan analysis level from 5 to 6 with `includes/` scan path
-* **PHP 7.4**: Added type declarations (parameter and return types) to all functions
-* **PHP 7.4**: Standardized all `array()` to short `[]` syntax
-* **PHP 7.4**: Applied `??=` null coalescing assignment and `?:` Elvis operator
-* **PHP 7.4**: Added PHPStan `array{}` shape annotations to all functions with untyped array params/returns
+* **PHP 8.2 Baseline**: Raised the minimum supported PHP version to 8.2 across plugin metadata, Composer, PHPCS, documentation, and GitHub guidance
+* **CI Compatibility**: Updated the PHP compatibility matrix to test PHP 8.2, 8.3, 8.4, and 8.5
+* **PHPUnit Tooling**: Updated test tooling constraints for the PHP 8.2+ baseline
+* **QA Tooling**: Updated PHPCS installs to use `phpcsstandards/php_codesniffer` 4.0.1+, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints
+* **PHP Syntax**: Added type declarations (parameter and return types) to all functions
+* **PHP Syntax**: Standardized all `array()` to short `[]` syntax
+* **PHP Syntax**: Applied `??=` null coalescing assignment and `?:` Elvis operator
+* **PHPStan**: Added PHPStan `array{}` shape annotations to all functions with untyped array params/returns
 * **Code Quality**: Removed trailing whitespace across 5 include files
 * **Code Quality**: Converted `admin.js` file header to plain block comment (avoids TSDoc linter false positives)
 * **Code Quality**: Extracted `sse_cleanup_expired_export_file()` from bulk cleanup handler to reduce cyclomatic/NPath complexity

@@ -8,7 +8,7 @@ applyTo: '**'
 
 - **Plugin:** EngineScript Site Exporter (WordPress site export/backup plugin)
 - **WordPress:** 6.8+ minimum
-- **PHP:** 7.4+ minimum (use typed parameters, return types, short arrays `[]`, null coalescing `??=`)
+- **PHP:** 8.2+ minimum (use typed parameters, return types, short arrays `[]`, null coalescing `??=`, and native union types where they improve clarity)
 - **License:** GPL-3.0-or-later
 - **Text Domain:** `enginescript-site-exporter`
 - **Function Prefix:** `sse_`

@@ -1,8 +1,8 @@
 # This workflow performs comprehensive WordPress plugin compatibility and quality checks.
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
-# - PHPUnit tests across PHP versions (7.4/8.0: PHPUnit 9+polyfills2; 8.1: PHPUnit 9+polyfills4; 8.2: PHPUnit 11+polyfills4; 8.3: PHPUnit 12+polyfills4)
-# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4, 8.5)
+# - PHPUnit tests across supported PHP versions (8.2, 8.3, 8.4, 8.5)
+# - PHP compatibility testing across multiple PHP versions (8.2, 8.3, 8.4, 8.5)
 # - WordPress compatibility testing across multiple WP versions (6.8, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
@@ -69,11 +69,31 @@ jobs:
           rm -rf build 2>/dev/null || true
           echo "✅ Cleanup complete"
 
+      - name: Prepare Plugin Check build directory
+        run: |
+          rm -rf plugin-check-build 2>/dev/null || true
+
+          PLUGIN_SLUG="enginescript-site-exporter"
+          BUILD_DIR="plugin-check-build/${PLUGIN_SLUG}"
+
+          mkdir -p "$BUILD_DIR"
+
+          cp enginescript-site-exporter.php "$BUILD_DIR/"
+          cp readme.txt "$BUILD_DIR/"
+          cp README.md "$BUILD_DIR/"
+          cp CHANGELOG.md "$BUILD_DIR/"
+          cp LICENSE "$BUILD_DIR/"
+          cp -r includes "$BUILD_DIR/"
+          cp -r css "$BUILD_DIR/"
+          cp -r js "$BUILD_DIR/"
+          cp -r languages "$BUILD_DIR/"
+
       - name: WordPress Plugin Check
         uses: WordPress/plugin-check-action@v1.1.5
         with:
-          # Build directory - using repository root
-          build-dir: './'
+          # Production-style plugin directory. Excludes repo-only files such as
+          # .github, .vscode, GEMINI.md, and other development artifacts.
+          build-dir: './plugin-check-build/enginescript-site-exporter'
           
           # Configure which categories to check
           categories: |
@@ -128,7 +148,7 @@ jobs:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
-          tools: composer:v2, phpcs
+          tools: composer:v2
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v4
@@ -140,12 +160,12 @@ jobs:
         run: |
           # Install PHPCS and WordPress Coding Standards using the dealerdirect installer
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --dev squizlabs/php_codesniffer:"^3.7"
-          composer global require --dev wp-coding-standards/wpcs:"^3.2"
+          composer global require --dev phpcsstandards/php_codesniffer:"^4.0.1"
+          composer global require --dev wp-coding-standards/wpcs:"^3.3"
           composer global require --dev phpcompatibility/php-compatibility:"^9.3"
           composer global require --dev phpcompatibility/phpcompatibility-wp:"^2.1" 
-          composer global require --dev automattic/vipwpcs:"^3.0"
-          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1"
+          composer global require --dev automattic/vipwpcs:"^3.0.1"
+          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.2"
           
           # Add composer bin to PATH
           echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
@@ -183,7 +203,7 @@ jobs:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
-          tools: composer:v2, phpcs
+          tools: composer:v2
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v4
@@ -195,10 +215,10 @@ jobs:
         run: |
           # Install PHPCS and WordPress VIP Coding Standards
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --dev squizlabs/php_codesniffer:"^3.7"
-          composer global require --dev wp-coding-standards/wpcs:"^3.0"
-          composer global require --dev automattic/vipwpcs:"^3.0"
-          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.1.1"
+          composer global require --dev phpcsstandards/php_codesniffer:"^4.0.1"
+          composer global require --dev wp-coding-standards/wpcs:"^3.3"
+          composer global require --dev automattic/vipwpcs:"^3.0.1"
+          composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.2"
           
           # Add composer bin to PATH
           echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
@@ -343,7 +363,7 @@ jobs:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
-          tools: composer:v2, phpmd
+          tools: composer:v2
 
       - name: Clear any existing composer cache
         run: |
@@ -365,7 +385,7 @@ jobs:
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
           # Run PHPMD but don't fail the build on naming convention issues
-          phpmd enginescript-site-exporter.php text phpmd.xml || echo "PHPMD completed with warnings (WordPress naming conventions may differ from PHPMD defaults)"
+          vendor/bin/phpmd enginescript-site-exporter.php text phpmd.xml || echo "PHPMD completed with warnings (WordPress naming conventions may differ from PHPMD defaults)"
 
       - name: Create issue on PHPMD failure
         if: ${{ failure() }}
@@ -401,7 +421,7 @@ jobs:
           composer-options: "--prefer-dist --no-progress"
 
       - name: Install Psalm
-        run: composer require --dev vimeo/psalm
+        run: composer require --dev vimeo/psalm:"^6.16" --with-all-dependencies --no-progress
 
       - name: Create Psalm config
         run: |
@@ -587,7 +607,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php-version: ['8.2', '8.3', '8.4', '8.5']
         wp-version: ['6.8', 'latest', 'nightly']
       fail-fast: false
 
@@ -613,11 +633,22 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Use isolated Composer auth
+        run: |
+          # Avoid inheriting a masked or malformed GitHub OAuth token from Composer auth.
+          composer_home="${RUNNER_TEMP}/composer-home"
+          composer_cache="${RUNNER_TEMP}/composer-cache"
+
+          mkdir -p "$composer_home" "$composer_cache"
+
+          {
+            echo "COMPOSER_HOME=$composer_home"
+            echo "COMPOSER_CACHE_DIR=$composer_cache"
+            echo 'COMPOSER_AUTH={"github-oauth":{"github.com":"${{ github.token }}"}}'
+          } >> "$GITHUB_ENV"
+
       - name: Install Subversion
         run: sudo apt-get update && sudo apt-get install -y subversion
-
-      - name: Remove the PHP platform requirement
-        run: composer config --unset platform.php
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v4
@@ -821,9 +852,6 @@ jobs:
               bootstrap="tests/bootstrap.php"
               backupGlobals="false"
               colors="true"
-              convertErrorsToExceptions="true"
-              convertNoticesToExceptions="true"
-              convertWarningsToExceptions="true"
           >
               <testsuites>
                   <testsuite name="EngineScript Site Exporter">
