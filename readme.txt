@@ -135,7 +135,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **PHP 8.2 Baseline**: Raised the minimum supported PHP version to 8.2 across plugin metadata, Composer, PHPCS, documentation, and GitHub guidance
 * **CI Compatibility**: Updated the PHP compatibility matrix to test PHP 8.2, 8.3, 8.4, and 8.5
 * **PHPUnit Tooling**: Updated test tooling constraints for the PHP 8.2+ baseline
-* **QA Tooling**: Updated PHPCS installs to use `squizlabs/php_codesniffer` 4.0.1+, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints
+* **QA Tooling**: Kept PHPCS on the stable WPCS/PHPCompatibility-compatible 3.13 line, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints
 * **PHP Syntax**: Added type declarations (parameter and return types) to all functions
 * **PHP Syntax**: Standardized all `array()` to short `[]` syntax
 * **PHP Syntax**: Applied `??=` null coalescing assignment and `?:` Elvis operator

@@ -57,7 +57,7 @@
 - **Minimum PHP Version**: Raised the supported PHP baseline to 8.2 across plugin metadata, Composer, PHPCS, documentation, and GitHub guidance.
 - **CI Compatibility Matrix**: Updated WordPress compatibility testing to cover PHP 8.2, 8.3, 8.4, and 8.5.
 - **PHPUnit Tooling**: Updated PHPUnit and Yoast PHPUnit Polyfills constraints for the PHP 8.2+ baseline.
-- **QA Tooling Constraints**: Updated PHPCS installs to use `squizlabs/php_codesniffer` 4.0.1+, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints.
+- **QA Tooling Constraints**: Kept PHPCS on the stable WPCS/PHPCompatibility-compatible 3.13 line, added PHPMD as a Composer-managed dev dependency, and aligned workflow-installed coding standards with current stable package constraints.
 - **Type Declarations**: Added parameter types and return types to all functions where deterministic.
 - **Short Array Syntax**: Standardized all `array()` constructor calls to short `[]` syntax throughout the plugin.
 - **Null Coalescing Assignment**: Replaced explicit null check + assignment pattern with `??=` in `sse_should_exclude_file()` file size cache, and `?:` Elvis operator for the ternary fallback.
