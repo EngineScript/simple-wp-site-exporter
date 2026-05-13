@@ -72,6 +72,40 @@ function sse_is_path_within_export_source( string $path, string $directory ): bo
  * @return array{filename: string, filepath: string}|WP_Error Archive info on success, WP_Error on failure.
  */
 function sse_create_site_archive( array $export_paths, array $database_file, string $site_identifier, string $timestamp ) {
+	$requirements_result = sse_validate_archive_requirements();
+	if ( is_wp_error( $requirements_result ) ) {
+		return $requirements_result;
+	}
+
+	$bundle_paths = sse_prepare_engine_script_bundle_paths( $export_paths, $site_identifier, $timestamp );
+	$setup_result = sse_create_bundle_staging_directories( $bundle_paths );
+	if ( is_wp_error( $setup_result ) ) {
+		return $setup_result;
+	}
+
+	try {
+		$archive_result = sse_build_engine_script_bundle( $export_paths, $database_file, $bundle_paths, $site_identifier );
+		if ( is_wp_error( $archive_result ) ) {
+			return $archive_result;
+		}
+
+		sse_log( 'Site archive created successfully: ' . $bundle_paths['combined_zip_path'], 'info' );
+		return [
+			'filename' => $bundle_paths['combined_zip_filename'],
+			'filepath' => $bundle_paths['combined_zip_path'],
+		];
+	} finally {
+		sse_delete_directory_tree( $bundle_paths['staging_dir'] );
+	}
+}
+
+/**
+ * Validates that the server supports all archive formats used by exports.
+ *
+ * @since 2.0.0
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function sse_validate_archive_requirements() {
 	if ( ! class_exists( 'ZipArchive' ) ) {
 		return new WP_Error( 'zip_not_available', __( 'ZipArchive class is not available on your server. Cannot create ZIP file.', 'enginescript-site-exporter' ) );
 	}
@@ -84,41 +118,41 @@ function sse_create_site_archive( array $export_paths, array $database_file, str
 		return new WP_Error( 'gzip_not_available', __( 'Gzip functions are not available on your server. Cannot create compressed database file.', 'enginescript-site-exporter' ) );
 	}
 
-	$bundle_paths = sse_prepare_engine_script_bundle_paths( $export_paths, $site_identifier, $timestamp );
-	$setup_result = sse_create_bundle_staging_directories( $bundle_paths );
-	if ( is_wp_error( $setup_result ) ) {
-		return $setup_result;
+	return true;
+}
+
+/**
+ * Builds the staged EngineScript bundle payload.
+ *
+ * @since 2.0.0
+ * @param array{export_dir: string, export_url: string, export_dir_name: string}                                                                                                                                       $export_paths     Export directory paths.
+ * @param array{filename: string, filepath: string}                                                                                                                                                                   $database_file    Database file information.
+ * @param array{database_path: string, files_archive_path: string, manifest_path: string, database_gz_filename: string, files_archive_filename: string, combined_zip_path: string, combined_zip_filename: string} $bundle_paths    Bundle paths.
+ * @param string                                                                                                                                                                                                      $site_identifier Sanitized site identifier.
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function sse_build_engine_script_bundle( array $export_paths, array $database_file, array $bundle_paths, string $site_identifier ) {
+	$database_result = sse_create_compressed_database_file( $database_file['filepath'], $bundle_paths['database_path'] );
+	if ( is_wp_error( $database_result ) ) {
+		return $database_result;
 	}
 
-	try {
-		$database_result = sse_create_compressed_database_file( $database_file['filepath'], $bundle_paths['database_path'] );
-		if ( is_wp_error( $database_result ) ) {
-			return $database_result;
-		}
-
-		$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'], $export_paths['export_dir'] );
-		if ( is_wp_error( $file_result ) ) {
-			return $file_result;
-		}
-
-		$manifest_result = sse_write_engine_script_manifest( $bundle_paths, $site_identifier );
-		if ( is_wp_error( $manifest_result ) ) {
-			return $manifest_result;
-		}
-
-		$zip_result = sse_create_combined_engine_script_zip( $bundle_paths );
-		if ( is_wp_error( $zip_result ) ) {
-			return $zip_result;
-		}
-
-		sse_log( 'Site archive created successfully: ' . $bundle_paths['combined_zip_path'], 'info' );
-		return [
-			'filename' => $bundle_paths['combined_zip_filename'],
-			'filepath' => $bundle_paths['combined_zip_path'],
-		];
-	} finally {
-		sse_delete_directory_tree( $bundle_paths['staging_dir'] );
+	$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'], $export_paths['export_dir'] );
+	if ( is_wp_error( $file_result ) ) {
+		return $file_result;
 	}
+
+	$manifest_result = sse_write_engine_script_manifest( $bundle_paths, $site_identifier );
+	if ( is_wp_error( $manifest_result ) ) {
+		return $manifest_result;
+	}
+
+	$zip_result = sse_create_combined_engine_script_zip( $bundle_paths );
+	if ( is_wp_error( $zip_result ) ) {
+		return $zip_result;
+	}
+
+	return true;
 }
 
 /**
