@@ -14,12 +14,12 @@
 		deleteButtons.forEach( ( button ) => {
 			button.addEventListener( 'click', ( event ) => {
 				/* global sseAdmin */
-				if ( typeof sseAdmin === 'undefined' || ! sseAdmin.confirmDelete ) {
+				if ( typeof sseAdmin === 'undefined' || sseAdmin.confirmDelete === undefined || sseAdmin.confirmDelete === null ) {
 					event.preventDefault();
 					return;
 				}
 
-				if ( ! window.confirm( sseAdmin.confirmDelete ) ) {
+				if ( ! window.confirm( String( sseAdmin.confirmDelete ) ) ) {
 					event.preventDefault();
 				}
 			} );
