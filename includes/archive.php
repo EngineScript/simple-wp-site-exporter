@@ -307,7 +307,13 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 		]
 	) . "\n";
 
-	if ( false === file_put_contents( $bundle_paths['manifest_path'], $manifest_content ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing generated local manifest into staging directory.
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return $filesystem_init;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->put_contents( $bundle_paths['manifest_path'], $manifest_content, FS_CHMOD_FILE ) ) {
 		return new WP_Error( 'manifest_write_failed', __( 'Could not write EngineScript export manifest.', 'enginescript-site-exporter' ) );
 	}
 

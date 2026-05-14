@@ -16,16 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return string Client IP address or 'unknown' if not available.
  */
 function sse_get_client_ip(): string {
-	// WordPress-style IP detection with validation.
-	$client_ip = 'unknown';
+	$client_ip = filter_input( INPUT_SERVER, 'REMOTE_ADDR', FILTER_VALIDATE_IP );
 
-	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- $_SERVER['REMOTE_ADDR'] is safe for IP logging when properly sanitized
-	if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-		$client_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-	}
-
-	// Basic IP validation.
-	if ( filter_var( $client_ip, FILTER_VALIDATE_IP ) !== false ) {
+	if ( is_string( $client_ip ) ) {
 		return $client_ip;
 	}
 
@@ -187,7 +180,7 @@ function sse_wp_die( string $message, int $response = 500 ): void {
 		esc_html( $message ),
 		'',
 		[
-			'response' => $response,
+			'response' => absint( $response ),
 		]
 	);
 }

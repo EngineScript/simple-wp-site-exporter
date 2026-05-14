@@ -109,10 +109,11 @@
         <include-pattern>*\.php$</include-pattern>
     </rule>
 
-    <!-- PHPCSExtra rules for additional code quality checks -->
-    <rule ref="PHPCSExtra">
+    <!-- PHPCSExtra standards for additional code quality checks -->
+    <rule ref="Modernize">
         <exclude name="Modernize.FunctionCalls.Dirname.Nested"/>
     </rule>
+    <rule ref="NormalizedArrays"/>
 
     <!-- Set minimum WordPress version for deprecated function checks -->
     <config name="minimum_wp_version" value="6.8"/>

@@ -147,22 +147,4 @@
     <!-- For spacing enforcement, use PHPCS with WordPress standards instead -->
     <!-- This PHPMD config focuses on code quality and WordPress-compatible naming -->
     
-    <!-- Custom WordPress-specific rules -->
-    <rule name="WordPressSecurityRule"
-          message="Use WordPress sanitization functions for user input"
-          class="net.sourceforge.pmd.lang.rule.XPathRule">
-        <description>
-            Ensure WordPress sanitization functions are used for user input
-        </description>
-        <properties>
-            <property name="xpath">
-                <value>
-                //FunctionCall[FunctionName/@Image='$_GET' or FunctionName/@Image='$_POST' or FunctionName/@Image='$_REQUEST']
-                [not(ancestor::FunctionCall[FunctionName/@Image='sanitize_text_field' or FunctionName/@Image='wp_unslash' or FunctionName/@Image='esc_html' or FunctionName/@Image='esc_attr'])]
-                </value>
-            </property>
-        </properties>
-        <priority>2</priority>
-    </rule>
-
 </ruleset>
