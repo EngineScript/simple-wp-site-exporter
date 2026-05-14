@@ -11,14 +11,15 @@
 	document.addEventListener( 'DOMContentLoaded', () => {
 		const deleteButtons = document.querySelectorAll( '.sse-confirm-delete' );
 
-		deleteButtons.forEach( ( button ) => { // eslint-disable-line lodash/prefer-lodash-collection-iteration
+		deleteButtons.forEach( ( button ) => {
 			button.addEventListener( 'click', ( event ) => {
 				/* global sseAdmin */
-				const message = ( typeof sseAdmin !== 'undefined' && sseAdmin.confirmDelete )
-					? sseAdmin.confirmDelete
-					: 'Are you sure you want to delete this export file?';
+				if ( typeof sseAdmin === 'undefined' || ! sseAdmin.confirmDelete ) {
+					event.preventDefault();
+					return;
+				}
 
-				if ( ! window.confirm( message ) ) {
+				if ( ! window.confirm( sseAdmin.confirmDelete ) ) {
 					event.preventDefault();
 				}
 			} );
