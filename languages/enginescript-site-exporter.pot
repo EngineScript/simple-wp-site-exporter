@@ -1,23 +1,33 @@
-# EngineScript Site Exporter
 # Copyright (C) 2026 EngineScript
-# This file is distributed under the same license as the EngineScript Site Exporter plugin.
+# This file is distributed under the GPL-3.0-or-later.
 msgid ""
 msgstr ""
 "Project-Id-Version: EngineScript Site Exporter 2.0.0\n"
-"Report-Msgid-Bugs-To: https://github.com/EngineScript/enginescript-site-exporter/issues\n"
-"POT-Creation-Date: 2026-03-10 12:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/enginescript-site-exporter\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: WordPress\n"
+"POT-Creation-Date: 2026-05-14T09:22:37+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: enginescript-site-exporter\n"
 
+#. Plugin Name of the plugin
+#: enginescript-site-exporter.php
 #: includes/admin-page.php:20
 msgid "EngineScript Site Exporter"
+msgstr ""
+
+#. Description of the plugin
+#: enginescript-site-exporter.php
+msgid "Exports the site files and the database as an EngineScript-compatible site archive."
+msgstr ""
+
+#. Author of the plugin
+#: enginescript-site-exporter.php
+msgid "EngineScript"
 msgstr ""
 
 #: includes/admin-page.php:21
@@ -28,216 +38,266 @@ msgstr ""
 msgid "Are you sure you want to delete this export file?"
 msgstr ""
 
-#: includes/admin-page.php:72
+#: includes/admin-page.php:146
+msgid "Site export successfully created!"
+msgstr ""
+
+#: includes/admin-page.php:148
+msgid "Download Export File"
+msgstr ""
+
+#: includes/admin-page.php:155
+msgid "Delete Export File"
+msgstr ""
+
+#. translators: %s: file path
+#: includes/admin-page.php:163
+#, php-format
+msgid "Private file location: %s"
+msgstr ""
+
+#: includes/admin-page.php:180
 msgid "You do not have permission to view this page."
 msgstr ""
 
-#: includes/helpers.php:154
-msgid "Could not determine a private temporary directory for exports."
-msgstr ""
-
-#: includes/admin-page.php:89
-msgid "Export file successfully deleted."
-msgstr ""
-
-#: includes/admin-page.php:91
-msgid "Failed to delete export file."
-msgstr ""
-
-#: includes/admin-page.php:95
+#: includes/admin-page.php:192
 msgid "Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database."
 msgstr ""
 
-#: includes/admin-page.php:96
+#: includes/admin-page.php:193
 msgid "Warning:"
 msgstr ""
 
-#: includes/admin-page.php:96
+#: includes/admin-page.php:193
 msgid "This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time."
 msgstr ""
 
-#. translators: %s: directory path
-#: includes/admin-page.php:102
+#. translators: %s: directory path.
+#: includes/admin-page.php:199
+#, php-format
 msgid "Exported ZIP files will be staged in the following private server directory: %s"
 msgstr ""
 
-#: includes/admin-page.php:115
+#: includes/admin-page.php:212
 msgid "Maximum File Size"
 msgstr ""
 
-#: includes/admin-page.php:119
+#: includes/admin-page.php:216
 msgid "No limit (include all files)"
 msgstr ""
 
-#: includes/admin-page.php:120
+#: includes/admin-page.php:217
 msgid "100 MB"
 msgstr ""
 
-#: includes/admin-page.php:121
+#: includes/admin-page.php:218
 msgid "500 MB"
 msgstr ""
 
-#: includes/admin-page.php:122
+#: includes/admin-page.php:219
 msgid "1 GB"
 msgstr ""
 
-#: includes/admin-page.php:125
+#: includes/admin-page.php:222
 msgid "Files larger than this size will be excluded from the export. Choose \"No limit\" to include all files regardless of size."
 msgstr ""
 
-#: includes/admin-page.php:132
+#: includes/admin-page.php:229
 msgid "Export Site"
 msgstr ""
 
-#: includes/admin-page.php:136
+#: includes/admin-page.php:233
 msgid "This plugin is part of the EngineScript project."
 msgstr ""
 
-#: includes/admin-page.php:138
+#: includes/admin-page.php:235
 msgid "Visit the EngineScript GitHub page"
 msgstr ""
 
-#: includes/admin-page.php:146
+#: includes/admin-page.php:239
 msgid "Security Notice:"
 msgstr ""
 
-#: includes/admin-page.php:147
+#: includes/admin-page.php:240
 msgid "The exported ZIP file is served through WordPress admin and will be automatically deleted from the server 5 minutes after it is created."
+msgstr ""
+
+#: includes/archive.php:102
+msgid "ZipArchive class is not available on your server. Cannot create ZIP file."
+msgstr ""
+
+#: includes/archive.php:106
+msgid "PharData class is not available on your server. Cannot create files archive."
+msgstr ""
+
+#: includes/archive.php:110
+msgid "Gzip functions are not available on your server. Cannot create compressed database file."
+msgstr ""
+
+#: includes/archive.php:202
+msgid "Could not create EngineScript export staging directories."
+msgstr ""
+
+#: includes/archive.php:216
+msgid "Could not open database dump for compression."
+msgstr ""
+
+#: includes/archive.php:223
+msgid "Could not create compressed database file."
+msgstr ""
+
+#: includes/archive.php:232
+msgid "Failed while compressing database dump."
+msgstr ""
+
+#: includes/archive.php:241
+msgid "Compressed database file was not created successfully."
+msgstr ""
+
+#: includes/archive.php:258
+msgid "Could not determine files archive path."
+msgstr ""
+
+#. translators: %s: error message
+#: includes/archive.php:283
+#, php-format
+msgid "Failed to create WordPress files archive: %s"
+msgstr ""
+
+#: includes/archive.php:290
+msgid "WordPress files archive was not created successfully."
+msgstr ""
+
+#: includes/archive.php:325
+msgid "Could not write EngineScript export manifest."
+msgstr ""
+
+#. translators: %s: filename
+#: includes/archive.php:346
+#, php-format
+msgid "Could not create ZIP file at %s"
+msgstr ""
+
+#: includes/archive.php:365
+msgid "Failed to add EngineScript payload file to ZIP archive."
+msgstr ""
+
+#: includes/archive.php:371
+msgid "Failed to store EngineScript ZIP payload without recompression."
+msgstr ""
+
+#: includes/archive.php:379
+msgid "Failed to finalize or save the ZIP archive after processing files."
+msgstr ""
+
+#. translators: %s: error message
+#: includes/archive.php:447
+#: includes/archive.php:456
+#, php-format
+msgid "Error during file processing: %s"
+msgstr ""
+
+#. translators: %s: file path
+#: includes/archive.php:539
+#, php-format
+msgid "Failed to add file to archive: %s"
+msgstr ""
+
+#: includes/download.php:21
+#: includes/download.php:54
+#: includes/security.php:278
+msgid "No file specified."
+msgstr ""
+
+#: includes/download.php:28
+msgid "You do not have permission to download export files."
+msgstr ""
+
+#: includes/download.php:39
+msgid "Too many download requests. Please wait before trying again."
+msgstr ""
+
+#: includes/download.php:61
+msgid "You do not have permission to delete export files."
+msgstr ""
+
+#: includes/download.php:75
+msgid "Export file successfully deleted."
+msgstr ""
+
+#: includes/download.php:85
+msgid "Failed to delete export file."
+msgstr ""
+
+#: includes/download.php:164
+msgid "Access denied - invalid file type."
+msgstr ""
+
+#: includes/download.php:176
+msgid "Access denied."
+msgstr ""
+
+#: includes/download.php:202
+msgid "Unable to serve file download."
 msgstr ""
 
 #: includes/export.php:25
 msgid "An export process is already running. Please wait for it to complete before starting a new one."
 msgstr ""
 
-#: includes/export.php:85
-msgid "Nonce verification failed! Please try again."
-msgstr ""
-
-#: includes/export.php:89
+#: includes/export.php:93
 msgid "You do not have permission to perform this action."
 msgstr ""
 
-#: includes/helpers.php:160
-msgid "Failed to initialize WordPress filesystem API."
-msgstr ""
-
-#: includes/export.php:123
+#: includes/export.php:119
+#: includes/export.php:129
 msgid "The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again."
 msgstr ""
 
-#: includes/export.php:117
+#: includes/export.php:124
 msgid "Could not create the export directory. Please verify filesystem permissions."
 msgstr ""
 
-#: includes/export.php:128
+#: includes/export.php:140
 msgid "The export directory is not writable. Please adjust filesystem permissions."
 msgstr ""
 
-#: includes/export.php:218
+#: includes/export.php:226
 msgid "WP-CLI executable not found in an allowed location. Please install it at /usr/local/bin/wp, /usr/bin/wp, or as wp-cli.phar in the WordPress root."
 msgstr ""
 
-#: includes/export.php:247
+#: includes/export.php:243
 msgid "shell_exec function is disabled on this server."
 msgstr ""
 
-#: includes/archive.php:22
-msgid "ZipArchive class is not available on your server. Cannot create ZIP file."
+#: includes/helpers.php:193
+msgid "Could not determine a private temporary directory for exports."
 msgstr ""
 
-#. translators: %s: filename
-#: includes/archive.php:37
-msgid "Could not create ZIP file at %s"
+#: includes/helpers.php:260
+msgid "Failed to initialize WordPress filesystem API."
 msgstr ""
 
-#: includes/archive.php:326
-msgid "Failed to add EngineScript payload file to ZIP archive."
-msgstr ""
-
-#. translators: %s: file path
-#: includes/archive.php:520
-msgid "Failed to add file to archive: %s"
-msgstr ""
-
-#: includes/archive.php:332
-msgid "Failed to store EngineScript ZIP payload without recompression."
-msgstr ""
-
-#: includes/archive.php:58
-msgid "Failed to finalize or save the ZIP archive after processing files."
-msgstr ""
-
-#. translators: %s: error message
-#: includes/archive.php:97
-#: includes/archive.php:106
-msgid "Error during file processing: %s"
-msgstr ""
-
-#: includes/admin-page.php:206
-msgid "Site export successfully created!"
-msgstr ""
-
-#: includes/admin-page.php:208
-msgid "Download Export File"
-msgstr ""
-
-#: includes/admin-page.php:211
-msgid "Delete Export File"
-msgstr ""
-
-#. translators: %s: file path
-#: includes/admin-page.php:218
-msgid "Private file location: %s"
-msgstr ""
-
-#: includes/security.php:196
+#: includes/security.php:230
 msgid "Export file not readable."
 msgstr ""
 
-#: includes/security.php:202
+#: includes/security.php:236
 msgid "Could not determine file size."
 msgstr ""
 
-#: includes/security.php:244
-msgid "No file specified."
-msgstr ""
-
-#: includes/security.php:249
+#: includes/security.php:283
 msgid "Invalid filename."
 msgstr ""
 
-#: includes/security.php:254
+#: includes/security.php:288
 msgid "Invalid export file format."
 msgstr ""
 
-#: includes/security.php:275
+#: includes/security.php:312
 msgid "Invalid file path."
 msgstr ""
 
-#: includes/security.php:300
+#: includes/security.php:337
 msgid "Export file not found."
-msgstr ""
-
-#: includes/download.php:31
-msgid "You do not have permission to download export files."
-msgstr ""
-
-#: includes/download.php:49
-msgid "Too many download requests. Please wait before trying again."
-msgstr ""
-
-#: includes/download.php:74
-msgid "You do not have permission to delete export files."
-msgstr ""
-
-#: includes/download.php:177
-msgid "Access denied - invalid file type."
-msgstr ""
-
-#: includes/download.php:188
-msgid "Access denied."
-msgstr ""
-
-#: includes/download.php:215
-msgid "Unable to serve file download."
 msgstr ""
