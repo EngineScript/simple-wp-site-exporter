@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return void
  */
 function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$filename = isset( $_GET['file'] ) ? sanitize_file_name( wp_unslash( $_GET['file'] ) ) : '';
+	$filename = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_file_name( wp_unslash( $_GET['file'] ) ) : '';
 	if ( '' === $filename ) {
 		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
@@ -30,7 +30,7 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
 
 	$validation = sse_validate_export_file_for_download( $filename );
 
-	if ( sse_is_wp_error( $validation ) ) {
+	if ( is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
@@ -49,7 +49,7 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
  * @return void
  */
 function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-	$filename = isset( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
+	$filename = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
 	if ( '' === $filename ) {
 		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
@@ -63,7 +63,7 @@ function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security
 
 	$validation = sse_validate_basic_export_file( $filename );
 
-	if ( sse_is_wp_error( $validation ) ) {
+	if ( is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
@@ -166,7 +166,7 @@ function sse_validate_file_output_security( string $filepath ): string {
 
 	// Security: Ensure file is within our controlled directory before serving.
 	$export_dir = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir ) ) {
+	if ( is_wp_error( $export_dir ) ) {
 		sse_wp_die( $export_dir->get_error_message() );
 	}
 

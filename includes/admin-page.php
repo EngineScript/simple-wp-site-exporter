@@ -181,7 +181,7 @@ function sse_exporter_page_html(): void {
 	}
 
 	$export_dir_path = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir_path ) ) {
+	if ( is_wp_error( $export_dir_path ) ) {
 		sse_wp_die( $export_dir_path->get_error_message() );
 	}
 	$display_path = wp_normalize_path( $export_dir_path );

@@ -33,7 +33,7 @@ function sse_cleanup_files( array $files ): void {
  */
 function sse_schedule_export_cleanup( string $zip_filepath ): void {
 	// Check if already scheduled.
-	if ( wp_next_scheduled( 'sse_delete_export_file', [ $zip_filepath ] ) ) {
+	if ( false !== wp_next_scheduled( 'sse_delete_export_file', [ $zip_filepath ] ) ) {
 		return;
 	}
 
@@ -59,7 +59,7 @@ function sse_schedule_export_cleanup( string $zip_filepath ): void {
  * @return void
  */
 function sse_schedule_bulk_cleanup(): void {
-	if ( wp_next_scheduled( 'sse_bulk_cleanup_exports' ) ) {
+	if ( false !== wp_next_scheduled( 'sse_bulk_cleanup_exports' ) ) {
 		return;
 	}
 
@@ -82,7 +82,7 @@ function sse_bulk_cleanup_exports_handler(): void {
 	sse_log( 'Bulk export cleanup handler triggered', 'info' );
 
 	$export_dir = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir ) ) {
+	if ( is_wp_error( $export_dir ) ) {
 		sse_log( 'Could not determine export directory for cleanup: ' . $export_dir->get_error_message(), 'error' );
 		return;
 	}
@@ -144,7 +144,7 @@ function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ):
 	$filename   = basename( $file_path );
 	$validation = sse_validate_basic_export_file( $filename );
 
-	if ( sse_is_wp_error( $validation ) ) {
+	if ( is_wp_error( $validation ) ) {
 		sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
 		return false;
 	}
@@ -172,13 +172,13 @@ function sse_delete_export_file_handler( string $file ): void {
 	$filename = basename( $file );
 
 	$format_validation = sse_validate_filename_format( $filename );
-	if ( sse_is_wp_error( $format_validation ) ) {
+	if ( is_wp_error( $format_validation ) ) {
 		sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $format_validation->get_error_message(), 'warning' );
 		return;
 	}
 
 	$validation = sse_validate_export_file_path( $filename );
-	if ( sse_is_wp_error( $validation ) ) {
+	if ( is_wp_error( $validation ) ) {
 		sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $validation->get_error_message(), 'warning' );
 		return;
 	}
@@ -204,10 +204,15 @@ function sse_delete_export_file_handler( string $file ): void {
  * @return bool Whether the file was deleted successfully.
  */
 function sse_safely_delete_file( string $filepath ): bool {
+	/**
+	 * WordPress core is available at runtime.
+	 *
+	 * @psalm-suppress MissingFile
+	 */
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 
 	$export_dir = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir ) ) {
+	if ( is_wp_error( $export_dir ) ) {
 		return false;
 	}
 

@@ -10,21 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Checks whether a value is a WordPress error object.
- *
- * @since 2.0.0
- * @param mixed $value Value to inspect.
- * @psalm-assert-if-true WP_Error $value
- * @psalm-assert-if-false !WP_Error $value
- * @phpstan-assert-if-true WP_Error $value
- * @phpstan-assert-if-false !WP_Error $value
- * @return bool True when the value is a WP_Error.
- */
-function sse_is_wp_error( mixed $value ): bool {
-	return is_wp_error( $value );
-}
-
-/**
  * Safely get client IP address.
  *
  * @since 1.0.0
@@ -75,10 +60,12 @@ function sse_store_log_in_database( string $message, string $level ): void {
  * @return void
  */
 function sse_output_log_message( string $formatted_message ): void {
-	// Use WordPress logging (wp_debug_log is available in WP 5.1+).
 	if ( function_exists( 'wp_debug_log' ) ) {
 		wp_debug_log( $formatted_message );
+		return;
 	}
+
+	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Fallback for older WordPress installs; sse_log() already checks WP_DEBUG_LOG.
 }
 
 /**
@@ -147,6 +134,50 @@ function sse_get_execution_time_limit(): int {
 }
 
 /**
+ * Builds the canonical combined EngineScript archive filename.
+ *
+ * @since 2.0.0
+ * @param string $site_identifier Sanitized site identifier.
+ * @param string $timestamp       Export timestamp in Ymd_His format.
+ * @return string Combined ZIP filename.
+ */
+function sse_get_engine_script_archive_filename( string $site_identifier, string $timestamp ): string {
+	return $site_identifier . '_' . SSE_EXPORT_ARCHIVE_MARKER . '_' . $timestamp . '.zip';
+}
+
+/**
+ * Gets the validation regex for combined EngineScript archive filenames.
+ *
+ * @since 2.0.0
+ * @return non-empty-string Regex pattern with site_identifier and timestamp capture groups.
+ */
+function sse_get_engine_script_archive_filename_pattern(): string {
+	return '/^(?P<site_identifier>[a-zA-Z0-9._-]+)_' . preg_quote( SSE_EXPORT_ARCHIVE_MARKER, '/' ) . '_(?P<timestamp>\d{8}_\d{6})\.zip$/';
+}
+
+/**
+ * Checks whether a filename matches the canonical combined archive format.
+ *
+ * @since 2.0.0
+ * @param string $filename Filename to validate.
+ * @return bool True when the filename matches the generated archive format.
+ */
+function sse_is_engine_script_archive_filename( string $filename ): bool {
+	if ( ! preg_match( sse_get_engine_script_archive_filename_pattern(), $filename, $matches ) ) {
+		return false;
+	}
+
+	$site_identifier = $matches['site_identifier'] ?? '';
+	$timestamp       = $matches['timestamp'] ?? '';
+
+	if ( '' === $site_identifier || '' === $timestamp ) {
+		return false;
+	}
+
+	return sse_get_engine_script_archive_filename( $site_identifier, $timestamp ) === $filename;
+}
+
+/**
  * Gets the private export directory path.
  *
  * Exports contain a full database dump and site files, so they should not live
@@ -189,6 +220,8 @@ function sse_redirect_to_exporter_page( array $args = [] ): never {
  * @param string $message  Error message.
  * @param int    $response HTTP response code.
  * @return never
+ *
+ * @psalm-suppress InvalidReturnType WordPress exits from wp_die() at runtime.
  */
 function sse_wp_die( string $message, int $response = 500 ): never {
 	wp_die(
@@ -198,7 +231,6 @@ function sse_wp_die( string $message, int $response = 500 ): never {
 			'response' => absint( $response ),
 		]
 	);
-	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() should exit; this is a defensive fallback for static analysis.
 }
 
 /**
@@ -217,6 +249,11 @@ function sse_init_filesystem() {
 		return true;
 	}
 
+	/**
+	 * WordPress core is available at runtime.
+	 *
+	 * @psalm-suppress MissingFile
+	 */
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	if ( ! WP_Filesystem() ) {
 		sse_log( 'Failed to initialize WordPress filesystem API', 'error' );

@@ -40,6 +40,11 @@ if ( ! defined( 'SSE_FILTER_MAX_FILE_SIZE' ) ) {
 	define( 'SSE_FILTER_MAX_FILE_SIZE', 'sse_max_file_size_for_export' );
 }
 
+// Define the EngineScript archive filename marker used for generated export ZIP files.
+if ( ! defined( 'SSE_EXPORT_ARCHIVE_MARKER' ) ) {
+	define( 'SSE_EXPORT_ARCHIVE_MARKER', 'enginescript_site_export' );
+}
+
 // Define plugin file constant for use in included files.
 if ( ! defined( 'SSE_PLUGIN_FILE' ) ) {
 	define( 'SSE_PLUGIN_FILE', __FILE__ );

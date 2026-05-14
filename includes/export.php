@@ -36,7 +36,7 @@ function sse_handle_export(): void {
 			}
 
 			$export_paths = sse_setup_export_directories();
-			if ( sse_is_wp_error( $export_paths ) ) {
+			if ( is_wp_error( $export_paths ) ) {
 				sse_show_error_notice( $export_paths->get_error_message() );
 				break;
 			}
@@ -45,13 +45,13 @@ function sse_handle_export(): void {
 			$timestamp       = sse_get_export_timestamp();
 
 			$database_file = sse_export_database( $export_paths['export_dir'], $site_identifier, $timestamp );
-			if ( sse_is_wp_error( $database_file ) ) {
+			if ( is_wp_error( $database_file ) ) {
 				sse_show_error_notice( $database_file->get_error_message() );
 				break;
 			}
 
 			$zip_result = sse_create_site_archive( $export_paths, $database_file, $site_identifier, $timestamp );
-			if ( sse_is_wp_error( $zip_result ) ) {
+			if ( is_wp_error( $zip_result ) ) {
 				sse_cleanup_files( [ $database_file['filepath'] ] );
 				sse_show_error_notice( $zip_result->get_error_message() );
 				break;
@@ -82,7 +82,7 @@ function sse_handle_export(): void {
  * @return bool True if request is valid, false otherwise.
  */
 function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-	$post_action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification happens below
+	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification happens below
 	if ( 'sse_export_site' !== $post_action ) {
 		return false;
 	}
@@ -108,7 +108,7 @@ function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Securit
  */
 function sse_setup_export_directories() {
 	$export_dir = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir ) ) {
+	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
 
@@ -130,7 +130,7 @@ function sse_setup_export_directories() {
 	}
 
 	$filesystem_init = sse_init_filesystem();
-	if ( sse_is_wp_error( $filesystem_init ) ) {
+	if ( is_wp_error( $filesystem_init ) ) {
 		return $filesystem_init;
 	}
 
@@ -161,7 +161,7 @@ function sse_setup_export_directories() {
  * @return void
  */
 function sse_create_index_file( string $export_dir ): void {
-	if ( sse_is_wp_error( sse_init_filesystem() ) ) {
+	if ( is_wp_error( sse_init_filesystem() ) ) {
 		return;
 	}
 
@@ -245,7 +245,7 @@ function sse_export_database( string $export_dir, string $site_identifier, strin
 
 	// Enhanced WP-CLI path validation.
 	$wp_cli_path = sse_get_safe_wp_cli_path();
-	if ( sse_is_wp_error( $wp_cli_path ) ) {
+	if ( is_wp_error( $wp_cli_path ) ) {
 		return $wp_cli_path;
 	}
 
@@ -290,7 +290,7 @@ function sse_export_database( string $export_dir, string $site_identifier, strin
 					},
 					$output_lines
 				);
-				$safe_output = sanitize_text_field( implode( ' | ', $output_lines ) );
+				$safe_output  = sanitize_text_field( implode( ' | ', $output_lines ) );
 			}
 		}
 		$error_message = '' !== $safe_output ? $safe_output : 'WP-CLI command failed silently.';

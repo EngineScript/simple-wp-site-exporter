@@ -13,6 +13,7 @@
 
     <stubs>
         <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+        <file name="stubs/psalm-wordpress-constants.php" />
     </stubs>
 
     <issueHandlers>
@@ -27,10 +28,5 @@
                 <directory name="includes" />
             </errorLevel>
         </ParadoxicalCondition>
-        <UnresolvableInclude>
-            <errorLevel type="suppress">
-                <directory name="includes" />
-            </errorLevel>
-        </UnresolvableInclude>
     </issueHandlers>
 </psalm>

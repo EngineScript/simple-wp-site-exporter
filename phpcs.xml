@@ -15,6 +15,7 @@
     <exclude-pattern>*/dist/*</exclude-pattern>
     <exclude-pattern>*/css/*</exclude-pattern>
     <exclude-pattern>*/js/*</exclude-pattern>
+    <exclude-pattern>*/stubs/*</exclude-pattern>
     <exclude-pattern>*.css</exclude-pattern>
     <exclude-pattern>*.js</exclude-pattern>
 

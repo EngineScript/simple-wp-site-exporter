@@ -65,19 +65,19 @@ function sse_is_path_within_export_source( string $path, string $directory ): bo
  */
 function sse_create_site_archive( array $export_paths, array $database_file, string $site_identifier, string $timestamp ) {
 	$requirements_result = sse_validate_archive_requirements();
-	if ( sse_is_wp_error( $requirements_result ) ) {
+	if ( is_wp_error( $requirements_result ) ) {
 		return $requirements_result;
 	}
 
 	$bundle_paths = sse_prepare_engine_script_bundle_paths( $export_paths, $site_identifier, $timestamp );
 	$setup_result = sse_create_bundle_staging_directories( $bundle_paths );
-	if ( sse_is_wp_error( $setup_result ) ) {
+	if ( is_wp_error( $setup_result ) ) {
 		return $setup_result;
 	}
 
 	try {
 		$archive_result = sse_build_engine_script_bundle( $export_paths, $database_file, $bundle_paths, $site_identifier );
-		if ( sse_is_wp_error( $archive_result ) ) {
+		if ( is_wp_error( $archive_result ) ) {
 			return $archive_result;
 		}
 
@@ -128,22 +128,22 @@ function sse_validate_archive_requirements() {
  */
 function sse_build_engine_script_bundle( array $export_paths, array $database_file, array $bundle_paths, string $site_identifier ) {
 	$database_result = sse_create_compressed_database_file( $database_file['filepath'], $bundle_paths['database_path'] );
-	if ( sse_is_wp_error( $database_result ) ) {
+	if ( is_wp_error( $database_result ) ) {
 		return $database_result;
 	}
 
 	$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'], $export_paths['export_dir'] );
-	if ( sse_is_wp_error( $file_result ) ) {
+	if ( is_wp_error( $file_result ) ) {
 		return $file_result;
 	}
 
 	$manifest_result = sse_write_engine_script_manifest( $bundle_paths, $site_identifier );
-	if ( sse_is_wp_error( $manifest_result ) ) {
+	if ( is_wp_error( $manifest_result ) ) {
 		return $manifest_result;
 	}
 
 	$zip_result = sse_create_combined_engine_script_zip( $bundle_paths );
-	if ( sse_is_wp_error( $zip_result ) ) {
+	if ( is_wp_error( $zip_result ) ) {
 		return $zip_result;
 	}
 
@@ -168,7 +168,7 @@ function sse_prepare_engine_script_bundle_paths( array $export_paths, string $si
 	$database_filename      = "{$site_identifier}_db_{$timestamp}.sql";
 	$database_gz_filename   = $database_filename . '.gz';
 	$files_archive_filename = "{$site_identifier}_files_{$timestamp}.tar.gz";
-	$combined_zip_filename  = "{$site_identifier}_enginescript_site_export_{$timestamp}.zip";
+	$combined_zip_filename  = sse_get_engine_script_archive_filename( $site_identifier, $timestamp );
 
 	return [
 		'staging_dir'            => $staging_dir,
@@ -265,7 +265,7 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
 		$file_result = sse_add_wordpress_files_to_tar( $tar_archive, $export_dir );
 		unset( $tar_archive );
 
-		if ( sse_is_wp_error( $file_result ) ) {
+		if ( is_wp_error( $file_result ) ) {
 			sse_cleanup_files( [ $tar_path, $files_archive_path ] );
 			return $file_result;
 		}
@@ -316,7 +316,7 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 	) . "\n";
 
 	$filesystem_init = sse_init_filesystem();
-	if ( sse_is_wp_error( $filesystem_init ) ) {
+	if ( is_wp_error( $filesystem_init ) ) {
 		return $filesystem_init;
 	}
 
@@ -353,9 +353,9 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
 	$zip->addEmptyDir( 'files' );
 
 	$entries = [
-		'manifest.txt'                                      => $bundle_paths['manifest_path'],
+		'manifest.txt'                                     => $bundle_paths['manifest_path'],
 		'database/' . $bundle_paths['database_gz_filename'] => $bundle_paths['database_path'],
-		'files/' . $bundle_paths['files_archive_filename']  => $bundle_paths['files_archive_path'],
+		'files/' . $bundle_paths['files_archive_filename'] => $bundle_paths['files_archive_path'],
 	];
 
 	foreach ( $entries as $entry_name => $entry_path ) {
@@ -390,12 +390,12 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
  * @return bool True if deleted or absent, false on failure.
  */
 function sse_delete_directory_tree( string $directory ): bool {
-	if ( sse_is_wp_error( sse_init_filesystem() ) ) {
+	if ( is_wp_error( sse_init_filesystem() ) ) {
 		return false;
 	}
 
 	$export_dir = sse_get_export_directory_path();
-	if ( sse_is_wp_error( $export_dir ) ) {
+	if ( is_wp_error( $export_dir ) ) {
 		return false;
 	}
 
@@ -435,7 +435,7 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
 
 		foreach ( $files as $file_info ) {
 			$file_result = sse_process_file_for_tar( $tar, $file_info, $source_path, $export_dir );
-			if ( sse_is_wp_error( $file_result ) ) {
+			if ( is_wp_error( $file_result ) ) {
 				return $file_result;
 			}
 		}
@@ -596,7 +596,18 @@ function sse_should_exclude_file( string $pathname, string $relative_path, strin
 		}
 
 		if ( $cached_max_file_size > 0 && $file_info->getSize() > $cached_max_file_size ) {
-			sse_log( 'Excluding large file: ' . $pathname . ' (Size: ' . size_format( $file_info->getSize() ) . ', Limit: ' . size_format( $cached_max_file_size ) . ')', 'info' );
+			$file_size_label  = size_format( $file_info->getSize() );
+			$limit_size_label = size_format( $cached_max_file_size );
+
+			if ( false === $file_size_label ) {
+				$file_size_label = (string) $file_info->getSize() . ' B';
+			}
+
+			if ( false === $limit_size_label ) {
+				$limit_size_label = (string) $cached_max_file_size . ' B';
+			}
+
+			sse_log( 'Excluding large file: ' . $pathname . ' (Size: ' . $file_size_label . ', Limit: ' . $limit_size_label . ')', 'info' );
 			return true;
 		}
 	}
