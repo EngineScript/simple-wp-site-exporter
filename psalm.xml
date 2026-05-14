@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    phpVersion="8.2"
+    allFunctionsGlobal="true"
+    allConstantsGlobal="true"
+>
+    <projectFiles>
+        <file name="enginescript-site-exporter.php" />
+        <directory name="includes" />
+    </projectFiles>
+
+    <stubs>
+        <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+    </stubs>
+
+    <issueHandlers>
+        <ForbiddenCode>
+            <errorLevel type="suppress">
+                <file name="includes/export.php" />
+            </errorLevel>
+        </ForbiddenCode>
+        <ParadoxicalCondition>
+            <errorLevel type="suppress">
+                <file name="enginescript-site-exporter.php" />
+                <directory name="includes" />
+            </errorLevel>
+        </ParadoxicalCondition>
+        <UnresolvableInclude>
+            <errorLevel type="suppress">
+                <directory name="includes" />
+            </errorLevel>
+        </UnresolvableInclude>
+    </issueHandlers>
+</psalm>

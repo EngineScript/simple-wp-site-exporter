@@ -13,6 +13,10 @@
     <exclude-pattern>*/.github/*</exclude-pattern>
     <exclude-pattern>*/build/*</exclude-pattern>
     <exclude-pattern>*/dist/*</exclude-pattern>
+    <exclude-pattern>*/css/*</exclude-pattern>
+    <exclude-pattern>*/js/*</exclude-pattern>
+    <exclude-pattern>*.css</exclude-pattern>
+    <exclude-pattern>*.js</exclude-pattern>
 
     <!-- Use WordPress-Extra coding standards (includes WordPress-Core) -->
     <rule ref="WordPress-Extra">
@@ -113,7 +117,15 @@
     <rule ref="Modernize">
         <exclude name="Modernize.FunctionCalls.Dirname.Nested"/>
     </rule>
-    <rule ref="NormalizedArrays"/>
+
+    <!-- Allow PHP short array syntax. -->
+    <rule ref="Universal.Arrays.DisallowShortArraySyntax">
+        <severity>0</severity>
+    </rule>
+
+    <rule ref="NormalizedArrays">
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+    </rule>
 
     <!-- Set minimum WordPress version for deprecated function checks -->
     <config name="minimum_wp_version" value="6.8"/>

@@ -10,6 +10,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Checks whether a value is a WordPress error object.
+ *
+ * @since 2.0.0
+ * @param mixed $value Value to inspect.
+ * @psalm-assert-if-true WP_Error $value
+ * @psalm-assert-if-false !WP_Error $value
+ * @phpstan-assert-if-true WP_Error $value
+ * @phpstan-assert-if-false !WP_Error $value
+ * @return bool True when the value is a WP_Error.
+ */
+function sse_is_wp_error( mixed $value ): bool {
+	return is_wp_error( $value );
+}
+
+/**
  * Safely get client IP address.
  *
  * @since 1.0.0
@@ -155,9 +170,9 @@ function sse_get_export_directory_path() {
  *
  * @since 2.0.0
  * @param array<string, string> $args Optional query args.
- * @return void
+ * @return never
  */
-function sse_redirect_to_exporter_page( array $args = [] ): void {
+function sse_redirect_to_exporter_page( array $args = [] ): never {
 	wp_safe_redirect(
 		add_query_arg(
 			$args,
@@ -173,9 +188,9 @@ function sse_redirect_to_exporter_page( array $args = [] ): void {
  * @since 2.0.0
  * @param string $message  Error message.
  * @param int    $response HTTP response code.
- * @return void
+ * @return never
  */
-function sse_wp_die( string $message, int $response = 500 ): void {
+function sse_wp_die( string $message, int $response = 500 ): never {
 	wp_die(
 		esc_html( $message ),
 		'',
@@ -183,6 +198,7 @@ function sse_wp_die( string $message, int $response = 500 ): void {
 			'response' => absint( $response ),
 		]
 	);
+	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() should exit; this is a defensive fallback for static analysis.
 }
 
 /**

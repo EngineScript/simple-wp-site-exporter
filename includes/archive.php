@@ -55,27 +55,29 @@ function sse_is_path_within_export_source( string $path, string $directory ): bo
  * Creates a site archive with database and files.
  *
  * @since 1.0.0
- * @param array{export_dir: string, export_dir_name: string} $export_paths     Export directory paths.
- * @param array{filename: string, filepath: string}                             $database_file    Database file information.
- * @param string                                                                $site_identifier Sanitized site identifier.
- * @param string                                                                $timestamp       Export timestamp.
+ * @param array  $export_paths     Export directory paths.
+ * @param array  $database_file    Database file information.
+ * @param string $site_identifier Sanitized site identifier.
+ * @param string $timestamp       Export timestamp.
+ * @psalm-param array{export_dir: string, export_dir_name: string} $export_paths
+ * @psalm-param array{filename: string, filepath: string} $database_file
  * @return array{filename: string, filepath: string}|WP_Error Archive info on success, WP_Error on failure.
  */
 function sse_create_site_archive( array $export_paths, array $database_file, string $site_identifier, string $timestamp ) {
 	$requirements_result = sse_validate_archive_requirements();
-	if ( is_wp_error( $requirements_result ) ) {
+	if ( sse_is_wp_error( $requirements_result ) ) {
 		return $requirements_result;
 	}
 
 	$bundle_paths = sse_prepare_engine_script_bundle_paths( $export_paths, $site_identifier, $timestamp );
 	$setup_result = sse_create_bundle_staging_directories( $bundle_paths );
-	if ( is_wp_error( $setup_result ) ) {
+	if ( sse_is_wp_error( $setup_result ) ) {
 		return $setup_result;
 	}
 
 	try {
 		$archive_result = sse_build_engine_script_bundle( $export_paths, $database_file, $bundle_paths, $site_identifier );
-		if ( is_wp_error( $archive_result ) ) {
+		if ( sse_is_wp_error( $archive_result ) ) {
 			return $archive_result;
 		}
 
@@ -115,30 +117,33 @@ function sse_validate_archive_requirements() {
  * Builds the staged EngineScript bundle payload.
  *
  * @since 2.0.0
- * @param array{export_dir: string, export_dir_name: string}                                                                                                                                                          $export_paths     Export directory paths.
- * @param array{filename: string, filepath: string}                                                                                                                                                                   $database_file    Database file information.
- * @param array{database_path: string, files_archive_path: string, manifest_path: string, database_gz_filename: string, files_archive_filename: string, combined_zip_path: string, combined_zip_filename: string} $bundle_paths    Bundle paths.
- * @param string                                                                                                                                                                                                      $site_identifier Sanitized site identifier.
+ * @param array  $export_paths     Export directory paths.
+ * @param array  $database_file    Database file information.
+ * @param array  $bundle_paths     Bundle paths.
+ * @param string $site_identifier Sanitized site identifier.
+ * @psalm-param array{export_dir: string, export_dir_name: string} $export_paths
+ * @psalm-param array{filename: string, filepath: string} $database_file
+ * @psalm-param array{database_path: string, files_archive_path: string, manifest_path: string, database_gz_filename: string, files_archive_filename: string, combined_zip_path: string, combined_zip_filename: string, ...} $bundle_paths
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_build_engine_script_bundle( array $export_paths, array $database_file, array $bundle_paths, string $site_identifier ) {
 	$database_result = sse_create_compressed_database_file( $database_file['filepath'], $bundle_paths['database_path'] );
-	if ( is_wp_error( $database_result ) ) {
+	if ( sse_is_wp_error( $database_result ) ) {
 		return $database_result;
 	}
 
 	$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'], $export_paths['export_dir'] );
-	if ( is_wp_error( $file_result ) ) {
+	if ( sse_is_wp_error( $file_result ) ) {
 		return $file_result;
 	}
 
 	$manifest_result = sse_write_engine_script_manifest( $bundle_paths, $site_identifier );
-	if ( is_wp_error( $manifest_result ) ) {
+	if ( sse_is_wp_error( $manifest_result ) ) {
 		return $manifest_result;
 	}
 
 	$zip_result = sse_create_combined_engine_script_zip( $bundle_paths );
-	if ( is_wp_error( $zip_result ) ) {
+	if ( sse_is_wp_error( $zip_result ) ) {
 		return $zip_result;
 	}
 
@@ -149,16 +154,17 @@ function sse_build_engine_script_bundle( array $export_paths, array $database_fi
  * Prepares canonical EngineScript bundle paths and filenames.
  *
  * @since 2.0.0
- * @param array{export_dir: string, export_dir_name: string} $export_paths     Export directory paths.
- * @param string                                                                $site_identifier Sanitized site identifier.
- * @param string                                                                $timestamp       Export timestamp.
+ * @param array  $export_paths     Export directory paths.
+ * @param string $site_identifier Sanitized site identifier.
+ * @param string $timestamp       Export timestamp.
+ * @psalm-param array{export_dir: string, export_dir_name: string} $export_paths
  * @return array{staging_dir: string, bundle_root_dir: string, database_dir: string, files_dir: string, manifest_path: string, database_filename: string, database_gz_filename: string, database_path: string, files_archive_filename: string, files_archive_path: string, combined_zip_filename: string, combined_zip_path: string}
  */
 function sse_prepare_engine_script_bundle_paths( array $export_paths, string $site_identifier, string $timestamp ): array {
-	$staging_dir           = trailingslashit( $export_paths['export_dir'] ) . 'staging-' . $timestamp;
-	$bundle_root_dir       = trailingslashit( $staging_dir ) . 'bundle';
-	$database_dir          = trailingslashit( $bundle_root_dir ) . 'database';
-	$files_dir             = trailingslashit( $bundle_root_dir ) . 'files';
+	$staging_dir            = trailingslashit( $export_paths['export_dir'] ) . 'staging-' . $timestamp;
+	$bundle_root_dir        = trailingslashit( $staging_dir ) . 'bundle';
+	$database_dir           = trailingslashit( $bundle_root_dir ) . 'database';
+	$files_dir              = trailingslashit( $bundle_root_dir ) . 'files';
 	$database_filename      = "{$site_identifier}_db_{$timestamp}.sql";
 	$database_gz_filename   = $database_filename . '.gz';
 	$files_archive_filename = "{$site_identifier}_files_{$timestamp}.tar.gz";
@@ -184,7 +190,8 @@ function sse_prepare_engine_script_bundle_paths( array $export_paths, string $si
  * Creates bundle staging directories.
  *
  * @since 2.0.0
- * @param array{database_dir: string, files_dir: string} $bundle_paths Bundle paths.
+ * @param array $bundle_paths Bundle paths.
+ * @psalm-param array{database_dir: string, files_dir: string, ...} $bundle_paths
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_create_bundle_staging_directories( array $bundle_paths ) {
@@ -258,7 +265,7 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
 		$file_result = sse_add_wordpress_files_to_tar( $tar_archive, $export_dir );
 		unset( $tar_archive );
 
-		if ( is_wp_error( $file_result ) ) {
+		if ( sse_is_wp_error( $file_result ) ) {
 			sse_cleanup_files( [ $tar_path, $files_archive_path ] );
 			return $file_result;
 		}
@@ -290,8 +297,9 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
  * Writes the EngineScript archive manifest.
  *
  * @since 2.0.0
- * @param array{manifest_path: string, database_gz_filename: string, files_archive_filename: string} $bundle_paths     Bundle paths.
- * @param string                                                                                   $site_identifier Sanitized site identifier.
+ * @param array  $bundle_paths     Bundle paths.
+ * @param string $site_identifier Sanitized site identifier.
+ * @psalm-param array{manifest_path: string, database_gz_filename: string, files_archive_filename: string, ...} $bundle_paths
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_write_engine_script_manifest( array $bundle_paths, string $site_identifier ) {
@@ -308,7 +316,7 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 	) . "\n";
 
 	$filesystem_init = sse_init_filesystem();
-	if ( is_wp_error( $filesystem_init ) ) {
+	if ( sse_is_wp_error( $filesystem_init ) ) {
 		return $filesystem_init;
 	}
 
@@ -324,7 +332,8 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
  * Creates the outer EngineScript ZIP archive.
  *
  * @since 2.0.0
- * @param array{combined_zip_path: string, manifest_path: string, database_path: string, database_gz_filename: string, files_archive_path: string, files_archive_filename: string} $bundle_paths Bundle paths.
+ * @param array $bundle_paths Bundle paths.
+ * @psalm-param array{combined_zip_path: string, manifest_path: string, database_path: string, database_gz_filename: string, files_archive_path: string, files_archive_filename: string, ...} $bundle_paths
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_create_combined_engine_script_zip( array $bundle_paths ) {
@@ -344,7 +353,7 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
 	$zip->addEmptyDir( 'files' );
 
 	$entries = [
-		'manifest.txt' => $bundle_paths['manifest_path'],
+		'manifest.txt'                                      => $bundle_paths['manifest_path'],
 		'database/' . $bundle_paths['database_gz_filename'] => $bundle_paths['database_path'],
 		'files/' . $bundle_paths['files_archive_filename']  => $bundle_paths['files_archive_path'],
 	];
@@ -381,12 +390,16 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
  * @return bool True if deleted or absent, false on failure.
  */
 function sse_delete_directory_tree( string $directory ): bool {
-	if ( is_wp_error( sse_init_filesystem() ) ) {
+	if ( sse_is_wp_error( sse_init_filesystem() ) ) {
 		return false;
 	}
 
 	$export_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
+	if ( sse_is_wp_error( $export_dir ) ) {
+		return false;
+	}
+
+	if ( ! sse_is_path_within_directory( $directory, $export_dir ) ) {
 		return false;
 	}
 
@@ -408,7 +421,7 @@ function sse_delete_directory_tree( string $directory ): bool {
  */
 function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
 	$source_path = realpath( ABSPATH );
-	if ( ! $source_path ) {
+	if ( false === $source_path ) {
 		sse_log( 'Could not resolve real path for ABSPATH. Using ABSPATH directly.', 'warning' );
 		$source_path = ABSPATH;
 	}
@@ -422,7 +435,7 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir ) {
 
 		foreach ( $files as $file_info ) {
 			$file_result = sse_process_file_for_tar( $tar, $file_info, $source_path, $export_dir );
-			if ( is_wp_error( $file_result ) ) {
+			if ( sse_is_wp_error( $file_result ) ) {
 				return $file_result;
 			}
 		}
@@ -570,10 +583,17 @@ function sse_should_exclude_file( string $pathname, string $relative_path, strin
 		 *
 		 * @param int $max_file_size Maximum file size in bytes. Default is user's selection or 0 (no limit).
 		 */
-		$cached_max_file_size ??= (int) apply_filters(
-			SSE_FILTER_MAX_FILE_SIZE,
-			get_transient( 'sse_export_max_file_size_' . get_current_user_id() ) ?: 0
-		);
+		if ( null === $cached_max_file_size ) {
+			$selected_max_file_size = get_transient( 'sse_export_max_file_size_' . get_current_user_id() );
+			if ( false === $selected_max_file_size || ! is_numeric( $selected_max_file_size ) ) {
+				$selected_max_file_size = 0;
+			}
+
+			$cached_max_file_size = (int) apply_filters(
+				SSE_FILTER_MAX_FILE_SIZE,
+				(int) $selected_max_file_size
+			);
+		}
 
 		if ( $cached_max_file_size > 0 && $file_info->getSize() > $cached_max_file_size ) {
 			sse_log( 'Excluding large file: ' . $pathname . ' (Size: ' . size_format( $file_info->getSize() ) . ', Limit: ' . size_format( $cached_max_file_size ) . ')', 'info' );

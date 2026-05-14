@@ -30,7 +30,7 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
 
 	$validation = sse_validate_export_file_for_download( $filename );
 
-	if ( is_wp_error( $validation ) ) {
+	if ( sse_is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
@@ -63,7 +63,7 @@ function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security
 
 	$validation = sse_validate_basic_export_file( $filename );
 
-	if ( is_wp_error( $validation ) ) {
+	if ( sse_is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );
 	}
 
@@ -102,7 +102,7 @@ function sse_check_download_rate_limit(): bool {
 	$last_download = get_transient( $rate_limit_key );
 
 	// Allow one download per minute per user.
-	if ( false !== $last_download && is_numeric( $last_download ) && ( $current_time - $last_download ) < 60 ) {
+	if ( false !== $last_download && is_numeric( $last_download ) && ( $current_time - (int) $last_download ) < 60 ) {
 		return false;
 	}
 
@@ -165,8 +165,8 @@ function sse_validate_file_output_security( string $filepath ): string {
 	}
 
 	// Security: Ensure file is within our controlled directory before serving.
-	$export_dir      = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) ) {
+	$export_dir = sse_get_export_directory_path();
+	if ( sse_is_wp_error( $export_dir ) ) {
 		sse_wp_die( $export_dir->get_error_message() );
 	}
 
@@ -185,9 +185,9 @@ function sse_validate_file_output_security( string $filepath ): string {
  * @since 2.0.0
  * @param string $filepath The validated file path.
  * @param string $filename The filename for logging.
- * @return void
+ * @return never
  */
-function sse_output_file_content( string $filepath, string $filename ): void {
+function sse_output_file_content( string $filepath, string $filename ): never {
 	// Security: Validate and resolve to realpath before any filesystem access.
 	$resolved_path = sse_validate_file_output_security( $filepath );
 
@@ -207,9 +207,9 @@ function sse_output_file_content( string $filepath, string $filename ): void {
  *
  * @since 2.0.0
  * @param array{filename: string, filesize: int, filepath: string} $file_data Validated file information array.
- * @return void
+ * @return never
  */
-function sse_serve_file_download( array $file_data ): void {
+function sse_serve_file_download( array $file_data ): never {
 	// Set download headers.
 	sse_set_download_headers( $file_data['filename'], $file_data['filesize'] );
 

@@ -17,12 +17,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return bool True if path is safe, false if contains traversal patterns.
  */
 function sse_check_path_traversal( string $normalized_file_path ): bool {
+	$has_parent_traversal   = false !== strpos( $normalized_file_path, '..' );
+	$has_current_directory  = false !== strpos( $normalized_file_path, '/./' );
+	$has_windows_separator  = false !== strpos( $normalized_file_path, '\\' );
+
 	// Block obvious directory traversal attempts.
-	if ( strpos( $normalized_file_path, '..' ) !== false ||
-			 strpos( $normalized_file_path, '/./' ) !== false ||
-			 strpos( $normalized_file_path, '\\' ) !== false ) {
+	if ( $has_parent_traversal || $has_current_directory || $has_windows_separator ) {
 		return false;
 	}
+
 	return true;
 }
 
@@ -38,8 +41,7 @@ function sse_check_path_traversal( string $normalized_file_path ): bool {
  * @param string $normalized_base_dir  The normalized base directory.
  * @return string|false Real file path on success, false on failure.
  */
-// phpmd:suppress CyclomaticComplexity -- Consolidated from 7 single-use functions for readability.
-function sse_resolve_file_path( string $normalized_file_path, string $normalized_base_dir ) { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh -- Consolidated from 7 single-use functions for readability.
+function sse_resolve_file_path( string $normalized_file_path, string $normalized_base_dir ) {
 	// Security: Only allow files with safe extensions.
 	if ( ! sse_validate_file_extension( $normalized_file_path ) ) {
 		return false;
@@ -216,7 +218,7 @@ function sse_validate_filepath( string $file_path, string $base_dir ): bool {
  */
 function sse_validate_export_file_for_download( string $filename ) {
 	$basic_validation = sse_validate_basic_export_file( $filename );
-	if ( is_wp_error( $basic_validation ) ) {
+	if ( sse_is_wp_error( $basic_validation ) ) {
 		return $basic_validation;
 	}
 
@@ -247,17 +249,17 @@ function sse_validate_export_file_for_download( string $filename ) {
  */
 function sse_validate_basic_export_file( string $filename ) {
 	$basic_checks = sse_validate_filename_format( $filename );
-	if ( is_wp_error( $basic_checks ) ) {
+	if ( sse_is_wp_error( $basic_checks ) ) {
 		return $basic_checks;
 	}
 
 	$path_validation = sse_validate_export_file_path( $filename );
-	if ( is_wp_error( $path_validation ) ) {
+	if ( sse_is_wp_error( $path_validation ) ) {
 		return $path_validation;
 	}
 
 	$existence_check = sse_validate_file_existence( $path_validation['filepath'] );
-	if ( is_wp_error( $existence_check ) ) {
+	if ( sse_is_wp_error( $existence_check ) ) {
 		return $existence_check;
 	}
 
@@ -281,7 +283,6 @@ function sse_validate_filename_format( string $filename ) {
 		return new WP_Error( 'invalid_filename', __( 'Invalid filename.', 'enginescript-site-exporter' ) );
 	}
 
-
 	// Validate the canonical EngineScript combined site archive filename.
 	if ( ! preg_match( '/^[a-zA-Z0-9._-]+_enginescript_site_export_\d{8}_\d{6}\.zip$/', $filename ) ) {
 		return new WP_Error( 'invalid_format', __( 'Invalid export file format.', 'enginescript-site-exporter' ) );
@@ -300,11 +301,11 @@ function sse_validate_filename_format( string $filename ) {
 function sse_validate_export_file_path( string $filename ) {
 	// Get the full path to the file.
 	$export_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) ) {
+	if ( sse_is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
 
-	$file_path  = trailingslashit( $export_dir ) . $filename;
+	$file_path = trailingslashit( $export_dir ) . $filename;
 
 	// Validate the file path is within our export directory.
 	if ( ! sse_validate_filepath( $file_path, $export_dir ) ) {
@@ -326,7 +327,7 @@ function sse_validate_export_file_path( string $filename ) {
  */
 function sse_validate_file_existence( string $file_path ) {
 	$filesystem_init = sse_init_filesystem();
-	if ( is_wp_error( $filesystem_init ) ) {
+	if ( sse_is_wp_error( $filesystem_init ) ) {
 		return $filesystem_init;
 	}
 

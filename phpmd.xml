@@ -33,6 +33,9 @@
         <exclude name="TooManyMethods"/>
         <!-- Exclude ExcessiveClassComplexity - WordPress plugins can be complex -->
         <exclude name="ExcessiveClassComplexity"/>
+        <!-- Re-added below with WordPress-adjusted thresholds -->
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
     </rule>
     
     <!-- WordPress-adjusted complexity limits -->
@@ -68,6 +71,13 @@
         <properties>
             <!-- WordPress functions often have conditional logic for hooks -->
             <property name="reportLevel" value="15"/>
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/NPathComplexity">
+        <properties>
+            <!-- Export validation and cleanup flows branch heavily by design -->
+            <property name="minimum" value="600"/>
         </properties>
     </rule>
     

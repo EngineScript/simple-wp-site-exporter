@@ -82,7 +82,7 @@ function sse_bulk_cleanup_exports_handler(): void {
 	sse_log( 'Bulk export cleanup handler triggered', 'info' );
 
 	$export_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) ) {
+	if ( sse_is_wp_error( $export_dir ) ) {
 		sse_log( 'Could not determine export directory for cleanup: ' . $export_dir->get_error_message(), 'error' );
 		return;
 	}
@@ -119,7 +119,7 @@ function sse_bulk_cleanup_exports_handler(): void {
 
 	foreach ( $files as $file_path ) {
 		if ( sse_cleanup_expired_export_file( $file_path, $cutoff_time ) ) {
-			$cleaned_count++;
+			++$cleaned_count;
 		}
 	}
 
@@ -137,14 +137,14 @@ function sse_bulk_cleanup_exports_handler(): void {
 function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ): bool {
 	$file_time = filemtime( $file_path );
 
-	if ( ! $file_time || $file_time >= $cutoff_time ) {
+	if ( false === $file_time || $file_time >= $cutoff_time ) {
 		return false;
 	}
 
 	$filename   = basename( $file_path );
 	$validation = sse_validate_basic_export_file( $filename );
 
-	if ( is_wp_error( $validation ) ) {
+	if ( sse_is_wp_error( $validation ) ) {
 		sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
 		return false;
 	}
@@ -172,13 +172,13 @@ function sse_delete_export_file_handler( string $file ): void {
 	$filename = basename( $file );
 
 	$format_validation = sse_validate_filename_format( $filename );
-	if ( is_wp_error( $format_validation ) ) {
+	if ( sse_is_wp_error( $format_validation ) ) {
 		sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $format_validation->get_error_message(), 'warning' );
 		return;
 	}
 
 	$validation = sse_validate_export_file_path( $filename );
-	if ( is_wp_error( $validation ) ) {
+	if ( sse_is_wp_error( $validation ) ) {
 		sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $validation->get_error_message(), 'warning' );
 		return;
 	}
@@ -207,7 +207,7 @@ function sse_safely_delete_file( string $filepath ): bool {
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 
 	$export_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) ) {
+	if ( sse_is_wp_error( $export_dir ) ) {
 		return false;
 	}
 

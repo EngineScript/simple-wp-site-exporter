@@ -406,34 +406,12 @@ jobs:
           dependency-versions: highest
           composer-options: "--prefer-dist --no-progress"
 
-      - name: Install Psalm
-        run: composer require --dev vimeo/psalm:"^6.16" --with-all-dependencies --no-progress
-
-      - name: Create Psalm config
-        run: |
-          cat > psalm.xml << 'EOF'
-          <?xml version="1.0"?>
-          <psalm
-              errorLevel="3"
-              resolveFromConfigFile="true"
-          >
-              <projectFiles>
-                  <directory name="." />
-                  <ignoreFiles>
-                      <directory name="vendor" />
-                  </ignoreFiles>
-              </projectFiles>
-          </psalm>
-          EOF
+      - name: Verify Psalm installation
+        run: vendor/bin/psalm --version
 
       - name: Run Psalm
         run: |
-          # Initialize Psalm configuration if needed
-          if [ ! -f psalm.xml ]; then
-            ./vendor/bin/psalm --init
-          fi
-          
-          ./vendor/bin/psalm --show-info=true
+          vendor/bin/psalm --config=psalm.xml --show-info=true
 
       - name: Create issue on Psalm failure
         if: ${{ failure() }}
