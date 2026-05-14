@@ -30,6 +30,7 @@
 - **WordPress Test Compatibility**: Pinned the generated WordPress compatibility test job to PHPUnit 9.6 with Yoast PHPUnit Polyfills 4.x because the WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+.
 - **WordPress Compatibility Coverage**: Added PHP syntax linting, PHPUnit dependency verification, hook registration checks, constant checks, security helper tests, and a PHP 8.2/latest WordPress lowest-dependency matrix run.
 - **Release Packaging**: Fixed release and CI package builds to include required `includes/`, `css/`, `js/`, `languages/`, and `readme.txt` files.
+- **Release Package Hygiene**: Excluded Composer files, CI metadata, tests, static-analysis stubs/configs, and source-only docs from generated plugin release packages.
 - **Archive Failure Reporting**: File archive creation now returns a `WP_Error` when a file cannot be added instead of logging the failure and reporting success.
 
 ### Architecture

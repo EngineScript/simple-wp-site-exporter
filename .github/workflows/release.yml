@@ -50,8 +50,6 @@ jobs:
           cp -r js enginescript-site-exporter/
           cp -r languages enginescript-site-exporter/
           cp readme.txt enginescript-site-exporter/
-          cp README.md enginescript-site-exporter/
-          cp CHANGELOG.md enginescript-site-exporter/
           cp LICENSE enginescript-site-exporter/ || echo "No LICENSE file found"
           zip -r enginescript-site-exporter-${{ steps.get_version.outputs.version }}.zip enginescript-site-exporter
 

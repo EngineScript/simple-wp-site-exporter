@@ -7,16 +7,14 @@
  * Since:   2.0.0
  */
 
-( function () {
-	'use strict';
+( () => {
+	document.addEventListener( 'DOMContentLoaded', () => {
+		const deleteButtons = document.querySelectorAll( '.sse-confirm-delete' );
 
-	document.addEventListener( 'DOMContentLoaded', function () {
-		var deleteButtons = document.querySelectorAll( '.sse-confirm-delete' );
-
-		deleteButtons.forEach( function ( button ) { // eslint-disable-line lodash/prefer-lodash-collection-iteration
-			button.addEventListener( 'click', function ( event ) {
+		deleteButtons.forEach( ( button ) => { // eslint-disable-line lodash/prefer-lodash-collection-iteration
+			button.addEventListener( 'click', ( event ) => {
 				/* global sseAdmin */
-				var message = ( typeof sseAdmin !== 'undefined' && sseAdmin.confirmDelete )
+				const message = ( typeof sseAdmin !== 'undefined' && sseAdmin.confirmDelete )
 					? sseAdmin.confirmDelete
 					: 'Are you sure you want to delete this export file?';
 
