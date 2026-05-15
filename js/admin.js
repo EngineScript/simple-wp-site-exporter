@@ -13,8 +13,7 @@
 
 		deleteButtons.forEach( ( button ) => {
 			button.addEventListener( 'click', ( event ) => {
-				/* global sseAdmin */
-				const confirmDelete = typeof sseAdmin === 'undefined' ? undefined : sseAdmin?.confirmDelete;
+				const confirmDelete = window.sseAdmin?.confirmDelete;
 
 				if ( confirmDelete === undefined || confirmDelete === null ) {
 					event.preventDefault();
