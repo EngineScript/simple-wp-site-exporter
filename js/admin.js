@@ -9,10 +9,10 @@
 
 ( () => {
 	document.addEventListener( 'DOMContentLoaded', () => {
-		const deleteButtons = document.querySelectorAll( '.sse-confirm-delete' );
+		const deleteForms = document.querySelectorAll( '.sse-confirm-delete' );
 
-		deleteButtons.forEach( ( button ) => {
-			button.addEventListener( 'click', ( event ) => {
+		deleteForms.forEach( ( form ) => {
+			form.addEventListener( 'submit', ( event ) => {
 				const confirmDelete = window.sseAdmin?.confirmDelete;
 
 				if ( confirmDelete === undefined || confirmDelete === null ) {
