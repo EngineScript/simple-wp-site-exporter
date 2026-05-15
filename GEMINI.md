@@ -7,7 +7,7 @@ This is a secure WordPress site export plugin that creates complete site backups
 ## Plugin Details
 
 - **Name:** EngineScript Site Exporter
-- **Version:** 2.0.0
+- **Version:** 2.1.0
 - **WordPress Compatibility:** 6.8+
 - **PHP Compatibility:** 8.2+
 - **License:** GPL-3.0-or-later

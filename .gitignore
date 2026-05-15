@@ -1,4 +1,8 @@
+# Test and build artifacts
 /vendor/
+
+# Local private files
+/.private/
 
 # PHP tooling caches
 /.phpunit.cache/

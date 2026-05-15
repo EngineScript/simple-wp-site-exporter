@@ -147,11 +147,11 @@ function sse_render_export_success_notice( array $zip_result ): void {
 			<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
 				<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
 			</a>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sse-inline-form">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sse-inline-form sse-confirm-delete">
 				<input type="hidden" name="action" value="sse_delete_export">
 				<input type="hidden" name="file" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
 				<?php wp_nonce_field( 'sse_delete_export_' . $zip_result['filename'] ); ?>
-				<button type="submit" class="button button-secondary sse-action-button sse-confirm-delete">
+				<button type="submit" class="button button-secondary sse-action-button">
 					<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
 				</button>
 			</form>

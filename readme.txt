@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 8.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -97,7 +97,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
-= Unreleased =
+= 2.1.0 =
 * **Security**: Added `.htaccess` file to export directory with `Deny from all` rules to prevent direct HTTP access to export files
 * **Security**: Removed usage of `_get_cron_array()` private WordPress API from cron failure diagnostics
 * **Security**: Replaced `glob()` with `scandir()` in bulk cleanup handler for cross-platform compatibility
