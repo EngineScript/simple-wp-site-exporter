@@ -8,22 +8,20 @@
  */
 
 ( () => {
-	document.addEventListener( 'DOMContentLoaded', () => {
-		const deleteForms = document.querySelectorAll( '.sse-confirm-delete' );
+	const handleDeleteSubmit = ( event ) => {
+		const confirmMessage = event.currentTarget?.dataset?.sseConfirmMessage;
 
-		deleteForms.forEach( ( form ) => {
-			form.addEventListener( 'submit', ( event ) => {
-				const confirmDelete = window.sseAdmin?.confirmDelete;
+		if ( ! confirmMessage ) {
+			event.preventDefault();
+			return;
+		}
 
-				if ( confirmDelete === undefined || confirmDelete === null ) {
-					event.preventDefault();
-					return;
-				}
+		if ( ! globalThis.confirm( confirmMessage ) ) {
+			event.preventDefault();
+		}
+	};
 
-				if ( ! window.confirm( String( confirmDelete ) ) ) {
-					event.preventDefault();
-				}
-			} );
-		} );
+	document.querySelectorAll( '.sse-confirm-delete' ).forEach( ( form ) => {
+		form.addEventListener( 'submit', handleDeleteSubmit );
 	} );
 } )();

@@ -49,14 +49,9 @@ function sse_enqueue_admin_assets( string $hook_suffix ): void {
 		plugin_dir_url( SSE_PLUGIN_FILE ) . 'js/admin.js',
 		[],
 		ES_SITE_EXPORTER_VERSION,
-		true
-	);
-
-	wp_localize_script(
-		'sse-admin',
-		'sseAdmin',
 		[
-			'confirmDelete' => __( 'Are you sure you want to delete this export file?', 'enginescript-site-exporter' ),
+			'in_footer' => true,
+			'strategy'  => 'defer',
 		]
 	);
 }
@@ -140,6 +135,7 @@ function sse_render_export_success_notice( array $zip_result ): void {
 	);
 
 	$display_zip_path = wp_normalize_path( $zip_result['filepath'] );
+	$delete_confirm   = __( 'Are you sure you want to delete this export file?', 'enginescript-site-exporter' );
 	?>
 	<div class="notice notice-success is-dismissible">
 		<div class="sse-notice-actions">
@@ -147,7 +143,12 @@ function sse_render_export_success_notice( array $zip_result ): void {
 			<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
 				<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
 			</a>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sse-inline-form sse-confirm-delete">
+			<form
+				method="post"
+				action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+				class="sse-inline-form sse-confirm-delete"
+				data-sse-confirm-message="<?php echo esc_attr( $delete_confirm ); ?>"
+			>
 				<input type="hidden" name="action" value="sse_delete_export">
 				<input type="hidden" name="file" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
 				<?php wp_nonce_field( 'sse_delete_export_' . $zip_result['filename'] ); ?>

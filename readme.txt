@@ -123,7 +123,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Architecture**: Removed `sse_test_cron_scheduling()` debug function from export flow
 * **Architecture**: Reduced cron scheduling logging from 5+ entries to 2 per operation
 * **Architecture**: Extracted 7 inline styles into `css/admin.css` with semantic CSS classes
-* **Architecture**: Extracted inline JS confirmation dialog into `js/admin.js` with `wp_localize_script()` i18n
+* **Architecture**: Extracted inline JS confirmation dialog into `js/admin.js`
 * **Architecture**: Added `sse_enqueue_admin_assets()` for proper CSS/JS enqueueing on plugin page only
 * **Architecture**: Rewrote copilot-instructions.md for clarity, removed irrelevant references
 * **Architecture**: Split monolithic plugin file (~1,400 lines) into 112-line bootstrap + 7 include files under `includes/`

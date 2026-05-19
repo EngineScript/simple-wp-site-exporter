@@ -46,7 +46,7 @@
 - **PHPStan Level Increase**: Increased PHPStan analysis level from 5 to 6, added `includes/` directory to scan paths.
 - **Inline CSS Removal**: Extracted 7 inline `style` attributes from admin page and success notice into dedicated `css/admin.css` file with semantic CSS classes (`sse-section-spacing`, `sse-form-table`, `sse-warning-text`, `sse-action-button`).
 - **Inline JS Removal**: Extracted inline `onclick` confirmation dialog into dedicated `js/admin.js` file with a `sse-confirm-delete` form submit listener.
-- **Asset Enqueueing**: Added `sse_enqueue_admin_assets()` function hooked to `admin_enqueue_scripts` with page-slug check (`tools_page_enginescript-site-exporter`) to load CSS/JS only on the plugin's admin page. Uses `wp_localize_script()` for i18n of JavaScript confirmation string.
+- **Asset Enqueueing**: Added `sse_enqueue_admin_assets()` function hooked to `admin_enqueue_scripts` with page-slug check (`tools_page_enginescript-site-exporter`) to load CSS/JS only on the plugin's admin page.
 - **EngineScript Documentation**: Clarified that the plugin does not detect EngineScript servers; it produces an EngineScript-compatible archive format usable from any supported WordPress server.
 - **Copilot Instructions Revision**: Rewrote `.github/copilot-instructions.md` to remove irrelevant references (WooCommerce, package.json, admin.php), consolidate redundant security subsections, add plugin-specific naming conventions (`sse_`, `SSE_`), and fix version file list.
 
