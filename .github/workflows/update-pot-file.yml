@@ -1,14 +1,6 @@
 name: Update Translation File
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - '*.php'
-      - '**/*.php'
-      - '*.js'
-      - '**/*.js'
-      - '.github/workflows/update-pot-file.yml'
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +10,6 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 env:
   PLUGIN_SLUG: enginescript-site-exporter
