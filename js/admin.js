@@ -8,7 +8,7 @@
  */
 
 ( () => {
-	const handleDeleteSubmit = ( event ) => {
+	function handleDeleteSubmit( event ) {
 		const confirmMessage = event.currentTarget?.dataset?.sseConfirmMessage;
 
 		if ( ! confirmMessage ) {
@@ -19,7 +19,7 @@
 		if ( ! globalThis.confirm( confirmMessage ) ) {
 			event.preventDefault();
 		}
-	};
+	}
 
 	document.querySelectorAll( '.sse-confirm-delete' ).forEach( ( form ) => {
 		form.addEventListener( 'submit', handleDeleteSubmit );
