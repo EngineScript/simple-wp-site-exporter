@@ -14,6 +14,9 @@ permissions:
 jobs:
   check-and-release:
     runs-on: ubuntu-latest
+    env:
+      PLUGIN_FILE: enginescript-site-exporter.php
+      PLUGIN_SLUG: enginescript-site-exporter
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -23,7 +26,7 @@ jobs:
       - name: Get latest version
         id: get_version
         run: |
-          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" enginescript-site-exporter.php)
+          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" "$PLUGIN_FILE")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
 
@@ -47,7 +50,6 @@ jobs:
         run: |
           README_FILE="README.md"
           TMP_FILE=$(mktemp)
-          PLUGIN_SLUG="enginescript-site-exporter"
 
           # Update the version badge with the new version and logo
           sed -E "s#\[!\[Version\]\(https://img\.shields\.io/badge/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https://github\.com/[^/]+/${PLUGIN_SLUG}/releases/(latest/download|download/v[0-9]+\.[0-9]+\.[0-9]+)/${PLUGIN_SLUG}-[0-9]+\.[0-9]+\.[0-9]+\.zip\)#[![Version](https://img.shields.io/badge/Version-${VERSION}-orange.svg?logo=github)](https://github.com/${{ github.repository }}/releases/latest/download/${PLUGIN_SLUG}-${VERSION}.zip)#g" "$README_FILE" > "$TMP_FILE"
@@ -77,16 +79,16 @@ jobs:
       - name: Create zip file
         if: steps.check_release.outputs.exists == 'false'
         run: |
-          rm -rf enginescript-site-exporter
-          mkdir -p enginescript-site-exporter
-          cp enginescript-site-exporter.php enginescript-site-exporter/
-          cp -r includes enginescript-site-exporter/
-          cp -r css enginescript-site-exporter/
-          cp -r js enginescript-site-exporter/
-          cp -r languages enginescript-site-exporter/
-          cp readme.txt enginescript-site-exporter/
-          cp LICENSE enginescript-site-exporter/ || echo "No LICENSE file found"
-          zip -r enginescript-site-exporter-${{ steps.get_version.outputs.version }}.zip enginescript-site-exporter
+          rm -rf "$PLUGIN_SLUG"
+          mkdir -p "$PLUGIN_SLUG"
+          cp "$PLUGIN_FILE" "$PLUGIN_SLUG/"
+          cp -r includes "$PLUGIN_SLUG/"
+          cp -r css "$PLUGIN_SLUG/"
+          cp -r js "$PLUGIN_SLUG/"
+          cp -r languages "$PLUGIN_SLUG/"
+          cp readme.txt "$PLUGIN_SLUG/"
+          cp LICENSE "$PLUGIN_SLUG/" || echo "No LICENSE file found"
+          zip -r "${PLUGIN_SLUG}-${{ steps.get_version.outputs.version }}.zip" "$PLUGIN_SLUG"
 
       - name: Get changelog entry
         if: steps.check_release.outputs.exists == 'false'
@@ -112,7 +114,7 @@ jobs:
             3. Activate the plugin
             
             [Full Documentation](https://github.com/${{ github.repository }})
-          files: enginescript-site-exporter-${{ steps.get_version.outputs.version }}.zip
+          files: ${{ env.PLUGIN_SLUG }}-${{ steps.get_version.outputs.version }}.zip
           draft: false
           prerelease: false
           generate_release_notes: false
