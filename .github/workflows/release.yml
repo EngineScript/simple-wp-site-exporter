@@ -47,9 +47,10 @@ jobs:
         run: |
           README_FILE="README.md"
           TMP_FILE=$(mktemp)
+          PLUGIN_SLUG="enginescript-site-exporter"
 
           # Update the version badge with the new version and logo
-          sed -E 's#\[!\[Version\]\(https://img\.shields\.io/badge/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https://github\.com/EngineScript/enginescript-site-optimizer/releases/download/v[0-9]+\.[0-9]+\.[0-9]+/enginescript-site-optimizer-[0-9]+\.[0-9]+\.[0-9]+\.zip\)#[![Version](https://img.shields.io/badge/Version-'"$VERSION"'-orange.svg?logo=github)](https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v'"$VERSION"'/enginescript-site-optimizer-'"$VERSION"'.zip)#g' "$README_FILE" > "$TMP_FILE"
+          sed -E "s#\[!\[Version\]\(https://img\.shields\.io/badge/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https://github\.com/[^/]+/${PLUGIN_SLUG}/releases/(latest/download|download/v[0-9]+\.[0-9]+\.[0-9]+)/${PLUGIN_SLUG}-[0-9]+\.[0-9]+\.[0-9]+\.zip\)#[![Version](https://img.shields.io/badge/Version-${VERSION}-orange.svg?logo=github)](https://github.com/${{ github.repository }}/releases/latest/download/${PLUGIN_SLUG}-${VERSION}.zip)#g" "$README_FILE" > "$TMP_FILE"
 
           # Replace file if changes were made
           if ! cmp -s "$README_FILE" "$TMP_FILE"; then
