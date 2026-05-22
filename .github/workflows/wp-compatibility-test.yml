@@ -452,52 +452,77 @@ jobs:
       - name: WordPress Security Scan
         run: |
           echo "Performing WordPress plugin security analysis..."
-          
+
           # Basic security pattern checks for common WordPress vulnerabilities
-          echo "🔍 Checking for common security issues..."
-          
+          echo "Checking for common security issues..."
+          security_findings=0
+
+          grep_php() {
+            grep -r "$1" \
+              --include="*.php" \
+              --exclude-dir=.github \
+              --exclude-dir=.vscode \
+              --exclude-dir=build \
+              --exclude-dir=coverage \
+              --exclude-dir=plugin-check-build \
+              --exclude-dir=stubs \
+              --exclude-dir=tests \
+              --exclude-dir=vendor \
+              . 2>/dev/null
+          }
+
           # Check for potential SQL injection patterns
-          if grep -r "mysql_query\|mysqli_query" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
-            echo "⚠️ Warning: Direct database queries found - ensure proper sanitization"
+          if grep_php "mysql_query\|mysqli_query"; then
+            echo "::error::Direct database queries found. Ensure proper sanitization."
+            security_findings=1
           fi
-          
+
           # Check for potential XSS vulnerabilities (missing escaping)
-          if grep -r "echo \$_\|print \$_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
-            echo "⚠️ Warning: Potential XSS vulnerability - ensure output is escaped"
+          if grep_php "echo \$_\|print \$_"; then
+            echo "::error::Potential XSS vulnerability found. Ensure output is escaped."
+            security_findings=1
           fi
-          
+
           # Check for file inclusion vulnerabilities
-          if grep -r "include.*\$_\|require.*\$_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
-            echo "⚠️ Warning: Potential file inclusion vulnerability found"
+          if grep_php "include.*\$_\|require.*\$_"; then
+            echo "::error::Potential file inclusion vulnerability found."
+            security_findings=1
           fi
-          
+
           # Check for eval() usage (security risk)
-          if grep -r "eval(" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . 2>/dev/null; then
-            echo "⚠️ Warning: eval() function usage detected - security risk"
+          if grep_php "eval("; then
+            echo "::error::eval() function usage detected. This is a security risk."
+            security_findings=1
           fi
-          
+
           # Check for proper nonce usage
-          if grep -r "wp_nonce_field\|wp_verify_nonce" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
-            echo "✅ WordPress nonce usage detected - good security practice"
+          if grep_php "wp_nonce_field\|wp_verify_nonce\|settings_fields" >/dev/null 2>&1; then
+            echo "WordPress nonce usage detected."
           else
-            echo "ℹ️ Info: Consider adding WordPress nonces for form security"
+            echo "Info: Consider adding WordPress nonces for form security."
           fi
-          
+
           # Check for proper sanitization functions
-          if grep -r "sanitize_\|esc_" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
-            echo "✅ WordPress sanitization functions detected - good security practice"
+          if grep_php "sanitize_\|esc_" >/dev/null 2>&1; then
+            echo "WordPress sanitization functions detected."
           else
-            echo "⚠️ Warning: Limited use of WordPress sanitization functions"
+            echo "::error::Limited use of WordPress sanitization functions."
+            security_findings=1
           fi
-          
+
           # Check for capability checks
-          if grep -r "current_user_can\|user_can" --include="*.php" --exclude-dir=.github --exclude-dir=.vscode . >/dev/null 2>&1; then
-            echo "✅ WordPress capability checks detected - good security practice"
+          if grep_php "current_user_can\|user_can" >/dev/null 2>&1; then
+            echo "WordPress capability checks detected."
           else
-            echo "ℹ️ Info: Consider adding user capability checks where appropriate"
+            echo "Info: Consider adding user capability checks where appropriate."
           fi
-          
-          echo "🛡️ WordPress security scan completed"
+
+          if [ "$security_findings" -ne 0 ]; then
+            echo "::error::WordPress security scan found blocking findings."
+            exit 1
+          fi
+
+          echo "WordPress security scan completed."
 
       - name: Create issue on security vulnerability
         if: ${{ failure() }}
