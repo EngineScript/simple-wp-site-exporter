@@ -1,5 +1,8 @@
 # Test and build artifacts
 /vendor/
+/coverage/
+/build/
+/plugin-check-build/
 
 # Local private files
 /.private/
@@ -11,3 +14,7 @@
 /.phpcs-cache
 /.phpstan.cache/
 /.psalm/cache/
+
+# Python tooling caches
+__pycache__/
+*.py[cod]

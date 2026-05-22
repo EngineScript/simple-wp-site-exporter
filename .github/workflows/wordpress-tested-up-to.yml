@@ -1,0 +1,35 @@
+# This workflow checks that WordPress "Tested up to" metadata stays current.
+# It scans tracked PHP, Markdown, and text files without assuming repository-specific
+# metadata filenames, then compares each value to the latest WordPress major.minor release.
+
+name: WordPress Tested Up To
+
+on:
+  schedule:
+    - cron: '23 12 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tested-up-to:
+    name: Verify Tested Up To Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download WordPress version data
+        run: |
+          curl --fail --silent --show-error --location \
+            --proto '=https' --tlsv1.2 \
+            https://api.wordpress.org/core/version-check/1.7/ \
+            --output wordpress-version-check.json
+
+      - name: Check WordPress Tested Up To metadata
+        run: python3 .github/scripts/check-wordpress-tested-up-to.py

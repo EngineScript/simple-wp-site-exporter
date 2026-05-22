@@ -5,6 +5,7 @@
         "plaintext": true,
         "markdown": true,
         "scminput": true,
-        "shellscript": true
+        "shellscript": true,
+        "javascript": true
     }
 }
