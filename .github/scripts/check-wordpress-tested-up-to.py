@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -32,6 +33,7 @@ VERSION_PATTERN = re.compile(r"^[0-9]+(?:\.[0-9]+){1,2}$")
 
 
 def main() -> int:
+    args = parse_args()
     latest_version = get_latest_wordpress_major_minor()
     excluded_dirs = get_excluded_dirs()
     findings = find_tested_up_to_entries(excluded_dirs)
@@ -42,39 +44,52 @@ def main() -> int:
         write_summary(latest_version, [], [message])
         return 1
 
-    failures = []
-    for finding in findings:
-        if finding["version"] is None:
-            failures.append(
-                f"{finding['path']}:{finding['line']}: Could not parse Tested up to version."
-            )
-            print_github_error(
-                "Could not parse Tested up to version.",
-                finding["path"],
-                finding["line"],
-            )
-            continue
+    failures = get_failures(latest_version, findings)
+    updated_paths = []
 
-        tested_version = normalize_major_minor(finding["version"])
-        if tested_version != latest_version:
-            message = (
-                f"Tested up to is {finding['version']}; expected {latest_version} "
-                "for the latest WordPress release."
-            )
-            failures.append(f"{finding['path']}:{finding['line']}: {message}")
-            print_github_error(message, finding["path"], finding["line"])
+    if args.fix and failures:
+        updated_paths = update_tested_up_to_entries(findings, latest_version)
+        findings = find_tested_up_to_entries(excluded_dirs)
+        failures = get_failures(latest_version, findings)
 
-    write_summary(latest_version, findings, failures)
+    if failures:
+        for failure in failures:
+            print_github_error(failure["message"], failure["path"], failure["line"])
+
+    write_summary(latest_version, findings, failures, updated_paths)
 
     if failures:
         entry_label = "entry" if len(failures) == 1 else "entries"
         print(f"Found {len(failures)} stale or invalid Tested up to {entry_label}.")
         for failure in failures:
-            print(f"- {failure}")
+            print(f"- {format_failure(failure)}")
         return 1
+
+    if updated_paths:
+        path_label = "file" if len(updated_paths) == 1 else "files"
+        print(
+            f"Updated Tested up to metadata to WordPress {latest_version} "
+            f"in {len(updated_paths)} {path_label}."
+        )
+        for path in updated_paths:
+            print(f"- {path}")
+        return 0
 
     print(f"All Tested up to entries match WordPress {latest_version}.")
     return 0
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description='Check WordPress "Tested up to" metadata against the latest release.'
+    )
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Update stale or invalid Tested up to entries to the latest WordPress release.",
+    )
+
+    return parser.parse_args()
 
 
 def get_latest_wordpress_major_minor() -> str:
@@ -175,10 +190,100 @@ def should_scan(path: Path, excluded_dirs: set[str]) -> bool:
     return not any(part in excluded_dirs for part in path.parts)
 
 
+def get_failures(
+    latest_version: str,
+    findings: list[dict[str, str | int | None]],
+) -> list[dict[str, str | int]]:
+    failures = []
+
+    for finding in findings:
+        if finding["version"] is None:
+            failures.append(
+                {
+                    "path": str(finding["path"]),
+                    "line": int(finding["line"]),
+                    "message": "Could not parse Tested up to version.",
+                }
+            )
+            continue
+
+        tested_version = normalize_major_minor(str(finding["version"]))
+        if tested_version != latest_version:
+            failures.append(
+                {
+                    "path": str(finding["path"]),
+                    "line": int(finding["line"]),
+                    "message": (
+                        f"Tested up to is {finding['version']}; expected "
+                        f"{latest_version} for the latest WordPress release."
+                    ),
+                }
+            )
+
+    return failures
+
+
+def update_tested_up_to_entries(
+    findings: list[dict[str, str | int | None]],
+    latest_version: str,
+) -> list[str]:
+    paths_to_update = {
+        str(finding["path"])
+        for finding in findings
+        if finding["version"] is None
+        or normalize_major_minor(str(finding["version"])) != latest_version
+    }
+
+    for path_string in paths_to_update:
+        path_findings = [
+            finding for finding in findings if str(finding["path"]) == path_string
+        ]
+        path = Path(path_string)
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines(
+            keepends=True
+        )
+
+        for finding in path_findings:
+            line_index = int(finding["line"]) - 1
+            lines[line_index] = replace_tested_up_to_line(
+                lines[line_index], latest_version
+            )
+
+        path.write_text("".join(lines), encoding="utf-8")
+
+    return sorted(paths_to_update)
+
+
+def replace_tested_up_to_line(line: str, latest_version: str) -> str:
+    match = TESTED_UP_TO_PATTERN.search(line)
+    if match:
+        return f"{line[:match.start(1)]}{latest_version}{line[match.end(1):]}"
+
+    label_match = TESTED_UP_TO_LABEL_PATTERN.search(line)
+    if not label_match:
+        return line
+
+    line_ending = ""
+    content = line
+    if line.endswith("\r\n"):
+        content = line[:-2]
+        line_ending = "\r\n"
+    elif line.endswith("\n"):
+        content = line[:-1]
+        line_ending = "\n"
+
+    return f"{content[:label_match.end()]} {latest_version}{line_ending}"
+
+
+def format_failure(failure: dict[str, str | int]) -> str:
+    return f"{failure['path']}:{failure['line']}: {failure['message']}"
+
+
 def write_summary(
     latest_version: str,
     findings: list[dict[str, str | int | None]],
-    failures: list[str],
+    failures: list[dict[str, str | int] | str],
+    updated_paths: list[str] | None = None,
 ) -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not summary_path:
@@ -194,7 +299,14 @@ def write_summary(
 
     if failures:
         lines.append("## Failures")
-        lines.extend(f"- {failure}" for failure in failures)
+        lines.extend(
+            f"- {format_failure(failure) if isinstance(failure, dict) else failure}"
+            for failure in failures
+        )
+    elif updated_paths:
+        lines.append("## Updates")
+        lines.append(f"Updated Tested up to metadata in `{len(updated_paths)}` file(s).")
+        lines.extend(f"- `{path}`" for path in updated_paths)
     else:
         lines.append("All Tested up to entries are current.")
 

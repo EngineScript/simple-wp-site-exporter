@@ -1,12 +1,21 @@
 # This workflow automatically posts a guidance comment on new pull requests.
-# It encourages contributors to include sanitized output from `es.debug` if relevant,
-# helping maintainers review and test changes more efficiently.
+# It welcomes contributors and provides a brief message to acknowledge their
+# contribution to EngineScript Site Exporter.
+# The workflow is triggered whenever a new pull request is opened.
 
 name: New Pull Request Guidance
 
 on:
+  # pull_request_target is used only so the workflow can post this static
+  # guidance comment on forked PRs. Do not add checkout, build, or script steps
+  # here because this event has access to repository-scoped credentials.
   pull_request_target:
     types: [opened]
+
+permissions: read-all
+
+env:
+  PLUGIN_SLUG: enginescript-site-exporter
 
 jobs:
   guide:
@@ -20,18 +29,18 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Thanks for contributing to EngineScript Site Exporter! 🎉
+            Thanks for contributing to EngineScript Site Exporter!
 
             **Before we review:**
             - [ ] Have you tested your changes with WordPress 6.8+?
             - [ ] Are your changes compatible with PHP 8.2+?
             - [ ] Have you followed WordPress coding standards?
             - [ ] Did you update the CHANGELOG.md if needed?
-            
-            **Security Reminder:**
-            This plugin handles sensitive site databases, so please ensure:
-            - All user inputs are properly sanitized
-            - All outputs are properly escaped
+
+            **Security Reminder**
+            This plugin creates site export archives, so please ensure:
+            - All user input is properly sanitized
+            - All output is properly escaped
             - No security vulnerabilities are introduced
-            
-            We'll review your PR soon! 🚀
+
+            We'll review your PR soon.

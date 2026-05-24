@@ -2,21 +2,20 @@ name: Create Release
 
 on:
   push:
-    # Trigger on pushes to main or master branch
+    # Trigger on pushes to the main or master branch.
     branches: [ main, master ]
-  # Allow manual triggering
+  # Allow manual triggering.
   workflow_dispatch:
 
 permissions:
   contents: write
-  discussions: write
+
+env:
+  PLUGIN_SLUG: enginescript-site-exporter
 
 jobs:
   check-and-release:
     runs-on: ubuntu-latest
-    env:
-      PLUGIN_FILE: enginescript-site-exporter.php
-      PLUGIN_SLUG: enginescript-site-exporter
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -26,8 +25,9 @@ jobs:
       - name: Get latest version
         id: get_version
         run: |
+          PLUGIN_FILE="${PLUGIN_SLUG}.php"
           VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" "$PLUGIN_FILE")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Found version: $VERSION"
 
       - name: Check if release exists
@@ -35,10 +35,10 @@ jobs:
         run: |
           RELEASE_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }})
           if [[ "$RELEASE_EXISTS" == "200" ]]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Release v${{ steps.get_version.outputs.version }} already exists"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Release v${{ steps.get_version.outputs.version }} does not exist yet"
           fi
 
@@ -79,25 +79,31 @@ jobs:
       - name: Create zip file
         if: steps.check_release.outputs.exists == 'false'
         run: |
+          PLUGIN_FILE="${PLUGIN_SLUG}.php"
           rm -rf "$PLUGIN_SLUG"
           mkdir -p "$PLUGIN_SLUG"
           cp "$PLUGIN_FILE" "$PLUGIN_SLUG/"
           cp -r includes "$PLUGIN_SLUG/"
-          cp -r css "$PLUGIN_SLUG/"
-          cp -r js "$PLUGIN_SLUG/"
-          cp -r languages "$PLUGIN_SLUG/"
+          if [ -d assets ]; then
+            cp -r assets "$PLUGIN_SLUG/"
+          fi
           cp readme.txt "$PLUGIN_SLUG/"
+          cp README.md "$PLUGIN_SLUG/"
+          cp CHANGELOG.md "$PLUGIN_SLUG/"
           cp LICENSE "$PLUGIN_SLUG/" || echo "No LICENSE file found"
+          if [ -d languages ]; then
+            cp -r languages "$PLUGIN_SLUG/"
+          fi
           zip -r "${PLUGIN_SLUG}-${{ steps.get_version.outputs.version }}.zip" "$PLUGIN_SLUG"
 
       - name: Get changelog entry
         if: steps.check_release.outputs.exists == 'false'
         id: get_changelog
         run: |
-          CHANGELOG_ENTRY=$(awk -v ver="## ${{ steps.get_version.outputs.version }}" 'BEGIN{flag=0} $0~ver{flag=1; print; next} /^## [0-9]+\.[0-9]+\.[0-9]+/{flag=0} flag{print}' CHANGELOG.md | tail -n +2)
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG_ENTRY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          CHANGELOG_ENTRY=$(awk -v ver="${{ steps.get_version.outputs.version }}" 'BEGIN{flag=0; target="^## \\[?" ver "\\]?([[:space:]-]|$)"} $0 ~ target {flag=1; print; next} /^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?([[:space:]-]|$)/ {flag=0} flag {print}' CHANGELOG.md | tail -n +2)
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG_ENTRY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'
@@ -107,12 +113,12 @@ jobs:
           name: Release v${{ steps.get_version.outputs.version }}
           body: |
             ${{ steps.get_changelog.outputs.changelog }}
-            
+
             ## Installation
             1. Download the zip file
             2. Upload to your WordPress site through the Plugins > Add New > Upload menu
             3. Activate the plugin
-            
+
             [Full Documentation](https://github.com/${{ github.repository }})
           files: ${{ env.PLUGIN_SLUG }}-${{ steps.get_version.outputs.version }}.zip
           draft: false

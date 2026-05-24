@@ -15,6 +15,9 @@ permissions:
   pull-requests: write
   issues: write
 
+env:
+  PLUGIN_SLUG: enginescript-site-exporter
+
 jobs:
   triage:
     runs-on: ubuntu-latest

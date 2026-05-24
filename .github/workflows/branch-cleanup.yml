@@ -1,6 +1,6 @@
 # This workflow automatically deletes the branch associated with a pull request
 # after it has been merged, unless the branch is protected (e.g., main, dev, staging).
-# It helps keep the repository clean by removing merged feature or bugfix branches.
+# It helps keep the repository clean by removing merged feature or bug-fix branches.
 
 name: Branch Cleanup
 
@@ -12,16 +12,19 @@ permissions:
   contents: write
   pull-requests: read
 
+env:
+  PLUGIN_SLUG: enginescript-site-exporter
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Delete merged branch
         if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository
         env:
@@ -30,14 +33,14 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           echo "Checking branch: $BRANCH_NAME"
-          
-          # Protected branch check - using quotes to prevent injection
+
+          # Check protected branches. Quotes prevent injection.
           if [[ "$BRANCH_NAME" =~ ^(main|master|dev|develop|staging|production)$ ]]; then
             echo "::warning::Skipping deletion of protected branch: $BRANCH_NAME"
             exit 0
           fi
-          
-          # Attempt branch deletion - using quotes to prevent injection
+
+          # Attempt branch deletion. Quotes prevent injection.
           echo "Attempting to delete branch: $BRANCH_NAME"
           if git push origin --delete "$BRANCH_NAME" 2>/dev/null; then
             echo "::notice::Successfully deleted branch: $BRANCH_NAME"
