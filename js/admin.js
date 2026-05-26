@@ -12,6 +12,9 @@
 		const confirmMessage = event.currentTarget?.dataset?.sseConfirmMessage;
 
 		if ( ! confirmMessage ) {
+			console.warn(
+				'Site Exporter delete confirmation form is missing data-sse-confirm-message.'
+			);
 			event.preventDefault();
 			return;
 		}
