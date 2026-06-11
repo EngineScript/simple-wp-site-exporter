@@ -8,5 +8,6 @@
         "shellscript": true,
         "javascript": true,
         "github-actions-workflow": true
-    }
+    },
+    "git.autofetch": true
 }

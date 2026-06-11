@@ -1,20 +1,49 @@
-# Test and build artifacts
-/vendor/
-/coverage/
-/build/
-/plugin-check-build/
-
 # Local private files
-/.private/
+AGENTS.md
+.private/
+.vscode/
 
-# PHP tooling caches
-/.phpunit.cache/
-/.phpunit.result.cache
-/.php-cs-fixer.cache
-/.phpcs-cache
-/.phpstan.cache/
-/.psalm/cache/
+# JetBrains IDE project files
+.idea/
 
-# Python tooling caches
-__pycache__/
+# OS/editor noise
+*.swo
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Tool caches
 *.py[cod]
+.cache/
+.cspellcache
+.eslintcache
+.php-cs-fixer.cache
+.phpcs-cache
+.phpstan.cache
+.phpunit.cache
+.phpunit.result.cache
+.psalm/cache
+.stylelintcache
+__pycache__/
+
+# Logs and temporary files
+*.backup
+*.bak
+*.log
+*.log.*
+*.old
+*.orig
+*.temp
+*.tmp
+logs/
+temp/
+tmp/
+
+# Dependencies, tests, and build artifacts
+build/
+coverage/
+dist/
+node_modules/
+plugin-check-build/
+vendor/
