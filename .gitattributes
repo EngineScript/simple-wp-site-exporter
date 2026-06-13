@@ -3,7 +3,6 @@
 
 # Exclude source-only and development tooling from git archive/export packages.
 /.github/** export-ignore
-/.vscode/** export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
 /composer.json export-ignore

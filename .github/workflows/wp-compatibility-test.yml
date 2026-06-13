@@ -92,7 +92,7 @@ jobs:
         uses: WordPress/plugin-check-action@v1.1.6
         with:
           # Production-style plugin directory. Excludes repo-only files such as
-          # .github, .vscode, GEMINI.md, and other development artifacts.
+          # .github, GEMINI.md, and other development artifacts.
           build-dir: './plugin-check-build/enginescript-site-exporter'
           
           # Configure which categories to check
@@ -234,7 +234,6 @@ jobs:
               <exclude-pattern>*/languages/*</exclude-pattern>
               <exclude-pattern>*/.git/*</exclude-pattern>
               <exclude-pattern>*/.github/*</exclude-pattern>
-              <exclude-pattern>*/.vscode/*</exclude-pattern>
               <exclude-pattern>*.js</exclude-pattern>
               <exclude-pattern>*.css</exclude-pattern>
 
@@ -461,7 +460,6 @@ jobs:
             grep -r "$1" \
               --include="*.php" \
               --exclude-dir=.github \
-              --exclude-dir=.vscode \
               --exclude-dir=build \
               --exclude-dir=coverage \
               --exclude-dir=plugin-check-build \

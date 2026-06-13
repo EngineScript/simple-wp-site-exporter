@@ -9,7 +9,6 @@ parameters:
 
     excludePaths:
         - .github
-        - .vscode
     
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
