@@ -6,14 +6,17 @@
 
 - **Multisite Export Authorization**: Full-site export access now uses a shared permission helper. On multisite, exporter page access, export creation, secure download, and manual delete require a super admin or `manage_network_options`; single-site installs continue to require `manage_options`.
 - **Per-Export Private Storage**: Each export is now staged in a random private child directory under the configured private temp export base. The exporter rejects symlinked or unsafe pre-existing directories and enforces `0700` directory permissions.
-- **Private File Modes**: Sensitive export artifacts now use a private umask during export and explicit `0600` chmod verification after database dumps, compressed database payloads, file archives, manifests, final ZIPs, and protection files are created.
+- **Private File Modes**: Sensitive export artifacts now use a private umask during export and WordPress Filesystem-backed `0600` chmod verification after database dumps, compressed database payloads, file archives, manifests, final ZIPs, and protection files are created.
 - **WP-CLI Trust Boundary**: WP-CLI discovery now prefers trusted system paths (`/usr/local/bin/wp`, `/usr/bin/wp`). Alternate executables must be explicitly configured with `SSE_WP_CLI_PATH` or the `sse_wp_cli_path` filter and must pass ownership and writable-mode checks.
 - **Export Action Binding**: Generated download and delete actions include the private export directory identifier in their request data and nonce action so requests are tied to the generated export location.
 
 ### Architecture
 
-- **Private Export Cleanup**: Bulk cleanup now scans generated private export directories, scheduled/manual deletion can clean up empty private export directories, and failed exports remove their private staging directory.
-- **Private Storage Helpers**: Added shared helpers for multisite-aware capability checks, private export directory naming, generated directory validation, and private filesystem mode enforcement.
+- **Private Export Cleanup**: Bulk cleanup now scans generated private export directories with the WordPress Filesystem API, scheduled/manual deletion can clean up empty private export directories, and failed exports remove their private staging directory through the WordPress Filesystem API for VIP compatibility.
+- **WordPress API Coverage**: Replaced direct file metadata checks, generated artifact verification, export cleanup directory scans, and filename basename extraction with WordPress Filesystem API methods and native WordPress helpers where available.
+- **Private Storage Helpers**: Added shared helpers for multisite-aware capability checks, private export directory naming, generated directory validation, generated file verification, and private filesystem mode enforcement.
+- **VIPCS Tooling**: Added VIP Coding Standards as a Composer-managed dev dependency so the project PHPCS script can run the VIP ruleset reproducibly.
+- **Semver Test Prep**: Added a Composer-managed semantic versioning library for future version-related tests.
 
 ### Documentation
 

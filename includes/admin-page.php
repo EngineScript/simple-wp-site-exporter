@@ -123,7 +123,7 @@ function sse_render_exporter_notices(): void {
  * @return void
  */
 function sse_render_export_success_notice( array $zip_result ): void {
-	$export_dir_name       = basename( dirname( $zip_result['filepath'] ) );
+	$export_dir_name       = wp_basename( dirname( $zip_result['filepath'] ) );
 	$has_private_dir_param = sse_is_export_private_directory_name( $export_dir_name );
 	$download_args         = [
 		'action' => 'sse_secure_download',

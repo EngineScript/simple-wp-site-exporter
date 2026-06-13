@@ -87,7 +87,14 @@ function sse_bulk_cleanup_exports_handler(): void {
 		return;
 	}
 
-	if ( ! is_dir( $export_dir ) ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		sse_log( 'Could not initialize filesystem for cleanup: ' . $filesystem_init->get_error_message(), 'error' );
+		return;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->is_dir( $export_dir ) ) {
 		sse_log( 'Export directory does not exist, nothing to clean up', 'info' );
 		return;
 	}
@@ -119,16 +126,22 @@ function sse_bulk_cleanup_exports_handler(): void {
  * @return string[] Export ZIP file paths.
  */
 function sse_get_export_files_for_bulk_cleanup( string $export_dir ): array {
-	try {
-		$dir_iterator = new DirectoryIterator( $export_dir );
-	} catch ( RuntimeException $e ) {
-		sse_log( 'Failed to read export directory: ' . $e->getMessage(), 'error' );
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		sse_log( 'Failed to initialize filesystem for export cleanup: ' . $filesystem_init->get_error_message(), 'error' );
+		return [];
+	}
+
+	global $wp_filesystem;
+	$dir_entries = $wp_filesystem->dirlist( $export_dir, true, false );
+	if ( ! is_array( $dir_entries ) ) {
+		sse_log( 'Failed to read export directory for cleanup.', 'error' );
 		return [];
 	}
 
 	$files = [];
-	foreach ( $dir_iterator as $entry ) {
-		$files = array_merge( $files, sse_get_export_files_from_directory_entry( $entry ) );
+	foreach ( $dir_entries as $entry_name => $entry ) {
+		$files = array_merge( $files, sse_get_export_files_from_directory_entry( (string) $entry_name, $entry, $export_dir ) );
 	}
 
 	return $files;
@@ -138,23 +151,29 @@ function sse_get_export_files_for_bulk_cleanup( string $export_dir ): array {
  * Gets export ZIP paths represented by one export base directory entry.
  *
  * @since 2.1.1
- * @param DirectoryIterator $entry Directory entry.
+ * @param string              $entry_name Directory entry name.
+ * @param array<string,mixed> $entry      Directory entry data from WP_Filesystem::dirlist().
+ * @param string              $export_dir Export base directory.
  * @return string[] Export ZIP file paths.
  */
-function sse_get_export_files_from_directory_entry( DirectoryIterator $entry ): array {
-	if ( $entry->isDot() || $entry->isLink() ) {
+function sse_get_export_files_from_directory_entry( string $entry_name, array $entry, string $export_dir ): array {
+	$filename = isset( $entry['name'] ) && is_string( $entry['name'] ) ? $entry['name'] : $entry_name;
+	$type     = isset( $entry['type'] ) && is_string( $entry['type'] ) ? $entry['type'] : '';
+
+	if ( '.' === $filename || '..' === $filename || 'l' === $type ) {
 		return [];
 	}
 
-	if ( sse_is_export_zip_entry( $entry ) ) {
-		return [ $entry->getPathname() ];
+	$entry_path = trailingslashit( $export_dir ) . $filename;
+	if ( sse_is_export_zip_entry( $filename, $type ) ) {
+		return [ $entry_path ];
 	}
 
-	if ( ! $entry->isDir() || ! sse_is_export_private_directory_name( $entry->getFilename() ) ) {
+	if ( 'd' !== $type || ! sse_is_export_private_directory_name( $filename ) ) {
 		return [];
 	}
 
-	return sse_get_export_files_from_private_directory( $entry->getPathname() );
+	return sse_get_export_files_from_private_directory( $entry_path );
 }
 
 /**
@@ -165,17 +184,29 @@ function sse_get_export_files_from_directory_entry( DirectoryIterator $entry ): 
  * @return string[] Export ZIP file paths.
  */
 function sse_get_export_files_from_private_directory( string $directory ): array {
-	try {
-		$private_dir_iterator = new DirectoryIterator( $directory );
-	} catch ( RuntimeException $e ) {
-		sse_log( 'Failed to read private export directory: ' . $e->getMessage(), 'error' );
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		sse_log( 'Failed to initialize filesystem for private export cleanup: ' . $filesystem_init->get_error_message(), 'error' );
+		return [];
+	}
+
+	global $wp_filesystem;
+	$private_entries = $wp_filesystem->dirlist( $directory, true, false );
+	if ( ! is_array( $private_entries ) ) {
+		sse_log( 'Failed to read private export directory for cleanup.', 'error' );
 		return [];
 	}
 
 	$files = [];
-	foreach ( $private_dir_iterator as $private_entry ) {
-		if ( sse_is_export_zip_entry( $private_entry ) ) {
-			$files[] = $private_entry->getPathname();
+	foreach ( $private_entries as $entry_name => $entry ) {
+		if ( ! is_array( $entry ) ) {
+			continue;
+		}
+
+		$filename = isset( $entry['name'] ) && is_string( $entry['name'] ) ? $entry['name'] : (string) $entry_name;
+		$type     = isset( $entry['type'] ) && is_string( $entry['type'] ) ? $entry['type'] : '';
+		if ( sse_is_export_zip_entry( $filename, $type ) ) {
+			$files[] = trailingslashit( $directory ) . $filename;
 		}
 	}
 
@@ -186,11 +217,12 @@ function sse_get_export_files_from_private_directory( string $directory ): array
  * Checks whether a directory entry is an export ZIP file.
  *
  * @since 2.1.1
- * @param DirectoryIterator $entry Directory entry.
+ * @param string $filename Directory entry filename.
+ * @param string $type     Directory entry type.
  * @return bool True when the entry is a ZIP file.
  */
-function sse_is_export_zip_entry( DirectoryIterator $entry ): bool {
-	return ! $entry->isDot() && ! $entry->isLink() && $entry->isFile() && '.zip' === substr( $entry->getFilename(), -4 );
+function sse_is_export_zip_entry( string $filename, string $type ): bool {
+	return 'f' === $type && '.zip' === substr( $filename, -4 );
 }
 
 /**
@@ -202,14 +234,20 @@ function sse_is_export_zip_entry( DirectoryIterator $entry ): bool {
  * @return bool True if the file was deleted, false otherwise.
  */
 function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ): bool {
-	$file_time = filemtime( $file_path );
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return false;
+	}
+
+	global $wp_filesystem;
+	$file_time = $wp_filesystem->mtime( $file_path );
 
 	if ( false === $file_time || $file_time >= $cutoff_time ) {
 		return false;
 	}
 
-	$filename        = basename( $file_path );
-	$export_dir_name = basename( dirname( $file_path ) );
+	$filename        = wp_basename( $file_path );
+	$export_dir_name = wp_basename( dirname( $file_path ) );
 	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
 		$export_dir_name = '';
 	}
@@ -241,7 +279,7 @@ function sse_delete_export_file_handler( string $file ): void {
 	sse_log( 'Scheduled deletion handler triggered for file: ' . $file, 'info' );
 
 	// Validate that this is actually an export file before deletion.
-	$filename = basename( $file );
+	$filename = wp_basename( $file );
 
 	$format_validation = sse_validate_filename_format( $filename );
 	if ( is_wp_error( $format_validation ) ) {
@@ -249,12 +287,19 @@ function sse_delete_export_file_handler( string $file ): void {
 		return;
 	}
 
-	if ( ! file_exists( $file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Scheduled cleanup gracefully handles already-deleted exports.
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		sse_log( 'Scheduled deletion blocked - filesystem unavailable: ' . $filesystem_init->get_error_message(), 'error' );
+		return;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->exists( $file ) ) {
 		sse_log( 'Scheduled deletion skipped - file already removed: ' . $filename, 'info' );
 		return;
 	}
 
-	$export_dir_name = basename( dirname( $file ) );
+	$export_dir_name = wp_basename( dirname( $file ) );
 	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
 		$export_dir_name = '';
 	}
@@ -266,7 +311,7 @@ function sse_delete_export_file_handler( string $file ): void {
 	}
 
 	$validated_file = $validation['filepath'];
-	if ( file_exists( $validated_file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled scheduled deletion validation
+	if ( $wp_filesystem->exists( $validated_file ) ) {
 		if ( sse_safely_delete_file( $validated_file ) ) {
 			sse_log( 'Scheduled deletion successful: ' . $validated_file, 'info' );
 			return;
@@ -315,24 +360,24 @@ function sse_safely_delete_file( string $filepath ): bool {
  * @return void
  */
 function sse_delete_empty_private_export_directory( string $directory, string $export_dir ): void {
-	if ( ! sse_is_export_private_directory_name( basename( $directory ) ) ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
 		return;
 	}
 
-	if ( ! is_dir( $directory ) || is_link( $directory ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
+	if ( ! sse_is_export_private_directory_name( wp_basename( $directory ) ) ) {
 		return;
 	}
 
-	try {
-		$dir_iterator = new DirectoryIterator( $directory );
-		foreach ( $dir_iterator as $entry ) {
-			if ( ! $entry->isDot() ) {
-				return;
-			}
-		}
-	} catch ( RuntimeException $e ) {
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->is_dir( $directory ) || is_link( $directory ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
 		return;
 	}
 
-	rmdir( $directory ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removes empty generated private export directories after file cleanup.
+	$dir_entries = $wp_filesystem->dirlist( $directory, true, false );
+	if ( ! is_array( $dir_entries ) || [] !== $dir_entries ) {
+		return;
+	}
+
+	$wp_filesystem->delete( $directory, false, 'd' );
 }

@@ -203,8 +203,16 @@ function sse_output_file_content( string $filepath, string $filename ): never {
 	// Security: Validate and resolve to realpath before any filesystem access.
 	$resolved_path = sse_validate_file_output_security( $filepath );
 
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		sse_log( 'Failed to initialize filesystem before secure file download: ' . $filename, 'error' );
+		sse_wp_die( __( 'Unable to serve file download.', 'enginescript-site-exporter' ) );
+	}
+
+	global $wp_filesystem;
+
 	// Security: Use resolved path (from realpath) for all filesystem operations to prevent SSRF/TOCTOU.
-	if ( function_exists( 'readfile' ) && is_readable( $resolved_path ) && is_file( $resolved_path ) ) {
+	if ( function_exists( 'readfile' ) && $wp_filesystem->is_readable( $resolved_path ) && $wp_filesystem->is_file( $resolved_path ) ) {
 		readfile( $resolved_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Security validated export file download.
 		sse_log( 'Secure file download served via readfile: ' . $filename, 'info' );
 		exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required to terminate script after file download.

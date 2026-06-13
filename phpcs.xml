@@ -32,6 +32,17 @@
         <exclude name="WordPress.DB.DirectDatabaseQuery"/>
     </rule>
 
+    <!-- WordPress VIP Go coding standards. -->
+    <rule ref="WordPress-VIP-Go">
+        <!-- VIPCS 3 registers JS sniffs that PHPCS 3.13 marks deprecated. -->
+        <exclude name="WordPressVIPMinimum.JS.DangerouslySetInnerHTML"/>
+        <exclude name="WordPressVIPMinimum.JS.HTMLExecutingFunctions"/>
+        <exclude name="WordPressVIPMinimum.JS.InnerHTML"/>
+        <exclude name="WordPressVIPMinimum.JS.StringConcat"/>
+        <exclude name="WordPressVIPMinimum.JS.StrippingTags"/>
+        <exclude name="WordPressVIPMinimum.JS.Window"/>
+    </rule>
+
     <!-- WordPress documentation standards -->
     <rule ref="WordPress-Docs"/>
 

@@ -78,7 +78,6 @@ if ( ! defined( 'SSE_PLUGIN_FILE' ) ) {
  * @see PharData - PHP PharData class
  * @see RecursiveIteratorIterator - PHP SPL iterator
  * @see RecursiveDirectoryIterator - PHP SPL directory iterator
- * @see DirectoryIterator - PHP SPL directory iterator for cleanup
  * @see SplFileInfo - PHP SPL file information class
  * @see RuntimeException - PHP runtime exception class
  * @see Exception - PHP base exception class

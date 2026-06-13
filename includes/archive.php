@@ -236,7 +236,7 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 	fclose( $source_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing local file handle opened above.
 	gzclose( $target_handle );
 
-	if ( ! file_exists( $target_path ) || filesize( $target_path ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists, WordPress.WP.AlternativeFunctions.file_system_operations_filesize -- Verifying generated local gzip payload.
+	if ( ! sse_filesystem_file_has_content( $target_path ) ) {
 		sse_cleanup_files( [ $target_path ] );
 		return new WP_Error( 'db_compress_verify_failed', __( 'Compressed database file was not created successfully.', 'enginescript-site-exporter' ) );
 	}
@@ -297,7 +297,7 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
 		);
 	}
 
-	if ( ! file_exists( $files_archive_path ) || filesize( $files_archive_path ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists, WordPress.WP.AlternativeFunctions.file_system_operations_filesize -- Verifying generated local tar.gz payload.
+	if ( ! sse_filesystem_file_has_content( $files_archive_path ) ) {
 		return new WP_Error( 'files_archive_verify_failed', __( 'WordPress files archive was not created successfully.', 'enginescript-site-exporter' ) );
 	}
 
@@ -364,7 +364,7 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
 			sprintf(
 				/* translators: %s: filename */
 				__( 'Could not create ZIP file at %s', 'enginescript-site-exporter' ),
-				basename( $bundle_paths['combined_zip_path'] ) // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename -- Safe usage: path is constructed from controlled export directory and sanitized filename.
+				wp_basename( $bundle_paths['combined_zip_path'] )
 			)
 		);
 	}
@@ -394,7 +394,7 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
 
 	$zip_close_status = $zip->close();
 
-	if ( ! $zip_close_status || ! file_exists( $bundle_paths['combined_zip_path'] ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Verifying generated export archive.
+	if ( ! $zip_close_status || ! sse_filesystem_file_has_content( $bundle_paths['combined_zip_path'] ) ) {
 		sse_cleanup_files( [ $bundle_paths['combined_zip_path'] ] );
 		return new WP_Error( 'zip_finalize_failed', __( 'Failed to finalize or save the ZIP archive after processing files.', 'enginescript-site-exporter' ) );
 	}

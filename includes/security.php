@@ -62,7 +62,7 @@ function sse_resolve_file_path( string $normalized_file_path, string $normalized
 	$base_real_path = wp_normalize_path( $base_real_path );
 
 	$parent_dir = dirname( $normalized_file_path );
-	$filename   = basename( $normalized_file_path );
+	$filename   = wp_basename( $normalized_file_path );
 
 	// Pre-validate parent directory path safety.
 	if ( strpos( $parent_dir, '..' ) !== false || strpos( $parent_dir, 'wp-config' ) !== false ) {
@@ -352,7 +352,7 @@ function sse_validate_export_file_path( string $filename, string $export_dir_nam
 
 	return [
 		'filepath' => $file_path,
-		'filename' => basename( $file_path ),
+		'filename' => wp_basename( $file_path ),
 	];
 }
 
@@ -365,37 +365,23 @@ function sse_validate_export_file_path( string $filename, string $export_dir_nam
  * @return string|WP_Error Export file path on success, WP_Error on ambiguity.
  */
 function sse_find_export_file_path( string $export_dir, string $filename ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return $filesystem_init;
+	}
+
+	global $wp_filesystem;
+
 	$legacy_file_path = trailingslashit( $export_dir ) . $filename;
-	if ( file_exists( $legacy_file_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Backward-compatible lookup for existing direct-base exports.
+	if ( $wp_filesystem->exists( $legacy_file_path ) ) {
 		return $legacy_file_path;
 	}
 
-	if ( ! is_dir( $export_dir ) ) {
+	if ( ! $wp_filesystem->is_dir( $export_dir ) ) {
 		return $legacy_file_path;
 	}
 
-	try {
-		$dir_iterator = new DirectoryIterator( $export_dir );
-	} catch ( RuntimeException $e ) {
-		return $legacy_file_path;
-	}
-
-	$matches = [];
-	foreach ( $dir_iterator as $entry ) {
-		if ( $entry->isDot() || $entry->isLink() || ! $entry->isDir() ) {
-			continue;
-		}
-
-		if ( ! sse_is_export_private_directory_name( $entry->getFilename() ) ) {
-			continue;
-		}
-
-		$candidate_path = trailingslashit( $entry->getPathname() ) . $filename;
-		if ( file_exists( $candidate_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled lookup within generated private export directories.
-			$matches[] = $candidate_path;
-		}
-	}
-
+	$matches = sse_find_private_export_file_matches( $export_dir, $filename );
 	if ( count( $matches ) > 1 ) {
 		return new WP_Error( 'ambiguous_export_file', __( 'Multiple matching export files were found. Please use the original download link for this export.', 'enginescript-site-exporter' ) );
 	}
@@ -405,6 +391,44 @@ function sse_find_export_file_path( string $export_dir, string $filename ) {
 	}
 
 	return $legacy_file_path;
+}
+
+/**
+ * Finds matching export files inside generated private export directories.
+ *
+ * @since 2.1.1
+ * @param string $export_dir Export base directory.
+ * @param string $filename   Export filename.
+ * @return string[] Matching export file paths.
+ */
+function sse_find_private_export_file_matches( string $export_dir, string $filename ): array {
+	global $wp_filesystem;
+
+	$dir_entries = $wp_filesystem->dirlist( $export_dir, true, false );
+	if ( ! is_array( $dir_entries ) ) {
+		return [];
+	}
+
+	$matches = [];
+	foreach ( $dir_entries as $entry_name => $entry ) {
+		if ( ! is_array( $entry ) ) {
+			continue;
+		}
+
+		$directory_name = isset( $entry['name'] ) && is_string( $entry['name'] ) ? $entry['name'] : (string) $entry_name;
+		$type           = isset( $entry['type'] ) && is_string( $entry['type'] ) ? $entry['type'] : '';
+
+		if ( 'd' !== $type || ! sse_is_export_private_directory_name( $directory_name ) ) {
+			continue;
+		}
+
+		$candidate_path = trailingslashit( trailingslashit( $export_dir ) . $directory_name ) . $filename;
+		if ( $wp_filesystem->exists( $candidate_path ) ) {
+			$matches[] = $candidate_path;
+		}
+	}
+
+	return $matches;
 }
 
 /**

@@ -65,7 +65,7 @@ function sse_output_log_message( string $formatted_message ): void {
 		return;
 	}
 
-	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Fallback for older WordPress installs; sse_log() already checks WP_DEBUG_LOG.
+	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WordPress has no universally available arbitrary debug-log wrapper; sse_log() already checks WP_DEBUG_LOG.
 }
 
 /**
@@ -271,12 +271,60 @@ function sse_generate_private_export_directory_name(): string {
  * @return bool True when group/other permissions are not set.
  */
 function sse_has_private_mode( string $path ): bool {
-	$permissions = fileperms( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fileperms -- Required to verify private filesystem modes.
+	$permissions = sse_get_filesystem_mode( $path );
 	if ( false === $permissions ) {
 		return false;
 	}
 
 	return 0 === ( $permissions & 0077 );
+}
+
+/**
+ * Gets a path mode through the WordPress Filesystem API.
+ *
+ * @since 2.1.1
+ * @param string $path Path to inspect.
+ * @return int|false Octal permissions as an integer, or false on failure.
+ */
+function sse_get_filesystem_mode( string $path ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return false;
+	}
+
+	global $wp_filesystem;
+	$chmod = $wp_filesystem->getchmod( $path );
+	if ( ! is_string( $chmod ) && ! is_int( $chmod ) ) {
+		return false;
+	}
+
+	if ( ! preg_match( '/([0-7]{3,4})$/', (string) $chmod, $matches ) ) {
+		return false;
+	}
+
+	return (int) octdec( $matches[1] );
+}
+
+/**
+ * Checks whether a file exists and has content using the WordPress Filesystem API.
+ *
+ * @since 2.1.1
+ * @param string $file_path File path to inspect.
+ * @return bool True when the file exists and is non-empty.
+ */
+function sse_filesystem_file_has_content( string $file_path ): bool {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return false;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->exists( $file_path ) || ! $wp_filesystem->is_file( $file_path ) ) {
+		return false;
+	}
+
+	$file_size = $wp_filesystem->size( $file_path );
+	return is_numeric( $file_size ) && (int) $file_size > 0;
 }
 
 /**
@@ -288,7 +336,13 @@ function sse_has_private_mode( string $path ): bool {
  * @return bool True when chmod succeeds and no group/public bits remain.
  */
 function sse_chmod_private_path( string $path, int $mode ): bool {
-	if ( ! chmod( $path, $mode ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Export secrecy requires exact private file modes.
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return false;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->chmod( $path, $mode ) ) {
 		return false;
 	}
 

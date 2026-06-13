@@ -26,7 +26,9 @@
     "php-stubs/wordpress-stubs": "^6.9",
     "szepeviktor/phpstan-wordpress": "^2.0",
     "phpstan/phpstan": "^2.1",
-    "phpcompatibility/phpcompatibility-wp": "^2.1"
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "automattic/vipwpcs": "^3.0.1",
+    "z4kn4fein/php-semver": "^3.0"
   },
   "scripts": {
     "phpcs": "phpcs --standard=phpcs.xml",

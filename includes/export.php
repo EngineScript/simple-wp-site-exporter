@@ -157,7 +157,7 @@ function sse_setup_export_directories() {
 
 	return [
 		'export_dir'      => $export_dir,
-		'export_dir_name' => basename( $export_dir ),
+		'export_dir_name' => wp_basename( $export_dir ),
 	];
 }
 
@@ -169,13 +169,20 @@ function sse_setup_export_directories() {
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function sse_prepare_export_base_directory( string $export_base_dir ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return $filesystem_init;
+	}
+
+	global $wp_filesystem;
+
 	if ( is_link( $export_base_dir ) ) {
 		sse_log( 'Rejected symlinked export base directory: ' . $export_base_dir, 'security' );
 		return new WP_Error( 'export_dir_symlink', __( 'The export directory is a symbolic link and cannot be used safely.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! file_exists( $export_base_dir ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled private export directory creation.
-		if ( ! mkdir( $export_base_dir, SSE_PRIVATE_DIR_MODE ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Exact private mode is required for export secrecy.
+	if ( ! $wp_filesystem->exists( $export_base_dir ) ) {
+		if ( ! $wp_filesystem->mkdir( $export_base_dir, SSE_PRIVATE_DIR_MODE ) ) {
 			sse_log( 'Failed to create export base directory at path: ' . $export_base_dir, 'error' );
 			return new WP_Error( 'export_dir_creation_failed', __( 'Could not create the export directory. Please verify filesystem permissions.', 'enginescript-site-exporter' ) );
 		}
@@ -183,7 +190,7 @@ function sse_prepare_export_base_directory( string $export_base_dir ) {
 
 	clearstatcache( true, $export_base_dir );
 
-	if ( ! is_dir( $export_base_dir ) || is_link( $export_base_dir ) ) {
+	if ( ! $wp_filesystem->is_dir( $export_base_dir ) || is_link( $export_base_dir ) ) {
 		sse_log( 'Rejected unsafe export base directory: ' . $export_base_dir, 'security' );
 		return new WP_Error( 'export_dir_unsafe', __( 'The export directory exists but is not a safe private directory.', 'enginescript-site-exporter' ) );
 	}
@@ -204,32 +211,39 @@ function sse_prepare_export_base_directory( string $export_base_dir ) {
  * @return string|WP_Error Private per-export directory path on success, WP_Error on failure.
  */
 function sse_create_private_export_directory( string $export_base_dir ) {
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return $filesystem_init;
+	}
+
+	global $wp_filesystem;
+
 	for ( $attempt = 0; $attempt < 10; ++$attempt ) {
 		$export_dir_name = sse_generate_private_export_directory_name();
 		$export_dir      = trailingslashit( $export_base_dir ) . $export_dir_name;
 
-		if ( file_exists( $export_dir ) || is_link( $export_dir ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Reject pre-existing generated export paths.
+		if ( $wp_filesystem->exists( $export_dir ) || is_link( $export_dir ) ) {
 			sse_log( 'Rejected pre-existing private export directory candidate: ' . $export_dir, 'security' );
 			continue;
 		}
 
-		if ( ! mkdir( $export_dir, SSE_PRIVATE_DIR_MODE ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Exact private mode is required for export secrecy.
+		if ( ! $wp_filesystem->mkdir( $export_dir, SSE_PRIVATE_DIR_MODE ) ) {
 			continue;
 		}
 
 		clearstatcache( true, $export_dir );
 
-		if ( ! is_dir( $export_dir ) || is_link( $export_dir ) || ! sse_is_path_within_directory( $export_dir, $export_base_dir ) ) {
+		if ( ! $wp_filesystem->is_dir( $export_dir ) || is_link( $export_dir ) || ! sse_is_path_within_directory( $export_dir, $export_base_dir ) ) {
 			sse_log( 'Rejected unsafe private export directory after creation: ' . $export_dir, 'security' );
-			if ( is_dir( $export_dir ) && ! is_link( $export_dir ) ) {
-				rmdir( $export_dir ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing unsafe just-created export directory.
+			if ( $wp_filesystem->is_dir( $export_dir ) && ! is_link( $export_dir ) ) {
+				$wp_filesystem->delete( $export_dir, false, 'd' );
 			}
 			return new WP_Error( 'private_export_dir_unsafe', __( 'Could not create a safe private export directory.', 'enginescript-site-exporter' ) );
 		}
 
 		if ( ! sse_chmod_private_directory( $export_dir ) ) {
 			sse_log( 'Failed to enforce private permissions on export directory: ' . $export_dir, 'security' );
-			rmdir( $export_dir ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removing just-created export directory after permission failure.
+			$wp_filesystem->delete( $export_dir, false, 'd' );
 			return new WP_Error( 'private_export_dir_permissions_failed', __( 'Could not secure the private export directory permissions.', 'enginescript-site-exporter' ) );
 		}
 
@@ -264,7 +278,7 @@ function sse_create_index_file( string $export_dir ): void {
 
 	// Create index.php to prevent directory listing.
 	$index_file_path = trailingslashit( $export_dir ) . 'index.php';
-	if ( ! file_exists( $index_file_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Checking controlled export directory
+	if ( ! $wp_filesystem->exists( $index_file_path ) ) {
 		$wp_filesystem->put_contents(
 			$index_file_path,
 			'<?php // Silence is golden.',
@@ -277,7 +291,7 @@ function sse_create_index_file( string $export_dir ): void {
 
 	// Create .htaccess to deny direct HTTP access (Apache).
 	$htaccess_path = trailingslashit( $export_dir ) . '.htaccess';
-	if ( ! file_exists( $htaccess_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Checking controlled export directory
+	if ( ! $wp_filesystem->exists( $htaccess_path ) ) {
 		$htaccess_content  = "# Deny direct access to export files.\n";
 		$htaccess_content .= "# For Nginx, add a location block to deny access to this directory.\n";
 		$htaccess_content .= "<IfModule mod_authz_core.c>\n";
@@ -371,7 +385,17 @@ function sse_validate_wp_cli_executable_path( string $path ) {
 	}
 
 	$resolved_path = realpath( $path );
-	if ( false === $resolved_path || ! is_file( $resolved_path ) || ! is_executable( $resolved_path ) ) {
+	if ( false === $resolved_path ) {
+		return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
+	}
+
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return $filesystem_init;
+	}
+
+	global $wp_filesystem;
+	if ( ! $wp_filesystem->is_file( $resolved_path ) || ! is_executable( $resolved_path ) ) {
 		return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
 	}
 
@@ -405,7 +429,7 @@ function sse_is_absolute_path( string $path ): bool {
  * @return bool True when mode is not group/public writable.
  */
 function sse_wp_cli_has_safe_mode( string $path ): bool {
-	$permissions = fileperms( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fileperms -- Required to verify executable mode.
+	$permissions = sse_get_filesystem_mode( $path );
 	if ( false === $permissions ) {
 		return false;
 	}
@@ -425,14 +449,20 @@ function sse_wp_cli_has_safe_mode( string $path ): bool {
  * @return bool True when ownership and owner-write bits are acceptable.
  */
 function sse_wp_cli_has_safe_owner( string $path ): bool {
-	$owner       = fileowner( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fileowner -- Required to verify executable ownership.
-	$permissions = fileperms( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fileperms -- Required to verify executable mode.
+	$filesystem_init = sse_init_filesystem();
+	if ( is_wp_error( $filesystem_init ) ) {
+		return false;
+	}
+
+	global $wp_filesystem;
+	$owner       = $wp_filesystem->owner( $path );
+	$permissions = sse_get_filesystem_mode( $path );
 
 	if ( false === $owner || false === $permissions ) {
 		return false;
 	}
 
-	if ( 0 === $owner ) {
+	if ( ( is_numeric( $owner ) && 0 === (int) $owner ) || 'root' === $owner ) {
 		return true;
 	}
 
@@ -479,7 +509,7 @@ function sse_export_database( string $export_dir, string $site_identifier, strin
 
 	$output = shell_exec( $command . ' 2>&1' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Required for WP-CLI database export: all parameters are validated and escaped with escapeshellarg()
 
-	if ( ! file_exists( $db_filepath ) || filesize( $db_filepath ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Validating WP-CLI export success
+	if ( ! sse_filesystem_file_has_content( $db_filepath ) ) {
 		// Sanitize WP-CLI output to avoid leaking absolute paths or sensitive data.
 		$safe_output = '';
 		if ( is_string( $output ) && '' !== $output ) {

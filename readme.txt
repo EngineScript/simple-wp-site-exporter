@@ -100,10 +100,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 = 2.1.1 - Unreleased =
 * **Security**: On multisite, exporter page access, export creation, secure download, and manual delete now require a super admin or `manage_network_options`; single-site installs continue to require `manage_options`
 * **Security**: Exports are staged in random private child directories with symlink/pre-existing directory rejection and enforced `0700` directory permissions
-* **Security**: Export artifacts now use private umask handling plus `0600` chmod verification for database dumps, compressed payloads, file archives, manifests, final ZIPs, and protection files
+* **Security**: Export artifacts now use private umask handling plus WordPress Filesystem-backed `0600` chmod verification for database dumps, compressed payloads, file archives, manifests, final ZIPs, and protection files
 * **Security**: WP-CLI discovery now prefers `/usr/local/bin/wp` and `/usr/bin/wp`; alternate executables must be explicitly configured and pass ownership/writable-mode checks
 * **Security**: Generated download and delete actions include the private export directory identifier in request data and nonce actions
-* **Cleanup**: Bulk cleanup now scans generated private export directories, removes empty private export directories after deletion, and cleans failed export staging directories
+* **Cleanup**: Bulk cleanup now scans generated private export directories through the WordPress Filesystem API, removes empty private export directories after deletion, and cleans failed export staging directories through the WordPress Filesystem API for VIP compatibility
+* **Architecture**: Replaced direct file metadata checks, generated artifact verification, export cleanup directory scans, and filename basename extraction with WordPress Filesystem API methods and native WordPress helpers where available
+* **Tooling**: Added VIP Coding Standards as a Composer-managed dev dependency so PHPCS can run the VIP ruleset reproducibly
+* **Tooling**: Added a Composer-managed semantic versioning library for future version-related tests
 * **Documentation**: Updated WP-CLI, multisite authorization, and private export storage guidance
 
 = 2.1.0 =
