@@ -19,7 +19,7 @@ function sse_admin_menu(): void {
 	add_management_page(
 		__( 'EngineScript Site Exporter', 'enginescript-site-exporter' ), // Page title (escaped by WordPress core).
 		__( 'Site Exporter', 'enginescript-site-exporter' ),               // Menu title (escaped by WordPress core).
-		'manage_options', // Capability required.
+		sse_get_exporter_menu_capability(), // Capability required.
 		'enginescript-site-exporter',
 		'sse_exporter_page_html'
 	);
@@ -123,19 +123,33 @@ function sse_render_exporter_notices(): void {
  * @return void
  */
 function sse_render_export_success_notice( array $zip_result ): void {
+	$export_dir_name       = basename( dirname( $zip_result['filepath'] ) );
+	$has_private_dir_param = sse_is_export_private_directory_name( $export_dir_name );
+	$download_args         = [
+		'action' => 'sse_secure_download',
+		'file'   => $zip_result['filename'],
+	];
+	$download_nonce_action = 'sse_secure_download_' . $zip_result['filename'];
+
+	if ( $has_private_dir_param ) {
+		$download_args['export_dir'] = $export_dir_name;
+		$download_nonce_action      .= '_' . $export_dir_name;
+	}
+
 	$download_url = wp_nonce_url(
 		add_query_arg(
-			[
-				'action' => 'sse_secure_download',
-				'file'   => $zip_result['filename'],
-			],
+			$download_args,
 			admin_url( 'admin-post.php' )
 		),
-		'sse_secure_download_' . $zip_result['filename']
+		$download_nonce_action
 	);
 
 	$display_zip_path = wp_normalize_path( $zip_result['filepath'] );
 	$delete_confirm   = __( 'Are you sure you want to delete this export file?', 'enginescript-site-exporter' );
+	$delete_nonce     = 'sse_delete_export_' . $zip_result['filename'];
+	if ( $has_private_dir_param ) {
+		$delete_nonce .= '_' . $export_dir_name;
+	}
 	?>
 	<div class="notice notice-success is-dismissible">
 		<div class="sse-notice-actions">
@@ -143,19 +157,22 @@ function sse_render_export_success_notice( array $zip_result ): void {
 			<a href="<?php echo esc_url( $download_url ); ?>" class="button sse-action-button">
 				<?php esc_html_e( 'Download Export File', 'enginescript-site-exporter' ); ?>
 			</a>
-			<form
-				method="post"
-				action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
-				class="sse-inline-form sse-confirm-delete"
-				data-sse-confirm-message="<?php echo esc_attr( $delete_confirm ); ?>"
-			>
-				<input type="hidden" name="action" value="sse_delete_export">
-				<input type="hidden" name="file" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
-				<?php wp_nonce_field( 'sse_delete_export_' . $zip_result['filename'] ); ?>
-				<button type="submit" class="button button-secondary sse-action-button">
-					<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
-				</button>
-			</form>
+				<form
+					method="post"
+					action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+					class="sse-inline-form sse-confirm-delete"
+					data-sse-confirm-message="<?php echo esc_attr( $delete_confirm ); ?>"
+				>
+					<input type="hidden" name="action" value="sse_delete_export">
+					<input type="hidden" name="file" value="<?php echo esc_attr( $zip_result['filename'] ); ?>">
+					<?php if ( $has_private_dir_param ) : ?>
+						<input type="hidden" name="export_dir" value="<?php echo esc_attr( $export_dir_name ); ?>">
+					<?php endif; ?>
+					<?php wp_nonce_field( $delete_nonce ); ?>
+					<button type="submit" class="button button-secondary sse-action-button">
+						<?php esc_html_e( 'Delete Export File', 'enginescript-site-exporter' ); ?>
+					</button>
+				</form>
 		</div>
 		<p><small>
 			<?php
@@ -177,7 +194,7 @@ function sse_render_export_success_notice( array $zip_result ): void {
  * @return void
  */
 function sse_exporter_page_html(): void {
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! sse_current_user_can_export_site() ) {
 		sse_wp_die( __( 'You do not have permission to view this page.', 'enginescript-site-exporter' ), 403 );
 	}
 

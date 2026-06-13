@@ -35,6 +35,19 @@ if ( ! defined( 'SSE_EXPORT_DIR_NAME' ) ) {
 	define( 'SSE_EXPORT_DIR_NAME', 'enginescript-site-exporter-exports' );
 }
 
+// Define private export directory naming and filesystem modes.
+if ( ! defined( 'SSE_EXPORT_PRIVATE_DIR_PREFIX' ) ) {
+	define( 'SSE_EXPORT_PRIVATE_DIR_PREFIX', 'export-' );
+}
+
+if ( ! defined( 'SSE_PRIVATE_DIR_MODE' ) ) {
+	define( 'SSE_PRIVATE_DIR_MODE', 0700 );
+}
+
+if ( ! defined( 'SSE_PRIVATE_FILE_MODE' ) ) {
+	define( 'SSE_PRIVATE_FILE_MODE', 0600 );
+}
+
 // Define the filter name for maximum file size override.
 if ( ! defined( 'SSE_FILTER_MAX_FILE_SIZE' ) ) {
 	define( 'SSE_FILTER_MAX_FILE_SIZE', 'sse_max_file_size_for_export' );

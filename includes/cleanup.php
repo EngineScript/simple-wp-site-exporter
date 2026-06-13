@@ -92,22 +92,7 @@ function sse_bulk_cleanup_exports_handler(): void {
 		return;
 	}
 
-	try {
-		$dir_iterator = new DirectoryIterator( $export_dir );
-	} catch ( RuntimeException $e ) {
-		sse_log( 'Failed to read export directory: ' . $e->getMessage(), 'error' );
-		return;
-	}
-
-	$files = [];
-	foreach ( $dir_iterator as $entry ) {
-		if ( $entry->isDot() || ! $entry->isFile() ) {
-			continue;
-		}
-		if ( '.zip' === substr( $entry->getFilename(), -4 ) ) {
-			$files[] = $entry->getPathname();
-		}
-	}
+	$files = sse_get_export_files_for_bulk_cleanup( $export_dir );
 
 	if ( empty( $files ) ) {
 		sse_log( 'No export files found in bulk cleanup', 'info' );
@@ -127,6 +112,88 @@ function sse_bulk_cleanup_exports_handler(): void {
 }
 
 /**
+ * Gets export ZIP files eligible for bulk cleanup lookup.
+ *
+ * @since 2.1.1
+ * @param string $export_dir Export base directory.
+ * @return string[] Export ZIP file paths.
+ */
+function sse_get_export_files_for_bulk_cleanup( string $export_dir ): array {
+	try {
+		$dir_iterator = new DirectoryIterator( $export_dir );
+	} catch ( RuntimeException $e ) {
+		sse_log( 'Failed to read export directory: ' . $e->getMessage(), 'error' );
+		return [];
+	}
+
+	$files = [];
+	foreach ( $dir_iterator as $entry ) {
+		$files = array_merge( $files, sse_get_export_files_from_directory_entry( $entry ) );
+	}
+
+	return $files;
+}
+
+/**
+ * Gets export ZIP paths represented by one export base directory entry.
+ *
+ * @since 2.1.1
+ * @param DirectoryIterator $entry Directory entry.
+ * @return string[] Export ZIP file paths.
+ */
+function sse_get_export_files_from_directory_entry( DirectoryIterator $entry ): array {
+	if ( $entry->isDot() || $entry->isLink() ) {
+		return [];
+	}
+
+	if ( sse_is_export_zip_entry( $entry ) ) {
+		return [ $entry->getPathname() ];
+	}
+
+	if ( ! $entry->isDir() || ! sse_is_export_private_directory_name( $entry->getFilename() ) ) {
+		return [];
+	}
+
+	return sse_get_export_files_from_private_directory( $entry->getPathname() );
+}
+
+/**
+ * Gets export ZIP paths from a private per-export directory.
+ *
+ * @since 2.1.1
+ * @param string $directory Private export directory.
+ * @return string[] Export ZIP file paths.
+ */
+function sse_get_export_files_from_private_directory( string $directory ): array {
+	try {
+		$private_dir_iterator = new DirectoryIterator( $directory );
+	} catch ( RuntimeException $e ) {
+		sse_log( 'Failed to read private export directory: ' . $e->getMessage(), 'error' );
+		return [];
+	}
+
+	$files = [];
+	foreach ( $private_dir_iterator as $private_entry ) {
+		if ( sse_is_export_zip_entry( $private_entry ) ) {
+			$files[] = $private_entry->getPathname();
+		}
+	}
+
+	return $files;
+}
+
+/**
+ * Checks whether a directory entry is an export ZIP file.
+ *
+ * @since 2.1.1
+ * @param DirectoryIterator $entry Directory entry.
+ * @return bool True when the entry is a ZIP file.
+ */
+function sse_is_export_zip_entry( DirectoryIterator $entry ): bool {
+	return ! $entry->isDot() && ! $entry->isLink() && $entry->isFile() && '.zip' === substr( $entry->getFilename(), -4 );
+}
+
+/**
  * Attempts to clean up a single expired export file.
  *
  * @since 2.0.0
@@ -141,8 +208,13 @@ function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ):
 		return false;
 	}
 
-	$filename   = basename( $file_path );
-	$validation = sse_validate_basic_export_file( $filename );
+	$filename        = basename( $file_path );
+	$export_dir_name = basename( dirname( $file_path ) );
+	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
+		$export_dir_name = '';
+	}
+
+	$validation = sse_validate_basic_export_file( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
@@ -177,7 +249,17 @@ function sse_delete_export_file_handler( string $file ): void {
 		return;
 	}
 
-	$validation = sse_validate_export_file_path( $filename );
+	if ( ! file_exists( $file ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Scheduled cleanup gracefully handles already-deleted exports.
+		sse_log( 'Scheduled deletion skipped - file already removed: ' . $filename, 'info' );
+		return;
+	}
+
+	$export_dir_name = basename( dirname( $file ) );
+	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
+		$export_dir_name = '';
+	}
+
+	$validation = sse_validate_export_file_path( $filename, $export_dir_name );
 	if ( is_wp_error( $validation ) ) {
 		sse_log( 'Scheduled deletion blocked - invalid file: ' . $file . ' - ' . $validation->get_error_message(), 'warning' );
 		return;
@@ -216,5 +298,41 @@ function sse_safely_delete_file( string $filepath ): bool {
 		return false;
 	}
 
-	return wp_delete_file_from_directory( $filepath, $export_dir );
+	$deleted = wp_delete_file_from_directory( $filepath, $export_dir );
+	if ( $deleted ) {
+		sse_delete_empty_private_export_directory( dirname( $filepath ), $export_dir );
+	}
+
+	return $deleted;
+}
+
+/**
+ * Deletes an empty generated private export directory.
+ *
+ * @since 2.1.1
+ * @param string $directory  Candidate private export directory path.
+ * @param string $export_dir Export base directory path.
+ * @return void
+ */
+function sse_delete_empty_private_export_directory( string $directory, string $export_dir ): void {
+	if ( ! sse_is_export_private_directory_name( basename( $directory ) ) ) {
+		return;
+	}
+
+	if ( ! is_dir( $directory ) || is_link( $directory ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
+		return;
+	}
+
+	try {
+		$dir_iterator = new DirectoryIterator( $directory );
+		foreach ( $dir_iterator as $entry ) {
+			if ( ! $entry->isDot() ) {
+				return;
+			}
+		}
+	} catch ( RuntimeException $e ) {
+		return;
+	}
+
+	rmdir( $directory ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removes empty generated private export directories after file cleanup.
 }

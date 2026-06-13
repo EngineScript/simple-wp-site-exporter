@@ -16,19 +16,25 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return void
  */
 function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$filename = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_file_name( wp_unslash( $_GET['file'] ) ) : '';
+	$filename        = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_file_name( wp_unslash( $_GET['file'] ) ) : '';
+	$export_dir_name = isset( $_GET['export_dir'] ) && is_string( $_GET['export_dir'] ) ? sanitize_file_name( wp_unslash( $_GET['export_dir'] ) ) : '';
 	if ( '' === $filename ) {
 		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
 
-	check_admin_referer( 'sse_secure_download_' . $filename );
+	$nonce_action = 'sse_secure_download_' . $filename;
+	if ( '' !== $export_dir_name ) {
+		$nonce_action .= '_' . $export_dir_name;
+	}
+
+	check_admin_referer( $nonce_action );
 
 	// Verify user capabilities.
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! sse_current_user_can_export_site() ) {
 		sse_wp_die( __( 'You do not have permission to download export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$validation = sse_validate_export_file_for_download( $filename );
+	$validation = sse_validate_export_file_for_download( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );
@@ -49,19 +55,25 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
  * @return void
  */
 function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-	$filename = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
+	$filename        = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
+	$export_dir_name = isset( $_POST['export_dir'] ) && is_string( $_POST['export_dir'] ) ? sanitize_file_name( wp_unslash( $_POST['export_dir'] ) ) : '';
 	if ( '' === $filename ) {
 		sse_wp_die( __( 'No file specified.', 'enginescript-site-exporter' ), 400 );
 	}
 
-	check_admin_referer( 'sse_delete_export_' . $filename );
+	$nonce_action = 'sse_delete_export_' . $filename;
+	if ( '' !== $export_dir_name ) {
+		$nonce_action .= '_' . $export_dir_name;
+	}
+
+	check_admin_referer( $nonce_action );
 
 	// Verify user capabilities.
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! sse_current_user_can_export_site() ) {
 		sse_wp_die( __( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$validation = sse_validate_basic_export_file( $filename );
+	$validation = sse_validate_basic_export_file( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		sse_wp_die( $validation->get_error_message(), 404 );

@@ -197,6 +197,129 @@ function sse_get_export_directory_path() {
 }
 
 /**
+ * Gets the capability used to show the exporter menu.
+ *
+ * @since 2.1.1
+ * @return string WordPress capability.
+ */
+function sse_get_exporter_menu_capability(): string {
+	return is_multisite() ? 'manage_network_options' : 'manage_options';
+}
+
+/**
+ * Checks whether the current user may perform full-site export actions.
+ *
+ * On multisite, the export contains the full database and files under ABSPATH,
+ * so site admins are not sufficient.
+ *
+ * @since 2.1.1
+ * @return bool True when the current user may export, download, or delete exports.
+ */
+function sse_current_user_can_export_site(): bool {
+	if ( is_multisite() ) {
+		return is_super_admin() || current_user_can( 'manage_network_options' );
+	}
+
+	return current_user_can( 'manage_options' );
+}
+
+/**
+ * Gets the validation regex for private per-export directory names.
+ *
+ * @since 2.1.1
+ * @return non-empty-string Regex pattern for generated private directory names.
+ */
+function sse_get_export_private_directory_name_pattern(): string {
+	return '/^' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}$/';
+}
+
+/**
+ * Checks whether a directory name matches the generated private export format.
+ *
+ * @since 2.1.1
+ * @param string $directory_name Directory basename to validate.
+ * @return bool True when the directory name matches the generated format.
+ */
+function sse_is_export_private_directory_name( string $directory_name ): bool {
+	return 1 === preg_match( sse_get_export_private_directory_name_pattern(), $directory_name );
+}
+
+/**
+ * Generates a private per-export directory name.
+ *
+ * @since 2.1.1
+ * @return string Private export directory basename.
+ */
+function sse_generate_private_export_directory_name(): string {
+	try {
+		$random_suffix = bin2hex( random_bytes( 16 ) );
+	} catch ( Exception $e ) {
+		$random_suffix = '';
+		for ( $index = 0; $index < 32; ++$index ) {
+			$random_suffix .= dechex( wp_rand( 0, 15 ) );
+		}
+	}
+
+	return SSE_EXPORT_PRIVATE_DIR_PREFIX . gmdate( 'Ymd_His' ) . '-' . $random_suffix;
+}
+
+/**
+ * Checks whether a filesystem path has no group or public permission bits.
+ *
+ * @since 2.1.1
+ * @param string $path Path to inspect.
+ * @return bool True when group/other permissions are not set.
+ */
+function sse_has_private_mode( string $path ): bool {
+	$permissions = fileperms( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fileperms -- Required to verify private filesystem modes.
+	if ( false === $permissions ) {
+		return false;
+	}
+
+	return 0 === ( $permissions & 0077 );
+}
+
+/**
+ * Applies and verifies a private filesystem mode.
+ *
+ * @since 2.1.1
+ * @param string $path Path to chmod.
+ * @param int    $mode Mode to apply.
+ * @return bool True when chmod succeeds and no group/public bits remain.
+ */
+function sse_chmod_private_path( string $path, int $mode ): bool {
+	if ( ! chmod( $path, $mode ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Export secrecy requires exact private file modes.
+		return false;
+	}
+
+	clearstatcache( true, $path );
+
+	return sse_has_private_mode( $path );
+}
+
+/**
+ * Applies and verifies private directory permissions.
+ *
+ * @since 2.1.1
+ * @param string $directory Directory path.
+ * @return bool True when the directory is private.
+ */
+function sse_chmod_private_directory( string $directory ): bool {
+	return sse_chmod_private_path( $directory, SSE_PRIVATE_DIR_MODE );
+}
+
+/**
+ * Applies and verifies private file permissions.
+ *
+ * @since 2.1.1
+ * @param string $file_path File path.
+ * @return bool True when the file is private.
+ */
+function sse_chmod_private_file( string $file_path ): bool {
+	return sse_chmod_private_path( $file_path, SSE_PRIVATE_FILE_MODE );
+}
+
+/**
  * Redirects back to the exporter admin page.
  *
  * @since 2.0.0

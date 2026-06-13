@@ -56,7 +56,7 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 Exports are staged in WordPress' temporary directory under:
 `<temp-dir>/enginescript-site-exporter-exports/`
 
-For security, the plugin refuses to export if that directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
+Each export is written inside a random private child directory with private filesystem permissions. For security, the plugin refuses to export if the export directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
 
 = Why do export files disappear after 5 minutes? =
 
@@ -64,7 +64,7 @@ For security and disk space considerations, all exports are automatically delete
 
 = Can I create multiple exports? =
 
-Yes, you can create as many exports as needed. Each will have a unique filename based on the timestamp of creation.
+Yes, you can create as many exports as needed. Each export is staged in its own random private directory.
 
 = Does this include my themes and plugins? =
 
@@ -96,6 +96,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
+
+= 2.1.1 - Unreleased =
+* **Security**: On multisite, exporter page access, export creation, secure download, and manual delete now require a super admin or `manage_network_options`; single-site installs continue to require `manage_options`
+* **Security**: Exports are staged in random private child directories with symlink/pre-existing directory rejection and enforced `0700` directory permissions
+* **Security**: Export artifacts now use private umask handling plus `0600` chmod verification for database dumps, compressed payloads, file archives, manifests, final ZIPs, and protection files
+* **Security**: WP-CLI discovery now prefers `/usr/local/bin/wp` and `/usr/bin/wp`; alternate executables must be explicitly configured and pass ownership/writable-mode checks
+* **Security**: Generated download and delete actions include the private export directory identifier in request data and nonce actions
+* **Cleanup**: Bulk cleanup now scans generated private export directories, removes empty private export directories after deletion, and cleans failed export staging directories
+* **Documentation**: Updated WP-CLI, multisite authorization, and private export storage guidance
 
 = 2.1.0 =
 * **Security**: Added `.htaccess` file to export directory with `Deny from all` rules to prevent direct HTTP access to export files

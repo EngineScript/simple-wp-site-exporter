@@ -241,6 +241,11 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 		return new WP_Error( 'db_compress_verify_failed', __( 'Compressed database file was not created successfully.', 'enginescript-site-exporter' ) );
 	}
 
+	if ( ! sse_chmod_private_file( $target_path ) ) {
+		sse_cleanup_files( [ $target_path ] );
+		return new WP_Error( 'db_compress_permissions_failed', __( 'Could not secure compressed database file permissions.', 'enginescript-site-exporter' ) );
+	}
+
 	return true;
 }
 
@@ -262,6 +267,12 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
 
 	try {
 		$tar_archive = new PharData( $tar_path );
+		if ( ! sse_chmod_private_file( $tar_path ) ) {
+			unset( $tar_archive );
+			sse_cleanup_files( [ $tar_path, $files_archive_path ] );
+			return new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure files archive permissions.', 'enginescript-site-exporter' ) );
+		}
+
 		$file_result = sse_add_wordpress_files_to_tar( $tar_archive, $export_dir );
 		unset( $tar_archive );
 
@@ -288,6 +299,11 @@ function sse_create_wordpress_files_archive( string $files_archive_path, string 
 
 	if ( ! file_exists( $files_archive_path ) || filesize( $files_archive_path ) <= 0 ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists, WordPress.WP.AlternativeFunctions.file_system_operations_filesize -- Verifying generated local tar.gz payload.
 		return new WP_Error( 'files_archive_verify_failed', __( 'WordPress files archive was not created successfully.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( ! sse_chmod_private_file( $files_archive_path ) ) {
+		sse_cleanup_files( [ $files_archive_path ] );
+		return new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure files archive permissions.', 'enginescript-site-exporter' ) );
 	}
 
 	return true;
@@ -321,8 +337,12 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 	}
 
 	global $wp_filesystem;
-	if ( ! $wp_filesystem->put_contents( $bundle_paths['manifest_path'], $manifest_content, FS_CHMOD_FILE ) ) {
+	if ( ! $wp_filesystem->put_contents( $bundle_paths['manifest_path'], $manifest_content, SSE_PRIVATE_FILE_MODE ) ) {
 		return new WP_Error( 'manifest_write_failed', __( 'Could not write EngineScript export manifest.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( ! sse_chmod_private_file( $bundle_paths['manifest_path'] ) ) {
+		return new WP_Error( 'manifest_permissions_failed', __( 'Could not secure EngineScript export manifest permissions.', 'enginescript-site-exporter' ) );
 	}
 
 	return true;
@@ -377,6 +397,11 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ) {
 	if ( ! $zip_close_status || ! file_exists( $bundle_paths['combined_zip_path'] ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Verifying generated export archive.
 		sse_cleanup_files( [ $bundle_paths['combined_zip_path'] ] );
 		return new WP_Error( 'zip_finalize_failed', __( 'Failed to finalize or save the ZIP archive after processing files.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( ! sse_chmod_private_file( $bundle_paths['combined_zip_path'] ) ) {
+		sse_cleanup_files( [ $bundle_paths['combined_zip_path'] ] );
+		return new WP_Error( 'zip_permissions_failed', __( 'Could not secure ZIP archive permissions.', 'enginescript-site-exporter' ) );
 	}
 
 	return true;

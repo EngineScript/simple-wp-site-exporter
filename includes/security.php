@@ -213,11 +213,12 @@ function sse_validate_filepath( string $file_path, string $base_dir ): bool {
  * Validates export file for download operations.
  *
  * @since 2.0.0
- * @param string $filename The filename to validate.
+ * @param string $filename        The filename to validate.
+ * @param string $export_dir_name Optional private export directory basename.
  * @return array{filepath: string, filename: string, filesize: int}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_for_download( string $filename ) {
-	$basic_validation = sse_validate_basic_export_file( $filename );
+function sse_validate_export_file_for_download( string $filename, string $export_dir_name = '' ) {
+	$basic_validation = sse_validate_basic_export_file( $filename, $export_dir_name );
 	if ( is_wp_error( $basic_validation ) ) {
 		return $basic_validation;
 	}
@@ -244,16 +245,17 @@ function sse_validate_export_file_for_download( string $filename ) {
  * Performs basic validation common to both download and deletion operations.
  *
  * @since 2.0.0
- * @param string $filename The filename to validate.
+ * @param string $filename        The filename to validate.
+ * @param string $export_dir_name Optional private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_basic_export_file( string $filename ) {
+function sse_validate_basic_export_file( string $filename, string $export_dir_name = '' ) {
 	$basic_checks = sse_validate_filename_format( $filename );
 	if ( is_wp_error( $basic_checks ) ) {
 		return $basic_checks;
 	}
 
-	$path_validation = sse_validate_export_file_path( $filename );
+	$path_validation = sse_validate_export_file_path( $filename, $export_dir_name );
 	if ( is_wp_error( $path_validation ) ) {
 		return $path_validation;
 	}
@@ -292,20 +294,56 @@ function sse_validate_filename_format( string $filename ) {
 }
 
 /**
+ * Validates a private export directory name.
+ *
+ * @since 2.1.1
+ * @param string $export_dir_name Private export directory basename.
+ * @return true|WP_Error True on success, WP_Error on failure.
+ */
+function sse_validate_export_directory_name_format( string $export_dir_name ) {
+	if ( '' === $export_dir_name ) {
+		return true;
+	}
+
+	if ( strpos( $export_dir_name, '/' ) !== false || strpos( $export_dir_name, '\\' ) !== false ) {
+		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
+		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
+	}
+
+	return true;
+}
+
+/**
  * Validates export file path and directory security.
  *
  * @since 2.0.0
- * @param string $filename The filename to validate.
+ * @param string $filename        The filename to validate.
+ * @param string $export_dir_name Optional private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_path( string $filename ) {
+function sse_validate_export_file_path( string $filename, string $export_dir_name = '' ) {
 	// Get the full path to the file.
 	$export_dir = sse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
 
-	$file_path = trailingslashit( $export_dir ) . $filename;
+	$dir_validation = sse_validate_export_directory_name_format( $export_dir_name );
+	if ( is_wp_error( $dir_validation ) ) {
+		return $dir_validation;
+	}
+
+	if ( '' !== $export_dir_name ) {
+		$file_path = trailingslashit( trailingslashit( $export_dir ) . $export_dir_name ) . $filename;
+	} else {
+		$file_path = sse_find_export_file_path( $export_dir, $filename );
+		if ( is_wp_error( $file_path ) ) {
+			return $file_path;
+		}
+	}
 
 	// Validate the file path is within our export directory.
 	if ( ! sse_validate_filepath( $file_path, $export_dir ) ) {
@@ -316,6 +354,57 @@ function sse_validate_export_file_path( string $filename ) {
 		'filepath' => $file_path,
 		'filename' => basename( $file_path ),
 	];
+}
+
+/**
+ * Finds an export ZIP in legacy or private export directories.
+ *
+ * @since 2.1.1
+ * @param string $export_dir Export base directory.
+ * @param string $filename   Export filename.
+ * @return string|WP_Error Export file path on success, WP_Error on ambiguity.
+ */
+function sse_find_export_file_path( string $export_dir, string $filename ) {
+	$legacy_file_path = trailingslashit( $export_dir ) . $filename;
+	if ( file_exists( $legacy_file_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Backward-compatible lookup for existing direct-base exports.
+		return $legacy_file_path;
+	}
+
+	if ( ! is_dir( $export_dir ) ) {
+		return $legacy_file_path;
+	}
+
+	try {
+		$dir_iterator = new DirectoryIterator( $export_dir );
+	} catch ( RuntimeException $e ) {
+		return $legacy_file_path;
+	}
+
+	$matches = [];
+	foreach ( $dir_iterator as $entry ) {
+		if ( $entry->isDot() || $entry->isLink() || ! $entry->isDir() ) {
+			continue;
+		}
+
+		if ( ! sse_is_export_private_directory_name( $entry->getFilename() ) ) {
+			continue;
+		}
+
+		$candidate_path = trailingslashit( $entry->getPathname() ) . $filename;
+		if ( file_exists( $candidate_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Controlled lookup within generated private export directories.
+			$matches[] = $candidate_path;
+		}
+	}
+
+	if ( count( $matches ) > 1 ) {
+		return new WP_Error( 'ambiguous_export_file', __( 'Multiple matching export files were found. Please use the original download link for this export.', 'enginescript-site-exporter' ) );
+	}
+
+	if ( 1 === count( $matches ) ) {
+		return $matches[0];
+	}
+
+	return $legacy_file_path;
 }
 
 /**

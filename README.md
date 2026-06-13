@@ -71,16 +71,17 @@ The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 - WordPress 6.8 or higher
 - PHP 8.2 or higher
 - Write access to a private WordPress temporary directory. If your host's temp directory is inside the WordPress web root, configure `WP_TEMP_DIR` to a non-public writable path.
-- WP-CLI installed at `/usr/local/bin/wp`, `/usr/bin/wp`, or as `wp-cli.phar` in the WordPress root for database exports
+- WP-CLI installed at `/usr/local/bin/wp` or `/usr/bin/wp` for database exports. To use another trusted executable, define `SSE_WP_CLI_PATH` or filter `sse_wp_cli_path`; local paths must pass ownership and permission checks.
 
 ## Security Features
 
 EngineScript Site Exporter is built with security as a priority:
 
-- **Export Authentication**: Only authorized administrators can create and download exports
+- **Export Authentication**: Only authorized administrators can create and download exports; multisite exports require a network-capable administrator
 - **Secure Downloads**: All downloads are validated with WordPress nonces
 - **Request Validation**: WordPress nonce validation for all admin actions
 - **Path Traversal Protection**: Comprehensive file path validation
+- **Private Export Storage**: Exports are staged in random private directories with `0700` directories and `0600` files
 - **Automatic Deletion**: Exports are automatically cleaned up after 5 minutes
 - **Security Headers**: Implements proper headers for download operations
 - **Secure File Handling**: Uses WordPress Filesystem API for file operations
@@ -96,7 +97,7 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 Exports are staged in WordPress' temporary directory under:
 `<temp-dir>/enginescript-site-exporter-exports/`
 
-For security, the plugin refuses to export if that directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
+Each export is written inside a random private child directory. For security, the plugin refuses to export if the export directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
 
 ### Why do export files disappear after 5 minutes?
 
@@ -104,7 +105,7 @@ For security and disk space considerations, all exports are automatically delete
 
 ### Can I create multiple exports?
 
-Yes, you can create as many exports as needed. Each will have a unique filename based on the timestamp of creation.
+Yes, you can create as many exports as needed. Each export is staged in its own random private directory.
 
 ### Does this include my themes and plugins?
 
