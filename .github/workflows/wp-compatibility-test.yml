@@ -89,7 +89,7 @@ jobs:
           cp -r languages "$BUILD_DIR/"
 
       - name: WordPress Plugin Check
-        uses: WordPress/plugin-check-action@v1.1.7
+        uses: WordPress/plugin-check-action@v1.1.9
         with:
           # Production-style plugin directory. Excludes repo-only files such as
           # .github, GEMINI.md, and other development artifacts.
